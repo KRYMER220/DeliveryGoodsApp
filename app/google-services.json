@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "790670265073",
+    "project_id": "box-v2-44543",
+    "storage_bucket": "box-v2-44543.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:790670265073:android:f3f8cafaa64a3f43e1f750",
+        "android_client_info": {
+          "package_name": "ru.krymer.box_v2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBiIW6JhRh8mJp-U0wY969DymRPkJRGGs4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:790670265073:android:239167966b6e57e0e1f750",
+        "android_client_info": {
+          "package_name": "ru.krymer.delivery"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBiIW6JhRh8mJp-U0wY969DymRPkJRGGs4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

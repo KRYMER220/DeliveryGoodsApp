@@ -1,0 +1,17 @@
+package ru.krymer.delivery.ui.screens.product.models
+
+import ru.krymer.delivery.data.model.ProductModel
+
+sealed class ProductEvent {
+    data class ProductItemClicked(val product: ProductModel) : ProductEvent()
+    data class ShowDeleteDialog(val itemName: String, val itemID: Long) : ProductEvent()
+    data object ShowAddDialog : ProductEvent()
+    data object ProductUpdateAction : ProductEvent()
+    data class ChangedNameProduct(val name: String) : ProductEvent()
+    data class ChangedPriceProduct(val price: String) : ProductEvent()
+    data object ProductSaveAction : ProductEvent()
+    data object DismissDeleteDialog : ProductEvent()
+    data object DismissAddDialog : ProductEvent()
+    data object DismissUpdateDialog : ProductEvent()
+    data object ChangeIsActiveProduct : ProductEvent()
+}

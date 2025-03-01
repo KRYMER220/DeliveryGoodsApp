@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="error">#FF0000</color>
+    <color name="grey">#66C3C3C3</color>
+    <color name="green">#00FF04</color>
+    <color name="tint">#33A6A6A6</color>
+    <color name="back">#1A737373</color>
+    <color name="drag">#1A00FFB7</color>
+    <color name="ready">#2600FF04</color>
+    <color name="ready_low">#1A00FF04</color>
+    <color name="ready_req">#4D00FF04</color>
+    <color name="changed">#33FF0000</color>
+    <color name="tint2">#BAE4E4E4</color>
+</resources>

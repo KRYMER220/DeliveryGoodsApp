@@ -1,0 +1,51 @@
+<resources>
+
+    <string name="app_name">Box 3.0</string>
+
+    //compose
+    //universal
+    <string name="name">Название</string>
+    <string name="close">Закрыть</string>
+    <string name="add">Добавить</string>
+    <string name="save">Сохранить</string>
+    <string name="price">Цена</string>
+    //auth
+    <string name="sign_in_title">Авторизация</string>
+    <string name="forgot_pass_title">Восстановить пароль</string>
+    <string name="sign_in_subtitle">Забыли пароль?</string>
+    <string name="email_hint">Эл.почта</string>
+    <string name="pass_hint">Пароль</string>
+    <string name="sign_in">Войти</string>
+    <string name="error_input_email">Поле с адресом пусто или данные не корректны!</string>
+    <string name="error_input_pass">Поле с паролем пусто или пароль слишком короткий! Введите пароль больше 7 символов!</string>
+    <string name="forgot_action">Забыли пароль?</string>
+    <string name="login_action">Войти сейчас!</string>
+    <string name="restore">Восстановить</string>
+
+    //menu
+    <string name="route">Маршруты</string>
+    <string name="products">Продукция</string>
+    <string name="couriers">Курьеры</string>
+    <string name="trip">Рейсы</string>
+    <string name="analitic">Аналитика</string>
+    //Route
+
+    //Clients
+    <string name="arrears">Долг</string>
+    <string name="phone">Номер телефона</string>
+    <string name="cords">Yandex координаты</string>
+    //Couriers
+    <string name="name_user">Имя</string>
+    <string name="percent_double">Процент (0.0)</string>
+    <string name="salary">Зарплата</string>
+    <string name="km_price">Цена за километраж</string>
+    //trip
+    <string name="add_trip">Добавить рейс</string>
+    <string name="ok">Ок</string>
+    <string name="km_et">Ведите километраж</string>
+    <string name="all_info">Общая</string>
+    <string name="range_select">Выберите диапазон</string>
+    //analitic
+    <string name="shop">Магазины</string>
+    <string name="logs">Логи</string>
+</resources>
