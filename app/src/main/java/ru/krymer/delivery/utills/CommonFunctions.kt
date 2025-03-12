@@ -44,40 +44,6 @@ fun convertToTextDate(timeStamp: Long, pattern: String = Constants.PatternDate.D
     return dateFormat.format(date)
 }
 
-fun Context.observeNetworkConnectivity(): Flow<Boolean> {
-    val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-
-    return callbackFlow {
-        val networkCallback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                trySend(true)
-            }
-
-            override fun onLost(network: Network) {
-                trySend(false)
-            }
-
-            override fun onUnavailable() {
-                trySend(false)
-            }
-        }
-
-        val networkRequest = NetworkRequest.Builder()
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-            .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
-            .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
-            .addTransportType(NetworkCapabilities.TRANSPORT_BLUETOOTH)
-            .build()
-
-        connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
-
-        awaitClose {
-            connectivityManager.unregisterNetworkCallback(networkCallback)
-        }
-    }
-}
-
 fun copyToClipboard(context: Context, text: String) {
     val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     val clipData = ClipData.newPlainText("label", text)

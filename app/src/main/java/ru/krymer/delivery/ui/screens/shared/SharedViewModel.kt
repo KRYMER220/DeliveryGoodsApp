@@ -1,5 +1,6 @@
 package ru.krymer.delivery.ui.screens.shared
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
@@ -54,8 +55,9 @@ class SharedViewModel @Inject constructor(
                         phone = phone,
                         status = statusModel.getStringByStatus(),
                         role = role.getStringByRole(),
-                        isBanned = isBanned,
-                        percentSalary = percentSalary
+                        isBanned = isBan,
+                        percentSalary = percentSalary,
+                        salary = salary
                     )
                     userApi.updateUser(updatedUser)
                 }
@@ -200,7 +202,7 @@ class SharedViewModel @Inject constructor(
                                 user = userData, isLoadUserData = true
                             )
                         }
-                        if (userData.isBanned) updateViewState { it.copy(isUserBlocked = true) }
+                        if (userData.isBan) updateViewState { it.copy(isUserBlocked = true) }
                         else {
                             updateUserStatus(statusModel = StatusModel.ONLINE)
                             loadFactoryData(

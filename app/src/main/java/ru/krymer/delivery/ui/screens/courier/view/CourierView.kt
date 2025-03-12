@@ -86,7 +86,7 @@ fun CourierItem(
             )
             Spacer(modifier = Modifier.width(5.dp))
             Image(
-                contentDescription = "ban courier", painter = if (courier.isBanned) {
+                contentDescription = "ban courier", painter = if (courier.isBan) {
                     painterResource(id = R.drawable.block_active)
                 } else {
                     painterResource(id = R.drawable.block_negative)

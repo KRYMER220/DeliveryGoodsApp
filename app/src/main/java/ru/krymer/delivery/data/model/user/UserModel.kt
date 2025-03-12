@@ -9,7 +9,8 @@ data class UserModel(
     val name: String,
     val phone: String,
     val status: StatusModel,
-    val isBanned: Boolean,
+    val isBan: Boolean,
     val role: RoleModel,
     val percentSalary: Double,
+    val salary: Double,
 )

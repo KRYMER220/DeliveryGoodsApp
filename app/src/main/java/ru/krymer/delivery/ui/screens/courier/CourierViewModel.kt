@@ -50,8 +50,8 @@ class CourierViewModel @Inject constructor(
             is CourierEvent.UserSaveAction -> saveUser()
             is CourierEvent.ChangedEmailUser -> emailChanged(event.email)
             is CourierEvent.ChangedPassUser -> passChanged(event.pass)
-            is CourierEvent.ChangedNameUser -> changeName(event.name)
-            is CourierEvent.ChangedPercentUser -> percentUpdateChanged(event.percent)
+            is CourierEvent.ChangeUsername -> changeName(event.name)
+            is CourierEvent.ChangeUserPercent -> percentUpdateChanged(event.percent)
             is CourierEvent.UserUpdateAction -> updateUser()
             is CourierEvent.ChangedPrice -> priceUpdateChanged(event.price)
             is CourierEvent.ChangedSalary -> salaryUpdateChanged(event.salary)
@@ -67,7 +67,12 @@ class CourierViewModel @Inject constructor(
             is CourierEvent.DeleteUser -> deleteUser()
             is CourierEvent.DropDownMenuState -> changeStateDropMenu(event.state)
             is CourierEvent.SelectedItemMenu -> changeRole(event.role)
+            is CourierEvent.ChangeUserSalary -> changeUserSalary(event.salary)
         }
+    }
+
+    private fun changeUserSalary(salary: String) {
+        updateViewState { it.copy(userSalary = salary) }
     }
 
     init {
@@ -203,7 +208,8 @@ class CourierViewModel @Inject constructor(
                 updatedUser = user,
                 userName = user.name,
                 userPercent = "${user.percentSalary}",
-                isUserBanned = user.isBanned,
+                userSalary = "${user.salary}",
+                isUserBanned = user.isBan,
                 userPhone = user.phone,
                 userRole = user.role,
             )
@@ -214,32 +220,35 @@ class CourierViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val name = viewState.value.userName
-                val percent = viewState.value.userPercent?.toDouble()
+                val percent = viewState.value.userPercent
+                val salary = viewState.value.userSalary
                 val phone = viewState.value.userPhone
                 val isBanned = viewState.value.isUserBanned
                 val userUpdated = viewState.value.updatedUser
                 val userRole = viewState.value.userRole
-                if (!viewState.value.isErrorPercent && !viewState.value.isErrorName && userUpdated != null && userRole != null && isBanned != null && !viewState.value.isErrorPhone) {
+                if (salary.isNotEmpty() && percent.isNotEmpty() && userUpdated != null && userRole != null) {
                     val userRequest = UpdateUserRequest(
                         id = userUpdated.id,
                         login = userUpdated.login,
-                        name = name ?: userUpdated.name,
+                        name = name,
                         phone = phone ?: userUpdated.phone,
                         role = userRole.getStringByRole(),
                         isBanned = isBanned,
-                        percentSalary = percent ?: userUpdated.percentSalary,
-                        status = userUpdated.status.getStringByStatus()
+                        percentSalary = percent.toDouble(),
+                        status = userUpdated.status.getStringByStatus(),
+                        salary = salary.toDouble()
                     )
                     val response = userApi.updateUser(userRequest)
                     if (response.success) {
                         val list = viewState.value.listUser.value.map { it.copy() }.toMutableList()
                         val index = list.indexOfFirst { it.id == userUpdated.id }
                         list[index] = userUpdated.copy(
-                            name = name ?: userUpdated.name,
-                            isBanned = isBanned,
+                            name = name,
+                            isBan = isBanned,
                             role = userRole,
                             phone = phone ?: userUpdated.phone,
-                            percentSalary = percent ?: userUpdated.percentSalary
+                            percentSalary = percent.toDouble(),
+                            salary = salary.toDouble()
                         )
                         updateViewState { it.copy(listUser = MutableStateFlow(list)) }
                         sharedViewModel.message(
@@ -266,15 +275,14 @@ class CourierViewModel @Inject constructor(
                 val pass = viewState.value.userPass
                 val name = viewState.value.userName
                 val user = sharedViewModel.viewState.value.user
-                if (!viewState.value.isErrorName && !viewState.value.isErrorPass && !viewState.value.isErrorEmail && user != null) {
+                if (email.isNotEmpty() && name.isNotEmpty() && user != null && pass.isNotEmpty()) {
                     if (sharedViewModel.initSysAdm()) {
                         val registerRequest = SignUpRequest(
-                            email = email!!,
-                            password = pass!!,
+                            email = email,
+                            password = pass,
                             role = Constants.Role.USER,
                             idFactory = user.idFactory,
-                            name = name
-                                ?: (Constants.Role.USER + "${viewState.value.listUser.value.size}"),
+                            name = name,
                             status = StatusModel.OFFLINE.getStringByStatus()
                         )
                         val response = userApi.signUpUser(registerRequest)
@@ -442,9 +450,10 @@ class CourierViewModel @Inject constructor(
                             name = user.name,
                             phone = user.phone,
                             role = user.role.getStringByRole(),
-                            isBanned = !user.isBanned,
+                            isBanned = !user.isBan,
                             percentSalary = user.percentSalary,
-                            status = user.status.getStringByStatus()
+                            status = user.status.getStringByStatus(),
+                            salary = user.salary
                         )
                         val response = userApi.updateUser(userRequest)
                         if (response.success) {
@@ -452,7 +461,7 @@ class CourierViewModel @Inject constructor(
                                 viewState.value.listUser.value.map { it.copy() }.toMutableList()
                             val index = list.indexOfFirst { it.id == user.id }
                             list[index] = user.copy(
-                                isBanned = !user.isBanned,
+                                isBan = !user.isBan,
                             )
                             updateViewState { it.copy(listUser = MutableStateFlow(list)) }
                         } else {
@@ -492,8 +501,8 @@ class CourierViewModel @Inject constructor(
         updateViewState {
             it.copy(
                 showUpdateSheetDialog = false,
-                userName = null,
-                userPercent = null,
+                userName = "",
+                userPercent = "",
             )
         }
     }

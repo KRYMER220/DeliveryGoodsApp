@@ -23,6 +23,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -123,7 +127,7 @@ fun CourierScreen(
                 isVisible = true,
                 onDismiss = { viewModel.obtainEvent(CourierEvent.DismissBanDialog) },
                 onConfirm = { viewModel.obtainEvent(CourierEvent.BanUser) },
-                isBanned = user.isBanned
+                isBanned = user.isBan
             )
         }
     }
@@ -135,7 +139,7 @@ fun CourierScreen(
             viewModel.obtainEvent(CourierEvent.UserSaveAction)
         }, content = {
             BottomSheetDialogAddUser(viewState = viewState, onValueNameChange = {
-                viewModel.obtainEvent(CourierEvent.ChangedNameUser(it))
+                viewModel.obtainEvent(CourierEvent.ChangeUsername(it))
             }, onValueEmailChange = {
                 viewModel.obtainEvent(CourierEvent.ChangedEmailUser(it))
             }, onValuePassChange = {
@@ -153,10 +157,12 @@ fun CourierScreen(
             BottomSheetDialogUpdateCourier(
                 viewState = viewState,
                 onPercentChange = {
-                    viewModel.obtainEvent(CourierEvent.ChangedPercentUser(it))
+                    viewModel.obtainEvent(CourierEvent.ChangeUserPercent(it))
                 },
                 onNameChange = {
-                    viewModel.obtainEvent(CourierEvent.ChangedNameUser(it))
+                    viewModel.obtainEvent(CourierEvent.ChangeUsername(it))
+                }, onSalaryChange = {
+                    viewModel.obtainEvent(CourierEvent.ChangeUserSalary(it))
                 }, viewModel = viewModel
             )
         })
@@ -184,38 +190,68 @@ fun CourierScreen(
 private fun BottomSheetDialogUpdateCourier(
     viewState: CourierViewState,
     onNameChange: (String) -> Unit,
-    onPercentChange: (String) -> Unit, viewModel: CourierViewModel
+    onPercentChange: (String) -> Unit,
+    onSalaryChange: (String) -> Unit,
+    viewModel: CourierViewModel
 ) {
+    var username by remember { mutableStateOf(viewState.userName) }
+    var percentage by remember { mutableStateOf(viewState.userPercent) }
+    var salary by remember { mutableStateOf(viewState.userSalary) }
+    val roles = RoleModel.entries.toList() - RoleModel.SYSTEM
+    
     Column {
         CommonTextField(
-            value = viewState.userName ?: Constants.EMPTY.EMPTY_STRING,
+            value = username,
             placeholder = stringResource(
                 id = R.string.name
             ),
-            onVC = onNameChange,
+            onVC = {
+                username = it
+                onNameChange(it)
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(60.dp),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-            isError = viewState.isErrorName,
-            errorValue = viewState.errorValue
+            isError = username.isEmpty(),
+            errorValue = Constants.EMPTY.EMPTY_FIELD
         )
         Spacer(modifier = Modifier.height(10.dp))
         CommonTextField(
-            value = viewState.userPercent ?: Constants.EMPTY.EMPTY_STRING,
+            value = percentage,
             placeholder = stringResource(
-                id = R.string.arrears
+                id = R.string.percent_double
             ),
-            onVC = onPercentChange,
+            onVC = {
+                percentage = it
+                onPercentChange(it)
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(60.dp),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            isError = viewState.isErrorPercent,
-            errorValue = viewState.errorValue
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            isError = percentage.isEmpty(),
+            errorValue = Constants.EMPTY.EMPTY_FIELD
         )
         Spacer(modifier = Modifier.height(10.dp))
-        val list = RoleModel.entries.toList()
+        CommonTextField(
+            value = salary,
+            placeholder = stringResource(
+                id = R.string.salary
+            ),
+            onVC = {
+                salary = it
+                onSalaryChange(it)
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(60.dp),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            isError = percentage.isEmpty(),
+            errorValue = Constants.EMPTY.EMPTY_FIELD
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+
         Box(
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -242,11 +278,11 @@ private fun BottomSheetDialogUpdateCourier(
                     viewModel.obtainEvent(CourierEvent.DropDownMenuState(false))
                 }) {
 
-                    list.forEach {
-                        DropdownMenuItem(text = { Text(text = it.name) }, onClick = {
+                    roles.forEach { role ->
+                        DropdownMenuItem(text = { Text(text = role.name) }, onClick = {
                             viewModel.obtainEvent(
                                 CourierEvent.SelectedItemMenu(
-                                    it
+                                    role
                                 )
                             )
                             viewModel.obtainEvent(
