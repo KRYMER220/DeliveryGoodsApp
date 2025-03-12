@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.CircularProgressIndicator
@@ -34,9 +35,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.data.model.ProductModel
+import ru.krymer.delivery.data.model.utilModel.TypePayModel
 import ru.krymer.delivery.ui.components.KeyBoardDialog
 import ru.krymer.delivery.ui.screens.shop.ShopViewModel
 import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
@@ -48,17 +53,19 @@ import ru.krymer.delivery.utills.Constants
 fun AlertDialogAddShop(
     viewState: ShopViewState, viewModel: ShopViewModel
 ) {
-
+    val listMenu = listOf("Тип оплаты")
+    var isExpandedMenu by remember { mutableStateOf(false) }
     var arrear by remember {
         mutableStateOf("")
     }
     var add by remember {
         mutableStateOf("")
     }
+    val switchOldPrice = viewState.stateSwitchPrice.collectAsState().value
     var dept by remember {
         mutableStateOf("")
     }
-
+    val typePayState = viewState.typePay.collectAsState().value
     if (viewState.isLoadDataProducts && viewState.isLoadDataClients) {
         Column {
             Box(
@@ -182,27 +189,92 @@ fun AlertDialogAddShop(
                 }
                 if (viewState.isAdminServices) {
                     item {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            TextField(
-                                value = arrear,
-                                onValueChange = { arrear = it
-                                    viewModel.obtainEvent(ShopEvent.ChangeArrears(it))},
-                                modifier = Modifier.weight(0.3f).height(70.dp)
-                            )
-                            Spacer(modifier = Modifier.width(3.dp))
-                            TextField(
-                                value = add,
-                                onValueChange = { add = it
-                                    viewModel.obtainEvent(ShopEvent.ChangeAdd(it))},
-                                modifier = Modifier.weight(0.3f).height(70.dp)
-                            )
-                            Spacer(modifier = Modifier.width(3.dp))
-                            TextField(
-                                value = dept,
-                                onValueChange = { dept = it
-                                    viewModel.obtainEvent(ShopEvent.ChangeDept(it))},
-                                modifier = Modifier.weight(0.3f).height(70.dp)
-                            )
+                        Column {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                TextField(
+                                    value = arrear,
+                                    onValueChange = { arrear = it
+                                        viewModel.obtainEvent(ShopEvent.ChangeArrears(it))},
+                                    modifier = Modifier.weight(0.3f).height(70.dp),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                    placeholder = {
+                                        Text(
+                                            text = "Долг",
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = AppTheme.colors.onSecondary,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                TextField(
+                                    value = add,
+                                    onValueChange = { add = it
+                                        viewModel.obtainEvent(ShopEvent.ChangeAdd(it))},
+                                    modifier = Modifier.weight(0.3f).height(70.dp),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                    placeholder = {
+                                        Text(
+                                            text = "Доп",
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = AppTheme.colors.onSecondary,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                TextField(
+                                    value = dept,
+                                    onValueChange = { dept = it
+                                        viewModel.obtainEvent(ShopEvent.ChangeDept(it))},
+                                    modifier = Modifier.weight(0.3f).height(70.dp),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                    placeholder = {
+                                        Text(
+                                            text = "Новый",
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = AppTheme.colors.onSecondary,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+                                )
+                            }
+                            Row {
+                                DropdownMenu(
+                                    expanded = isExpandedMenu,
+                                    onDismissRequest = { isExpandedMenu = false }) {
+                                    listMenu.forEach { item ->
+                                        DropdownMenuItem(onClick = {
+                                            isExpandedMenu = false
+                                            when (item) {
+                                                "Тип оплаты" -> {
+                                                    viewModel.obtainEvent(ShopEvent.ShowChangeTypePayDialog)
+                                                }
+                                            }
+                                        }, text = {
+                                            when (item) {
+                                                "Старая цена" -> Text(
+                                                    color = if (switchOldPrice) Color.Red else Color.Black,
+                                                    text = item
+                                                )
+
+                                                "Тип оплаты" -> Text(
+                                                    text = item + when (typePayState) {
+                                                        TypePayModel.CASH -> " (Нал)"
+                                                        TypePayModel.NO_CASH -> " (Без/Нал)"
+                                                        TypePayModel.ANOTHER -> " (Смешаный)"
+                                                    }
+                                                )
+
+                                                else -> Text(text = item)
+                                            }
+                                        })
+                                    }
+                                }
+                            }
                         }
                     }
                 }

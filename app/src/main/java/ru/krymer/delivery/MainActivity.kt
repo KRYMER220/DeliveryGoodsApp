@@ -25,7 +25,6 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 val sharedViewModel = hiltViewModel<SharedViewModel>()
                 sharedViewModel.saveNavControl(navController)
-
                 val sharedViewState by sharedViewModel.viewState.collectAsState()
                 ApplicationScreen(
                     navController = navController,

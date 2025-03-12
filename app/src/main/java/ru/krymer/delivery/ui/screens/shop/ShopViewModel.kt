@@ -3,6 +3,7 @@ package ru.krymer.delivery.ui.screens.shop
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -307,7 +308,7 @@ class ShopViewModel @Inject constructor(
                 if (user != null) {
                     val response = productApi.getCurrentListProduct(idFactory = user.idFactory)
                     if (response.success) {
-                        val products = response.obj?.sortedBy { it.price }
+                        val products = response.obj
                         if (products != null) {
                             updateViewState {
                                 it.copy(
@@ -455,8 +456,19 @@ class ShopViewModel @Inject constructor(
                         nameShop = client.name,
                         cord = client.cord,
                         addSum = viewState.value.add.value,
-                        cash = viewState.value.dept.value,
-                        status = if (viewState.value.isAdminServices) true else false
+                        cash = if (viewState.value.isAdminServices) {
+                            when(viewState.value.typePay.value) {
+                                TypePayModel.CASH -> viewState.value.dept.value
+                                else -> 0.0
+                            }
+                        } else 0.0,
+                        noCash = if (viewState.value.isAdminServices) {
+                            when(viewState.value.typePay.value) {
+                                TypePayModel.NO_CASH -> viewState.value.dept.value
+                                else -> 0.0
+                            }
+                        } else 0.0,
+                        status = viewState.value.isAdminServices
                     )
                     val response = shopApi.addShop(shop = shopRequest)
                     if (response.success) {
@@ -478,7 +490,7 @@ class ShopViewModel @Inject constructor(
                             val list =
                                 viewState.value.listShop.value.map { it.copy() }.toMutableList()
                             list.add(shop)
-                            updateViewState { it.copy(listShop = MutableStateFlow(list.sortedBy { s -> s.counter })) }
+                            updateViewState { it.copy(listShop = MutableStateFlow(list.sortedBy { s -> s.counter }), isLoadShopsData = true) }
                             saveRequest(
                                 idShop = shop.id, idTrip = shop.idTrip, idFactory = shop.idFactory
                             )
@@ -643,7 +655,7 @@ class ShopViewModel @Inject constructor(
                     if (!requests.isNullOrEmpty()) {
                         updateViewState {
                             it.copy(
-                                listDataRequests = MutableStateFlow(requests.sortedBy { r -> r.price })
+                                listDataRequests = MutableStateFlow(requests)
                             )
                         }
                         calculateOrder()
@@ -1107,6 +1119,7 @@ class ShopViewModel @Inject constructor(
                         val arrear = shop.arrears
                         val addSum = shop.addSum
                         val typePay = viewState.value.typePay.value
+                        val isOldPrice = viewState.value.stateSwitchPrice.value
                         val newArrear = (order + arrear + addSum) - (cash + noCash)
                         updateClient(shop.copy(arrears = newArrear))
                         val dataShop = shop.copy(
@@ -1115,7 +1128,7 @@ class ShopViewModel @Inject constructor(
                             noCash = noCash,
                             typePay = typePay,
                             status = true,
-                            isOldPrice = viewState.value.stateSwitchPrice.value,
+                            isOldPrice = isOldPrice,
                         )
                         updateShop(newShop = dataShop, oldShop = shop)
                     }
@@ -1178,7 +1191,7 @@ class ShopViewModel @Inject constructor(
     private fun updateShop(newShop: ShopModel, oldShop: ShopModel) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                oldShop.apply {
+                newShop.apply {
                     val shopRequest = UpdateShopRequest(
                         id = id,
                         idTrip = idTrip,
@@ -1195,8 +1208,11 @@ class ShopViewModel @Inject constructor(
                         cord = cord,
                         nameShop = nameShop
                     )
+                    Log.d("Debag", "$shopRequest")
+
                     val response = shopApi.updateShop(shopRequest)
                     if (response.success) {
+                        Log.d("Debag", "success")
                         loggerApi.addLog(
                             log = LogRequest(
                                 idFactory = sharedViewModel.viewState.value.factory?.id!!,

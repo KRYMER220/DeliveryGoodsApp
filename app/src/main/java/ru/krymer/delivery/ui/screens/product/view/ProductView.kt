@@ -1,21 +1,28 @@
 package ru.krymer.delivery.ui.screens.product.view
 
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.colorResource
@@ -33,16 +40,26 @@ fun ProductView(
     viewState: ProductViewState,
     onItemClicked: (ProductModel) -> Unit,
     onItemDelete: (ProductModel) -> Unit,
-    sharedViewState: SharedViewState
+    sharedViewState: SharedViewState,
+    onItemUpIndex: (Int) -> Unit,
+    onItemDownIndex: (Int) -> Unit,
 ) {
+    val size = viewState.listProduct.collectAsState().value.size
     LazyColumn {
-        items(viewState.listProduct.value) { product ->
+        itemsIndexed(viewState.listProduct.value) { i, product ->
             ProductItem(
                 product = product,
                 onItemClicked = onItemClicked,
                 onItemDelete = onItemDelete,
-                viewState = viewState,
-                sharedViewState = sharedViewState
+                index = i,
+                listSize = size,
+                onItemDownIndex = onItemDownIndex,
+                onItemUpIndex = onItemUpIndex,
+                modifier = Modifier.animateItem(
+                    fadeInSpec = null,
+                    fadeOutSpec = null,
+                    placementSpec = tween(durationMillis = 400)
+                ),
             )
             Spacer(modifier = Modifier.padding(bottom = 10.dp))
         }
@@ -54,11 +71,14 @@ fun ProductItem(
     product: ProductModel,
     onItemClicked: (ProductModel) -> Unit,
     onItemDelete: (ProductModel) -> Unit,
-    viewState: ProductViewState,
-    sharedViewState: SharedViewState
+    index: Int,
+    listSize: Int,
+    onItemUpIndex: (Int) -> Unit,
+    onItemDownIndex: (Int) -> Unit,
+    modifier: Modifier,
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .clickable { onItemClicked(product) }
             .background(
                 color = if (product.isActive) AppTheme.colors.secondary else colorResource(R.color.changed),
@@ -95,6 +115,25 @@ fun ProductItem(
                     .size(40.dp)
                     .clickable(onClick = { onItemDelete(product) })
             )
+            Column(Modifier.padding(start = 10.dp)) {
+                if (index != 0) {
+                    Icon(
+                        imageVector = Icons.Filled.KeyboardArrowUp,
+                        contentDescription = null,
+                        tint = AppTheme.colors.onSecondary,
+                        modifier = Modifier.clickable(onClick = { onItemUpIndex(index) })
+                    )
+                }
+                if (index != listSize - 1) {
+                    Icon(
+                        imageVector = Icons.Filled.KeyboardArrowDown,
+                        contentDescription = null,
+                        modifier = Modifier.clickable(onClick = {
+                            onItemDownIndex(index)
+                        }), tint = AppTheme.colors.onSecondary
+                    )
+                }
+            }
         }
     }
 }

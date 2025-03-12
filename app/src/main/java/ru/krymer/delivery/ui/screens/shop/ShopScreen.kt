@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -27,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -52,6 +54,7 @@ import ru.krymer.delivery.ui.screens.shop.views.InfoContent
 import ru.krymer.delivery.ui.screens.shop.views.InfoShopContent
 import ru.krymer.delivery.ui.screens.shop.views.TripShopView
 import ru.krymer.delivery.ui.theme.AppTheme
+import ru.krymer.delivery.utills.convertToTextDate
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -60,6 +63,7 @@ fun TripShopScreen(
 ) {
     val sharedViewModel = hiltViewModel<SharedViewModel>()
     val viewState = viewModel.viewState.collectAsState().value
+    val sharedViewState = sharedViewModel.viewState.collectAsState().value
     val context = LocalContext.current
 
     Column(modifier = Modifier.padding(15.dp)) {
@@ -111,6 +115,26 @@ fun TripShopScreen(
                 )
             }
         }
+
+
+        Text(
+            style = MaterialTheme.typography.bodyLarge,
+            text = sharedViewState.currentTrip!!.nameRoute,
+            fontSize = 20.sp,
+            color = AppTheme.colors.onSecondary,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
+
+        Text(
+            style = MaterialTheme.typography.bodyLarge,
+            text = convertToTextDate(sharedViewState.currentTrip.date),
+            fontSize = 14.sp,
+            color = AppTheme.colors.onSecondary,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
+
 
         Spacer(modifier = Modifier.height(15.dp))
 

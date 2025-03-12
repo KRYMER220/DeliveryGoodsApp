@@ -22,5 +22,4 @@ fun SplashScreen() {
                 .size(150.dp)
         )
     }
-
 }

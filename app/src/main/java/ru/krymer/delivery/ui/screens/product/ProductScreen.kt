@@ -84,7 +84,8 @@ fun ProductScreen(
                 )
             }
         } else {
-            ProductView(viewState = viewState, onItemClicked = {
+            ProductView(
+                viewState = viewState, onItemClicked = {
                 viewModel.obtainEvent(ProductEvent.ProductItemClicked(it))
             }, onItemDelete = {
                 viewModel.obtainEvent(
@@ -93,7 +94,10 @@ fun ProductScreen(
                         itemName = it.name
                     )
                 )
-            }, sharedViewState = sharedViewState)
+            }, sharedViewState = sharedViewState,
+                onItemUpIndex = { viewModel.obtainEvent(ProductEvent.UpItemIndex(it)) },
+                onItemDownIndex = { viewModel.obtainEvent(ProductEvent.DownItemIndex(it))  }
+            )
         }
     }
 

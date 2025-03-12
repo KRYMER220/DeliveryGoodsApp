@@ -2,7 +2,6 @@ package ru.krymer.delivery.data.request
 
 
 data class CreateTripRequest(
-    val id: Long? = null,
     val factoryId: Long,
     val date: Long,
     val courierId: Long,

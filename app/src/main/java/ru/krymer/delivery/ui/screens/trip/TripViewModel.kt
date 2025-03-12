@@ -2,9 +2,7 @@ package ru.krymer.delivery.ui.screens.trip
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.toObjects
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,13 +19,8 @@ import ru.krymer.delivery.data.api.TripApi
 import ru.krymer.delivery.data.api.UserApi
 import ru.krymer.delivery.data.model.RouteModel
 import ru.krymer.delivery.data.model.TripModel
-import ru.krymer.delivery.data.model.oldModel.ShopOld
 import ru.krymer.delivery.data.model.user.UserModel
-import ru.krymer.delivery.data.model.utilModel.TypePayModel
-import ru.krymer.delivery.data.model.utilModel.getStringByTypePay
 import ru.krymer.delivery.data.request.CreateTripRequest
-import ru.krymer.delivery.data.request.UpdateRequestShopRequest
-import ru.krymer.delivery.data.request.UpdateShopRequest
 import ru.krymer.delivery.data.request.UpdateTripRequest
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.ui.screens.trip.models.TripAction
@@ -417,7 +410,7 @@ class TripViewModel @Inject constructor(
                 val factory = sharedViewModel.viewState.value.factory
                 val date = viewState.value.currentDate
                 if (curRoute != null && curCourier != null && factory != null) {
-                    val routeRequest = CreateTripRequest(
+                    val tripRequest = CreateTripRequest(
                         factoryId = factory.id,
                         date = date,
                         courierId = curCourier.id,
@@ -428,7 +421,7 @@ class TripViewModel @Inject constructor(
                         nameRoute = curRoute.name,
                         nameCourier = curCourier.name
                     )
-                    val response = tripApi.addTrip(trip = routeRequest)
+                    val response = tripApi.addTrip(trip = tripRequest)
                     if (response.success) {
                         val trip = response.obj
                         if (trip != null) {

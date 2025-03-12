@@ -10,8 +10,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.krymer.delivery.common.EventHandler
 import ru.krymer.delivery.data.api.ProductApi
+import ru.krymer.delivery.data.model.ClientModel
 import ru.krymer.delivery.data.model.ProductModel
 import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
+import ru.krymer.delivery.data.request.ClientRequest
 import ru.krymer.delivery.data.request.CreateProductRequest
 import ru.krymer.delivery.data.request.UpdateProductRequest
 import ru.krymer.delivery.ui.screens.product.models.ProductEvent
@@ -49,7 +51,90 @@ class ProductViewModel @Inject constructor(
             ProductEvent.DismissDeleteDialog -> dismissDeleteDialog()
             ProductEvent.DismissUpdateDialog -> dismissUpdateDialog()
             ProductEvent.ChangeIsActiveProduct -> changeStatusProduct()
+            is ProductEvent.DownItemIndex -> if (sharedViewModel.initSysAdmMod()) changePosClientInListOnDown(
+                event.index
+            )
+            is ProductEvent.UpItemIndex -> if (sharedViewModel.initSysAdmMod()) changePosClientInListOnUp(
+                event.index
+            )
         }
+    }
+
+    private fun changePosClientInListOnUp(fromIndex: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val list = _viewState.value.listProduct.value
+            if (fromIndex in 1..<list.size) {
+                try {
+                    val itemFrom = list[fromIndex].copy()
+                    val indexFrom = itemFrom.counter
+                    val itemTo = list[fromIndex - 1].copy()
+                    val indexTo = itemTo.counter
+                    val newItemFrom = itemTo.toRequestUpdateIndex(indexFrom)
+                    val newItemTo = itemFrom.toRequestUpdateIndex(indexTo)
+                    val responseFrom = productApi.updateProduct(product = newItemFrom)
+                    val responseTo = productApi.updateProduct(product = newItemTo)
+                    if (responseTo.success && responseFrom.success) {
+                        val updatedList = list.map { it.copy() }.toMutableList()
+                        updatedList[fromIndex] = itemTo.copy(counter = indexFrom)
+                        updatedList[fromIndex - 1] = itemFrom.copy(counter = indexTo)
+                        updateViewState { it.copy(listProduct = MutableStateFlow(updatedList)) }
+                    } else {
+                        sharedViewModel.message(
+                            Constants.ERROR.SERVER_ERROR_RESPONSE
+                        )
+                    }
+                } catch (e: Exception) {
+                    sharedViewModel.message(e.message)
+                }
+            } else {
+                sharedViewModel.message(Constants.ERROR.GENERAL_ERROR)
+            }
+        }
+    }
+
+    private fun changePosClientInListOnDown(fromIndex: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val list = _viewState.value.listProduct.value.map { it.copy() }
+            if (fromIndex in 0..list.size - 2) {
+                try {
+                    val itemFrom = list[fromIndex].copy()
+                    val itemTo = list[fromIndex + 1].copy()
+                    val indexFrom = itemFrom.counter
+                    val indexTo = itemTo.counter
+                    val newItemFrom = itemTo.toRequestUpdateIndex(indexFrom)
+                    val newItemTo = itemFrom.toRequestUpdateIndex(indexTo)
+                    val responseFrom = productApi.updateProduct(product = newItemFrom)
+                    val responseTo = productApi.updateProduct(product = newItemTo)
+                    if (responseTo.success && responseFrom.success) {
+                        val updatedList = list.map { it.copy() }.toMutableList()
+                        updatedList[fromIndex] = itemTo.copy(counter = indexFrom)
+                        updatedList[fromIndex + 1] = itemFrom.copy(counter = indexTo)
+                        updateViewState { it.copy(listProduct = MutableStateFlow(updatedList)) }
+                    } else {
+                        sharedViewModel.message(
+                            Constants.ERROR.SERVER_ERROR_RESPONSE
+                        )
+                    }
+                } catch (e: Exception) {
+                    sharedViewModel.message(e.message)
+                }
+            } else {
+                sharedViewModel.message(Constants.ERROR.GENERAL_ERROR)
+            }
+        }
+    }
+
+    private fun ProductModel.toRequestUpdateIndex(index: Int): UpdateProductRequest {
+        return UpdateProductRequest(
+            id = this.id,
+            idFactory = this.idFactory,
+            name = this.name,
+            counter = index,
+            date = this.date,
+            price = this.price,
+            isActive = this.isActive,
+            oldPrice = this.oldPrice,
+        )
     }
 
     private fun changeStatusProduct() {
@@ -68,7 +153,7 @@ class ProductViewModel @Inject constructor(
                 if (user != null) {
                     val response = productApi.getCurrentListProduct(idFactory = user.idFactory)
                     if (response.success) {
-                        val products = response.obj?.sortedBy { it.price }
+                        val products = response.obj
                         if (products != null) {
                             updateViewState {
                                 it.copy(

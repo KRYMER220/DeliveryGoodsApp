@@ -1,6 +1,7 @@
 package ru.krymer.delivery.ui.screens.product.models
 
 import ru.krymer.delivery.data.model.ProductModel
+import ru.krymer.delivery.ui.screens.client.models.ClientEvent
 
 sealed class ProductEvent {
     data class ProductItemClicked(val product: ProductModel) : ProductEvent()
@@ -14,4 +15,6 @@ sealed class ProductEvent {
     data object DismissAddDialog : ProductEvent()
     data object DismissUpdateDialog : ProductEvent()
     data object ChangeIsActiveProduct : ProductEvent()
+    data class DownItemIndex(val index: Int) : ProductEvent()
+    data class UpItemIndex(val index: Int) : ProductEvent()
 }
