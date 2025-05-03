@@ -13,5 +13,5 @@ data class CreateTripRequest(
     val nameCourier: String,
     val nameRoute: String,
     val salaryCourier: Double ?= null,
-    val millage: Double ?= null,
+    val millage: Double ?= null
 )

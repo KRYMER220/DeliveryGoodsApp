@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import ru.krymer.delivery.ui.theme.AppTheme
 
 @Composable
-fun CommonShowDeleteDialog(
+fun CommonDeleteDialog(
     itemName: String,
     isVisible: Boolean,
     onDismiss: () -> Unit,

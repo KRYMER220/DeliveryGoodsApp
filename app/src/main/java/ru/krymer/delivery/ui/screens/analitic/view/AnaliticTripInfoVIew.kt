@@ -100,7 +100,7 @@ fun AnaliticTripView(viewModel: AnaliticViewModel) {
 @Composable
 fun TextTripInformation(viewState: AnaliticViewState) {
     val route = viewState.currentTrip?.collectAsState()?.value
-    val dataTrip = viewState.allDataTrip.collectAsState().value
+    val dataTrip = viewState.data.collectAsState().value
     if (route != null) {
         Column(modifier = Modifier.fillMaxWidth()) {
             TextItemInfo(value = "Имя: ${route.nameRoute}")

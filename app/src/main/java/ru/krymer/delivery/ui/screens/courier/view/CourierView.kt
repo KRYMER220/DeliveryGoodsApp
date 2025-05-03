@@ -30,18 +30,18 @@ import ru.krymer.delivery.ui.theme.AppTheme
 
 @Composable
 fun CourierView(
-    viewState: CourierViewState,
-    onItemClicked: (UserModel) -> Unit,
-    onItemBan: (UserModel) -> Unit,
-    onItemDelete: (UserModel) -> Unit
+    chooseUser: (UserModel) -> Unit,
+    banUser: (UserModel) -> Unit,
+    deleteUser: (UserModel) -> Unit,
+    couriers: List<UserModel>
 ) {
     LazyColumn {
-        items(viewState.listUser.value) { courier ->
+        items(couriers) { courier ->
             CourierItem(
                 courier = courier,
-                onItemClicked = onItemClicked,
-                onItemBan = onItemBan,
-                onItemDelete = onItemDelete
+                onItemClicked = chooseUser,
+                onItemBan = banUser,
+                onItemDelete = deleteUser
             )
             Spacer(modifier = Modifier.padding(bottom = 10.dp))
         }
@@ -86,7 +86,7 @@ fun CourierItem(
             )
             Spacer(modifier = Modifier.width(5.dp))
             Image(
-                contentDescription = "ban courier", painter = if (courier.isBanned) {
+                contentDescription = "ban courier", painter = if (courier.isBan) {
                     painterResource(id = R.drawable.block_active)
                 } else {
                     painterResource(id = R.drawable.block_negative)

@@ -9,25 +9,13 @@ sealed class ProductAction {
 
 
 data class ProductViewState(
-    val isLoadDataProduct: Boolean = false,
-    val isError: Boolean = false,
-    val errorValue: String = "",
     val listProduct: MutableStateFlow<List<ProductModel>> = MutableStateFlow(listOf()),
-
     val showAddSheetDialog: Boolean = false,
     val showUpdateSheetDialog: Boolean = false,
-
     val itemName: String = "",
     val itemPrice: String = "",
     val isActiveProduct: Boolean? = null,
     val productUpdated: ProductModel? = null,
-
-    val itemIdToDelete: Long? = null,
-    val itemNameToDelete: String = "",
+    val productDelete: ProductModel? = null,
     val showDeleteDialog: Boolean = false,
-
-    val isErrorPrice: Boolean = false,
-    val errorPrice: String = "",
-    val isErrorName: Boolean = false,
-    val errorName: String = "",
 )

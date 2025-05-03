@@ -37,10 +37,10 @@ fun MenuScreen(
     navController: NavController
 ) {
     val sharedViewModel = hiltViewModel<SharedViewModel>()
-    val viewState = menuViewModel.viewState
+    val viewState = menuViewModel.viewState.collectAsState().value
     val sharedViewState by sharedViewModel.viewState.collectAsState()
-
-    if (sharedViewState.isLoadUserData) {
+    val user = sharedViewState.user.collectAsState().value
+    if (user != null) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -68,10 +68,12 @@ fun MenuScreen(
                     menuViewModel.obtainEvent(MenuEvent.TripClickedToOpen)
                 }, onAnaliticClick = {
                     menuViewModel.obtainEvent(MenuEvent.AnaliticClickedToOpen)
-                }, sharedViewModel = sharedViewModel, sharedViewState = sharedViewState)
+                }, sharedViewModel = sharedViewModel, sharedViewState = sharedViewState,
+                    user = user
+                )
                 Box(modifier = Modifier.fillMaxSize()) {
                     Text(
-                        text = viewState.value.versionValue,
+                        text = viewState.versionValue,
                         color = AppTheme.colors.onSecondary,
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
@@ -81,8 +83,8 @@ fun MenuScreen(
             }
         }
 
-        LaunchedEffect(key1 = viewState.value.menuAction) {
-            when (viewState.value.menuAction) {
+        LaunchedEffect(key1 = viewState.menuAction) {
+            when (viewState.menuAction) {
                 is MenuAction.OpenRoute -> {
                     navController.navigate(NavigationTree.Route.name)
                 }

@@ -35,19 +35,19 @@ import androidx.navigation.NavController
 import ru.krymer.delivery.R
 import ru.krymer.delivery.ui.components.CommonAlertAddDialog
 import ru.krymer.delivery.ui.components.CommonInfoAlertDialog
-import ru.krymer.delivery.ui.components.CommonShowDeleteDialog
-import ru.krymer.delivery.ui.components.CommonUpdateBottomSheetDialog
+import ru.krymer.delivery.ui.components.CommonDeleteDialog
+import ru.krymer.delivery.ui.components.CommonUpdateDialog
+import ru.krymer.delivery.ui.components.ConfirmView
 import ru.krymer.delivery.ui.components.InfoDialog
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
-import ru.krymer.delivery.ui.screens.shop.views.AlertDialogAddRequest
-import ru.krymer.delivery.ui.screens.shop.views.AlertDialogAddShop
-import ru.krymer.delivery.ui.screens.shop.views.AlertDialogAddSum
-import ru.krymer.delivery.ui.screens.shop.views.AlertDialogChangeArrears
-import ru.krymer.delivery.ui.screens.shop.views.AlertDialogChangeTypePay
+import ru.krymer.delivery.ui.screens.shop.views.AddRequestView
+import ru.krymer.delivery.ui.screens.shop.views.AddShopAndRequestView
+import ru.krymer.delivery.ui.screens.shop.views.ChangeAddSumView
+import ru.krymer.delivery.ui.screens.shop.views.ChangeArrearsView
+import ru.krymer.delivery.ui.screens.shop.views.ChangeTypePayView
 import ru.krymer.delivery.ui.screens.shop.views.AlertDialogRequestShop
-import ru.krymer.delivery.ui.screens.shop.views.BottomSheetDialogMillageSave
-import ru.krymer.delivery.ui.screens.shop.views.ConfirmView
+import ru.krymer.delivery.ui.screens.shop.views.MillageAndInfoView
 import ru.krymer.delivery.ui.screens.shop.views.InfoContent
 import ru.krymer.delivery.ui.screens.shop.views.InfoShopContent
 import ru.krymer.delivery.ui.screens.shop.views.TripShopView
@@ -61,6 +61,7 @@ fun TripShopScreen(
     val sharedViewModel = hiltViewModel<SharedViewModel>()
     val viewState = viewModel.viewState.collectAsState().value
     val context = LocalContext.current
+    val shops = viewState.listShop.collectAsState().value
 
     Column(modifier = Modifier.padding(15.dp)) {
         Row(
@@ -114,7 +115,7 @@ fun TripShopScreen(
 
         Spacer(modifier = Modifier.height(15.dp))
 
-        if (!viewState.isLoadShopsData) {
+        if (shops.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize()) {
                 CircularProgressIndicator(
                     modifier = Modifier
@@ -151,12 +152,12 @@ fun TripShopScreen(
     }
 
     if (viewState.isShowMillageDialog) {
-        CommonUpdateBottomSheetDialog(isVisible = true, onDismiss = {
+        CommonUpdateDialog(isVisible = true, onDismiss = {
             viewModel.obtainEvent(ShopEvent.DismissMillageDialog)
         }, onConfirm = {
             viewModel.obtainEvent(ShopEvent.MillageSaveAction)
         }, content = {
-            BottomSheetDialogMillageSave(viewState = viewState, onMillageTFC = {
+            MillageAndInfoView(viewState = viewState, onMillageTFC = {
                 viewModel.obtainEvent(ShopEvent.ValueChangeMillage(millage = it))
             })
         })
@@ -168,7 +169,7 @@ fun TripShopScreen(
         }, onConfirmation = {
             viewModel.obtainEvent(ShopEvent.ShopAddAction)
         }, content = {
-            AlertDialogAddShop(
+            AddShopAndRequestView(
                 viewState = viewState, viewModel = viewModel
             )
         }, onConfirm = {})
@@ -180,7 +181,7 @@ fun TripShopScreen(
         }, onConfirmation = {
             viewModel.obtainEvent(ShopEvent.RequestAddAction)
         }, content = {
-            AlertDialogAddRequest(
+            AddRequestView(
                 viewState = viewState, viewModel = viewModel
             )
         }, onConfirm = {})
@@ -197,29 +198,10 @@ fun TripShopScreen(
                 )
             ) {
                 AlertDialogRequestShop(
-                    viewModel = viewModel, viewState = viewState, sharedViewModel = sharedViewModel
+                    viewModel = viewModel, viewState = viewState
                 )
             }
         }
-    }
-
-    if (viewState.stateIsBlocked) {
-        CommonInfoAlertDialog(
-            onDismissRequest = { viewModel.obtainEvent(ShopEvent.DismissInfoBlockDialog) },
-            content = {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(100.dp)
-                ) {
-                    Text(
-                        text = "Доступ ограничен!",
-                        fontSize = 12.sp,
-                        modifier = Modifier.align(Alignment.Center),
-                        color = AppTheme.colors.onSecondary
-                    )
-                }
-            })
     }
 
     if (viewState.stateInfoDialog) {
@@ -243,9 +225,9 @@ fun TripShopScreen(
             onDismissRequest = { viewModel.obtainEvent(ShopEvent.DismissAddSumDialog) },
             onConfirmation = { viewModel.obtainEvent(ShopEvent.SaveAddSum) },
             content = {
-                AlertDialogAddSum(onAddSumTFC = {
+                ChangeAddSumView(changeAddSum = {
                     viewModel.obtainEvent(ShopEvent.ChangeAddSum(it))
-                }, viewModel = viewModel)
+                })
             },
             onConfirm = {})
     }
@@ -255,10 +237,10 @@ fun TripShopScreen(
             onDismissRequest = { viewModel.obtainEvent(ShopEvent.DismissChangeTypePayDialog) },
             onConfirmation = { viewModel.obtainEvent(ShopEvent.DismissChangeTypePayDialog) },
             content = {
-                AlertDialogChangeTypePay(
+                ChangeTypePayView(
                     viewState = viewState,
-                    onChangeType = { viewModel.obtainEvent(ShopEvent.ChangeTypePay(it)) },
-                    onChangeStateTypePay = {
+                    changeTypePay = { viewModel.obtainEvent(ShopEvent.ChangeTypePay(it)) },
+                    changeStateChangerTypePay = {
                         viewModel.obtainEvent(
                             ShopEvent.ChangeDropDownStateTypePayChanger(
                                 it
@@ -275,7 +257,7 @@ fun TripShopScreen(
             onDismissRequest = { viewModel.obtainEvent(ShopEvent.DismissDialogChangeArrears) },
             onConfirmation = { viewModel.obtainEvent(ShopEvent.SaveArrears) },
             content = {
-                AlertDialogChangeArrears(onChangeArrearsTFC = {
+                ChangeArrearsView(changeArrears = {
                     viewModel.obtainEvent(ShopEvent.ChangeArrears(it))
                 })
             },
@@ -283,11 +265,13 @@ fun TripShopScreen(
     }
 
     if (viewState.showDeleteDialog) {
-        CommonShowDeleteDialog(
-            itemName = viewState.itemNameToDelete,
-            isVisible = true,
-            onDismiss = { viewModel.obtainEvent(ShopEvent.DismissDeleteDialog) },
-            onConfirm = { viewModel.obtainEvent(ShopEvent.DeleteAction) })
+        viewState.shopDeleted?.let {
+            CommonDeleteDialog(
+                itemName = it.nameShop,
+                isVisible = true,
+                onDismiss = { viewModel.obtainEvent(ShopEvent.DismissDeleteDialog) },
+                onConfirm = { viewModel.obtainEvent(ShopEvent.DeleteAction) })
+        }
     }
 
     if (viewState.stateConfirmRequestDialog) {

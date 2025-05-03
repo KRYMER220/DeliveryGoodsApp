@@ -24,25 +24,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.RouteModel
-import ru.krymer.delivery.ui.screens.route.models.RouteViewState
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.ui.theme.AppTheme
 
 @Composable
 fun RouteView(
-    viewState: RouteViewState,
     onItemClicked: (RouteModel) -> Unit,
     onItemLongClicked: (RouteModel) -> Unit,
     onItemDelete: (RouteModel) -> Unit,
-    sharedViewModel: SharedViewModel
+    sharedViewModel: SharedViewModel,
+    routes: List<RouteModel>
 ) {
     LazyColumn {
-        items(viewState.listRoute.value) { route ->
+        items(routes) { route ->
             RouteItem(
                 route = route,
-                onItemClicked = onItemClicked,
+                showClientByRoute = onItemClicked,
                 onItemDelete = onItemDelete,
-                onItemLongClicked = onItemLongClicked,
+                updateRoute = onItemLongClicked,
                 sharedViewModel = sharedViewModel
             )
             Spacer(modifier = Modifier.padding(bottom = 10.dp))
@@ -54,16 +53,16 @@ fun RouteView(
 @Composable
 fun RouteItem(
     route: RouteModel,
-    onItemClicked: (RouteModel) -> Unit,
-    onItemLongClicked: (RouteModel) -> Unit,
+    showClientByRoute: (RouteModel) -> Unit,
+    updateRoute: (RouteModel) -> Unit,
     onItemDelete: (RouteModel) -> Unit,
     sharedViewModel: SharedViewModel
 ) {
     Box(
         modifier = Modifier
             .combinedClickable(
-                onClick = { onItemClicked(route) },
-                onLongClick = { onItemLongClicked(route) })
+                onClick = { showClientByRoute(route) },
+                onLongClick = { updateRoute(route) })
             .background(
                 color = AppTheme.colors.secondary, shape = RoundedCornerShape(16.dp)
             )

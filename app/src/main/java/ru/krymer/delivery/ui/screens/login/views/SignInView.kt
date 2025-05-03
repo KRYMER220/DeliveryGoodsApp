@@ -1,7 +1,5 @@
 package ru.krymer.delivery.ui.screens.login.views
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,13 +11,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.autofill.AutofillType
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -28,24 +27,33 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.R
-import ru.krymer.delivery.ui.components.AuthFields
+import ru.krymer.delivery.ui.components.AuthField
 import ru.krymer.delivery.ui.screens.login.models.LoginViewState
-import ru.krymer.delivery.ui.theme.AppTheme
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun SignInView(
     viewState: LoginViewState,
-    onEmailTFC: (String) -> Unit,
-    onPassTFC: (String) -> Unit,
-    onAuthClick: () -> Unit,
-    onForgotClick: () -> Unit
+    onEmailChange: (String) -> Unit,
+    onPassChange: (String) -> Unit,
+    onSignIn: () -> Unit
 ) {
+    var email by remember {
+        mutableStateOf(viewState.emailValue)
+    }
+
+    var password by remember {
+        mutableStateOf(viewState.passValue)
+    }
+
     Column {
-        AuthFields(
-            value = viewState.emailValue,
+        AuthField(
+            value = email,
             placeholder = stringResource(id = R.string.email_hint),
-            onVC = onEmailTFC,
+            onVC = {
+                email = it
+                onEmailChange(it)
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(60.dp),
@@ -53,14 +61,16 @@ fun SignInView(
             errorValue = viewState.valueErrorEmail,
             enabled = !viewState.isLoginProgress,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            autofillTypes = listOf(AutofillType.EmailAddress)
         )
         Spacer(modifier = Modifier.padding(top = 10.dp))
 
-        AuthFields(
-            value = viewState.passValue,
+        AuthField(
+            value = password,
             placeholder = stringResource(id = R.string.pass_hint),
-            onVC = onPassTFC,
+            onVC = {
+                password = it
+                onPassChange(it)
+            },
             isError = viewState.isErrorPass,
             errorValue = viewState.valueErrorPass,
             modifier = Modifier
@@ -69,12 +79,11 @@ fun SignInView(
             enabled = !viewState.isLoginProgress,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             visualTransformation = PasswordVisualTransformation(),
-            autofillTypes = listOf(AutofillType.Password)
         )
         Spacer(modifier = Modifier.padding(top = 10.dp))
 
         Button(
-            onClick = onAuthClick, shape = RoundedCornerShape(10.dp), modifier = Modifier
+            onClick = onSignIn, shape = RoundedCornerShape(10.dp), modifier = Modifier
                 .fillMaxWidth()
                 .height(60.dp),
             enabled = !viewState.isLoginProgress,
@@ -95,18 +104,6 @@ fun SignInView(
                     ), fontSize = 20.sp
                 )
             }
-        }
-
-        Spacer(modifier = Modifier.height(30.dp))
-        Box(modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = stringResource(id = R.string.forgot_action),
-                style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .clickable(onClick = onForgotClick),
-                color = AppTheme.colors.onSecondary
-            )
         }
     }
 }

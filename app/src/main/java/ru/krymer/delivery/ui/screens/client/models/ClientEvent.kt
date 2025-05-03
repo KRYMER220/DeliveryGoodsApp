@@ -5,7 +5,7 @@ import ru.krymer.delivery.data.model.RouteModel
 
 sealed class ClientEvent {
     data object ClientActionInvoked : ClientEvent()
-    data class ShowDeleteDialog(val itemName: String, val itemId: Long) : ClientEvent()
+    data class ShowDeleteDialog(val client: ClientModel) : ClientEvent()
     data object ClientAddAction : ClientEvent()
     data object ShowAddDialog : ClientEvent()
     data class ShowUpdateDialog(val route: RouteModel?, val client: ClientModel) : ClientEvent()

@@ -11,18 +11,15 @@ import ru.krymer.delivery.data.response.BaseResponse
 import ru.krymer.delivery.utills.Constants
 
 interface RouteApi {
-    @POST("create-route")
-    suspend fun addRoute(@Body route: RouteRequest): BaseResponse<RouteModel>
+    @POST("route/create")
+    suspend fun add(@Body route: RouteRequest): BaseResponse<RouteModel>
 
-    @POST("update-route")
-    suspend fun updateRoute(@Body route: RouteRequest): BaseResponse<RouteModel>
+    @POST("route/update")
+    suspend fun update(@Body route: RouteRequest): BaseResponse<RouteModel>
 
-    @DELETE("delete-route")
-    suspend fun deleteRoute(@Query(Constants.ID.ID) idRoute: Long): BaseResponse<RouteModel>
+    @DELETE("route/delete")
+    suspend fun delete(@Query(Constants.ID.ID) id: Long): BaseResponse<RouteModel>
 
-    @GET("get-routes")
-    suspend fun getCurrentListRoute(@Query(Constants.ID.ID_FACTORY) idFactory: Long): BaseResponse<List<RouteModel>>
-
-    @GET("get-route")
-    suspend fun getCurrentRoute(@Query(Constants.ID.ID_ROUTE) idRoute: Long): BaseResponse<RouteModel>
+    @GET("routes")
+    suspend fun getRoutes(@Query(Constants.ID.ID_FACTORY) idFactory: Long): BaseResponse<List<RouteModel>>
 }

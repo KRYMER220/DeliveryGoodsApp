@@ -11,5 +11,6 @@ data class ProductModel(
     val count: Int,
     val addCount: Int,
     val oldPrice: Double,
-    val exchange: Int ?= null
+    val exchange: Int? = null,
+    val isAdd: Boolean = false
 )

@@ -10,9 +10,9 @@ import ru.krymer.delivery.data.response.BaseResponse
 import ru.krymer.delivery.utills.Constants
 
 interface LoggerApi {
-    @POST("create-log")
-    suspend fun addLog(@Body log: LogRequest)
+    @POST("log/create")
+    suspend fun add(@Body log: LogRequest)
 
-    @GET("get-current-logs")
-    suspend fun getAllFactoryLogs(@Query(Constants.ID.ID_FACTORY) idFactory: Long): BaseResponse<List<LoggerModel>>
+    @GET("logs")
+    suspend fun getLogs(@Query(Constants.ID.ID_FACTORY) idFactory: Long): BaseResponse<List<LoggerModel>>
 }

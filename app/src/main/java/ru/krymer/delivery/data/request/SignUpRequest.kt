@@ -6,5 +6,5 @@ data class SignUpRequest(
     val role: String,
     val idFactory: Long,
     val name: String,
-    val status: String,
+    val status: String
 )

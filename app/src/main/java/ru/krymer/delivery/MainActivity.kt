@@ -8,6 +8,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 import ru.krymer.delivery.ui.screens.ApplicationScreen
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
@@ -25,7 +26,6 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 val sharedViewModel = hiltViewModel<SharedViewModel>()
                 sharedViewModel.saveNavControl(navController)
-
                 val sharedViewState by sharedViewModel.viewState.collectAsState()
                 ApplicationScreen(
                     navController = navController,

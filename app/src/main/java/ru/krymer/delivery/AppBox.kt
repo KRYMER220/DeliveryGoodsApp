@@ -34,4 +34,12 @@ class AppLifecycleObserver @Inject constructor(
             viewModel.updateUserStatus(StatusModel.OFFLINE)
         }
     }
+
+    override fun onStart(owner: LifecycleOwner) {
+        super.onStart(owner)
+        viewModel.viewModelScope.launch {
+            viewModel.updateUserStatus(StatusModel.ONLINE)
+        }
+    }
+
 }

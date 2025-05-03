@@ -2,33 +2,28 @@ package ru.krymer.delivery.ui.screens.route
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.krymer.delivery.common.EventHandler
-import ru.krymer.delivery.data.api.LoggerApi
 import ru.krymer.delivery.data.api.RouteApi
 import ru.krymer.delivery.data.model.RouteModel
-import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
-import ru.krymer.delivery.data.request.LogRequest
 import ru.krymer.delivery.data.request.RouteRequest
 import ru.krymer.delivery.ui.screens.route.models.RouteAction
 import ru.krymer.delivery.ui.screens.route.models.RouteEvent
 import ru.krymer.delivery.ui.screens.route.models.RouteViewState
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.utills.Constants
-import ru.krymer.delivery.utills.isEmptyInput
 import javax.inject.Inject
 
 @HiltViewModel
 class RouteViewModel @Inject constructor(
     private val routeApi: RouteApi,
-    private val sharedViewModel: SharedViewModel, private val loggerApi: LoggerApi
+    private val sharedViewModel: SharedViewModel
 ) : ViewModel(), EventHandler<RouteEvent> {
 
     private val _viewState = MutableStateFlow(RouteViewState())
@@ -38,21 +33,31 @@ class RouteViewModel @Inject constructor(
         _viewState.update { update(it) }
     }
 
+    private fun launchCoroutine(block: suspend () -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                block()
+            } catch (e: Exception) {
+                sharedViewModel.message(e.message)
+            }
+        }
+    }
+
     override fun obtainEvent(event: RouteEvent) {
         when (event) {
             is RouteEvent.RouteActionInvoked -> routeActionInvoked()
             is RouteEvent.RouteSaveAction -> saveRoute()
             is RouteEvent.NameRouteChangedAdd -> changeNameRoute(event.name)
-            is RouteEvent.RouteItemClickedToShop -> clickedRouteToClient(event.route)
-            is RouteEvent.ShowDeleteDialog -> showDeleteDialog(event.itemID, event.itemName)
+            is RouteEvent.RouteItemClickedToShop -> openClientsByRoute(event.route)
+            is RouteEvent.ShowDeleteDialog -> showDeleteDialog(route = event.route)
             is RouteEvent.ShowAddDialog -> showAddDialog()
-            is RouteEvent.RouteItemLongClicked -> showUpdateDialog(event.route)
-            is RouteEvent.NameRouteChangedUpdate -> nameChangeUpdated(event.name)
+            is RouteEvent.ShowUpdateDialog -> showUpdateDialog(event.route)
+            is RouteEvent.UpdateNameRoute -> changeNameUpdate(event.name)
             is RouteEvent.RouteUpdateAction -> updateRoute()
-            RouteEvent.DismissAddDialog -> dismissAddDialog()
-            RouteEvent.DismissDeleteDialog -> dismissDeleteDialog()
-            RouteEvent.DismissUpdateDialog -> dismissUpdateDialog()
-            RouteEvent.DeleteRoute -> deleteItemConfirmed()
+            is RouteEvent.DismissAddDialog -> dismissAddDialog()
+            is RouteEvent.DismissDeleteDialog -> dismissDeleteDialog()
+            is RouteEvent.DismissUpdateDialog -> dismissUpdateDialog()
+            is RouteEvent.DeleteRoute -> deleteItemConfirmed()
         }
     }
 
@@ -61,139 +66,98 @@ class RouteViewModel @Inject constructor(
     }
 
     private fun getDataRoutes() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val user = sharedViewModel.viewState.value.user
-                if (user != null) {
-                    val idFactory = user.idFactory
-                    val response =
-                        routeApi.getCurrentListRoute(idFactory = idFactory)
-                    if (response.success) {
-                        val routes = response.obj
-                        if (routes != null) {
-                            updateViewState {
-                                it.copy(
-                                    listRoute = MutableStateFlow(routes), isLoadRouteData = true
-                                )
-                            }
+        launchCoroutine {
+            val user = sharedViewModel.viewState.value.user.value
+            if (user != null) {
+                val response = routeApi.getRoutes(idFactory = user.idFactory)
+                if (response.success) {
+                    val routes = response.obj
+                    if (routes != null) {
+                        updateViewState {
+                            it.copy(
+                                listRoute = MutableStateFlow(routes)
+                            )
                         }
                     } else {
-                        sharedViewModel.message(response.message)
+                        delay(5000)
+                        getDataRoutes()
                     }
+                } else {
+                    sharedViewModel.message(response.message)
                 }
-            } catch (e: Exception) {
-                sharedViewModel.message(e.message)
             }
         }
     }
 
+
     private fun dismissUpdateDialog() {
         updateViewState {
             it.copy(
-                isDialogUpdate = false, itemNameUpdate = ""
+                isDialogUpdate = false, routeUpdated = null
             )
         }
     }
 
     private fun dismissAddDialog() {
-        updateViewState { it.copy(showDialogAdd = false, itemNameAdd = "") }
+        updateViewState { it.copy(showDialogAdd = false, nameRouteAdd = "") }
     }
 
     private fun dismissDeleteDialog() {
         updateViewState {
             it.copy(
-                isDialogDelete = false, itemIdDelete = null, itemNameDelete = null
+                isDialogDelete = false, routeDeleted = null
             )
         }
     }
 
     private fun updateRoute() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val route = viewState.value.routeUpdated
-                val name = viewState.value.itemNameUpdate
-                if (name.isNotEmpty() && route != null) {
-                    val routeRequest = RouteRequest(
-                        name = name,
-                        idFactory = route.idFactory,
-                        date = route.date,
-                        id = route.id
+        launchCoroutine {
+            val route = viewState.value.routeUpdated
+            if (route != null) {
+                val routeRequest = RouteRequest(
+                    name = route.name, idFactory = route.idFactory, date = route.date, id = route.id
+                )
+                val response = routeApi.update(route = routeRequest)
+                if (response.success) {
+                    val list = viewState.value.listRoute.value.map { it.copy() }.toMutableList()
+                    val index = list.indexOfFirst { it.id == route.id }
+                    list[index] = route.copy(
+                        name = route.name
                     )
-                    val response = routeApi.updateRoute(route = routeRequest)
-                    if (response.success) {
-                        loggerApi.addLog(
-                            log = LogRequest(
-                                idFactory = sharedViewModel.viewState.value.factory?.id!!,
-                                log = "Пользователь: ${sharedViewModel.viewState.value.user?.name}, успешно обновил название: ${route.name} -> $name ",
-                                date = System.currentTimeMillis()
-                            )
-                        )
-                        val list = viewState.value.listRoute.value.map { it.copy() }.toMutableList()
-                        val index = list.indexOfFirst { it.id == route.id }
-                        list[index] = route.copy(
-                            name = name
-                        )
-                        updateViewState { it.copy(listRoute = MutableStateFlow(list)) }
-                        sharedViewModel.message(
-                            response.message,
-                            typeMessageModel = TypeMessageModel.SUCCEED
-                        )
-                    } else {
-                        sharedViewModel.message(response.message)
-                    }
+                    updateViewState { it.copy(listRoute = MutableStateFlow(list)) }
+                    dismissUpdateDialog()
                 } else {
-                    when {
-                        name.isEmpty() -> sharedViewModel.message(Constants.EMPTY.EMPTY_NAME)
-                        route == null -> sharedViewModel.message(Constants.EMPTY.EMPTY_DATA)
-                    }
+                    sharedViewModel.message(response.message)
                 }
-            } catch (e: Exception) {
-                sharedViewModel.message(message = e.message)
-            } finally {
-                dismissUpdateDialog()
+            } else {
+                sharedViewModel.message(Constants.EMPTY.EMPTY_DATA)
             }
         }
     }
 
     private fun saveRoute() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val name = viewState.value.itemNameAdd
-                val factory = sharedViewModel.viewState.value.factory
-                if (factory != null) {
-                    if (name.isNotEmpty()) {
-                        val routeRequest = RouteRequest(
-                            name = name, date = System.currentTimeMillis(), idFactory = factory.id
-                        )
-                        val response = routeApi.addRoute(route = routeRequest)
-                        if (response.success) {
-                            val route = response.obj
-                            loggerApi.addLog(
-                                log = LogRequest(
-                                    idFactory = factory.id,
-                                    log = "Пользователь: ${sharedViewModel.viewState.value.user?.name}, успешно добавил маршрут: $name",
-                                    date = System.currentTimeMillis()
-                                )
-                            )
-                            if (route != null) {
-                                val list = viewState.value.listRoute.value.map { it.copy() }
-                                    .toMutableList()
-                                list.add(route)
-                                updateViewState { it.copy(listRoute = MutableStateFlow(list.sortedBy { r -> r.name })) }
-                            } else {
-                                sharedViewModel.message(Constants.ERROR.SERVER_ERROR_RESPONSE)
-                            }
-                        } else {
-                            sharedViewModel.message(response.message)
-                        }
+        launchCoroutine {
+            val user = sharedViewModel.viewState.value.user.value
+            if (user != null) {
+                val routeRequest = RouteRequest(
+                    name = viewState.value.nameRouteAdd,
+                    date = System.currentTimeMillis(),
+                    idFactory = user.idFactory
+                )
+                val response = routeApi.add(route = routeRequest)
+                if (response.success) {
+                    val route = response.obj
+                    if (route != null) {
+                        val list = viewState.value.listRoute.value.map { it.copy() }.toMutableList()
+                        list.add(route)
+                        updateViewState { it.copy(listRoute = MutableStateFlow(list.sortedBy { r -> r.name })) }
+                        dismissAddDialog()
                     } else {
-                        sharedViewModel.message(Constants.EMPTY.EMPTY_NAME)
+                        sharedViewModel.message(Constants.ERROR.SERVER_ERROR_RESPONSE)
                     }
+                } else {
+                    sharedViewModel.message(response.message)
                 }
-            } catch (e: Exception) {
-                sharedViewModel.message(message = e.message)
-            } finally {
-                dismissAddDialog()
             }
         }
     }
@@ -204,31 +168,12 @@ class RouteViewModel @Inject constructor(
                 showDialogAdd = true
             )
         }
-        clearAllErrorsInputField()
     }
 
-
-    private fun clearAllErrorsInputField() {
-        updateViewState { it.copy(isErrorName = false) }
-    }
-
-    private fun nameChangeUpdated(name: String) {
-        if (validName(name)) {
-            updateViewState { it.copy(itemNameUpdate = name) }
-        }
-    }
-
-    private fun validName(name: String): Boolean {
-        return if (isEmptyInput(name)) {
-            updateViewState { it.copy(itemNameUpdate = name, isErrorName = false) }
-            true
-        } else {
-            updateViewState {
-                it.copy(
-                    errorName = Constants.EMPTY.EMPTY_FIELD, isErrorName = true
-                )
-            }
-            false
+    private fun changeNameUpdate(name: String) {
+        val route = viewState.value.routeUpdated
+        if (route != null) {
+            updateViewState { it.copy(routeUpdated = route.copy(name = name)) }
         }
     }
 
@@ -236,54 +181,43 @@ class RouteViewModel @Inject constructor(
         if (sharedViewModel.initSysAdmMod()) {
             updateViewState {
                 it.copy(
-                    isDialogUpdate = true, itemNameUpdate = route.name, routeUpdated = route
+                    isDialogUpdate = true, routeUpdated = route
                 )
             }
-            clearAllErrorsInputField()
         }
     }
 
-    private fun showDeleteDialog(itemId: Long, itemName: String) {
-        updateViewState {
-            it.copy(
-                isDialogDelete = true, itemIdDelete = itemId, itemNameDelete = itemName
-            )
+    private fun showDeleteDialog(route: RouteModel) {
+        if (sharedViewModel.initSysAdmMod()) {
+            updateViewState {
+                it.copy(
+                    isDialogDelete = true, routeDeleted = route
+                )
+            }
         }
     }
 
     private fun deleteItemConfirmed() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val idRoute = viewState.value.itemIdDelete
-                if (idRoute != null) {
-                    val response = routeApi.deleteRoute(idRoute = idRoute)
-                    if (response.success) {
-                        loggerApi.addLog(
-                            log = LogRequest(
-                                idFactory = sharedViewModel.viewState.value.factory?.id!!,
-                                log = "Пользователь: ${sharedViewModel.viewState.value.user?.name}, успешно удалил маршрут: ${viewState.value.itemNameDelete}",
-                                date = System.currentTimeMillis()
-                            )
-                        )
-                        val list = viewState.value.listRoute.value.map { it.copy() }.toMutableList()
-                        val item = list.first { it.id == idRoute }
-                        val listNew = list - item
-                        updateViewState { it.copy(listRoute = MutableStateFlow(listNew.sortedBy { r -> r.name })) }
-                    } else {
-                        sharedViewModel.message(response.message)
-                    }
+        launchCoroutine {
+            val route = viewState.value.routeDeleted
+            if (route != null) {
+                val response = routeApi.delete(id = route.id)
+                if (response.success) {
+                    val list = viewState.value.listRoute.value.map { it.copy() }.toMutableList()
+                    val item = list.first { it.id == route.id }
+                    val listNew = list - item
+                    updateViewState { it.copy(listRoute = MutableStateFlow(listNew.sortedBy { r -> r.name })) }
+                    dismissDeleteDialog()
                 } else {
-                    sharedViewModel.message(Constants.EMPTY.EMPTY_DATA)
+                    sharedViewModel.message(response.message)
                 }
-            } catch (e: Exception) {
-                sharedViewModel.message(e.message)
-            } finally {
-                dismissDeleteDialog()
+            } else {
+                sharedViewModel.message(Constants.EMPTY.EMPTY_DATA)
             }
         }
     }
 
-    private fun clickedRouteToClient(route: RouteModel) {
+    private fun openClientsByRoute(route: RouteModel) {
         val routes = viewState.value.listRoute.value
         sharedViewModel.saveRouteList(routes)
         updateViewState { it.copy(routeAction = RouteAction.OpenClients) }
@@ -292,9 +226,7 @@ class RouteViewModel @Inject constructor(
 
 
     private fun changeNameRoute(name: String) {
-        if (validName(name)) {
-            updateViewState { it.copy(itemNameAdd = name) }
-        }
+        updateViewState { it.copy(nameRouteAdd = name) }
     }
 
     private fun routeActionInvoked() {

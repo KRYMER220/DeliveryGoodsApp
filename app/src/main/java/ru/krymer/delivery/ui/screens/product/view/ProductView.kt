@@ -5,17 +5,23 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.colorResource
@@ -33,16 +39,22 @@ fun ProductView(
     viewState: ProductViewState,
     onItemClicked: (ProductModel) -> Unit,
     onItemDelete: (ProductModel) -> Unit,
-    sharedViewState: SharedViewState
+    sharedViewState: SharedViewState,
+    onItemUpIndex: (Int) -> Unit,
+    onItemDownIndex: (Int) -> Unit,
+    products: List<ProductModel>
 ) {
     LazyColumn {
-        items(viewState.listProduct.value) { product ->
+        itemsIndexed(products) { index, product ->
             ProductItem(
                 product = product,
                 onItemClicked = onItemClicked,
                 onItemDelete = onItemDelete,
                 viewState = viewState,
-                sharedViewState = sharedViewState
+                sharedViewState = sharedViewState,
+                index = index,
+                onItemUpIndex = onItemUpIndex,
+                onItemDownIndex = onItemDownIndex
             )
             Spacer(modifier = Modifier.padding(bottom = 10.dp))
         }
@@ -55,8 +67,12 @@ fun ProductItem(
     onItemClicked: (ProductModel) -> Unit,
     onItemDelete: (ProductModel) -> Unit,
     viewState: ProductViewState,
-    sharedViewState: SharedViewState
+    sharedViewState: SharedViewState,
+    index: Int,
+    onItemUpIndex: (Int) -> Unit,
+    onItemDownIndex: (Int) -> Unit,
 ) {
+    val list = viewState.listProduct.collectAsState().value.size
     Box(
         modifier = Modifier
             .clickable { onItemClicked(product) }
@@ -95,6 +111,25 @@ fun ProductItem(
                     .size(40.dp)
                     .clickable(onClick = { onItemDelete(product) })
             )
+            Column(Modifier.padding(start = 10.dp)) {
+                if (index != 0) {
+                    Icon(
+                        imageVector = Icons.Filled.KeyboardArrowUp,
+                        contentDescription = null,
+                        tint = AppTheme.colors.onSecondary,
+                        modifier = Modifier.clickable(onClick = { onItemUpIndex(index) })
+                    )
+                }
+                if (index != list - 1) {
+                    Icon(
+                        imageVector = Icons.Filled.KeyboardArrowDown,
+                        contentDescription = null,
+                        modifier = Modifier.clickable(onClick = {
+                            onItemDownIndex(index)
+                        }), tint = AppTheme.colors.onSecondary
+                    )
+                }
+            }
         }
     }
 }

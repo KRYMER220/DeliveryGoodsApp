@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -23,6 +24,9 @@ import ru.krymer.delivery.data.model.ProductModel
 import ru.krymer.delivery.data.model.RequestModel
 import ru.krymer.delivery.data.model.ShopModel
 import ru.krymer.delivery.data.model.utilModel.TypePayModel
+import ru.krymer.delivery.data.model.utilModel.TypePayModel.ANOTHER
+import ru.krymer.delivery.data.model.utilModel.TypePayModel.CASH
+import ru.krymer.delivery.data.model.utilModel.TypePayModel.NO_CASH
 import ru.krymer.delivery.data.model.utilModel.getStringByTypePay
 import ru.krymer.delivery.data.request.ClientRequest
 import ru.krymer.delivery.data.request.CreateRequestShopRequest
@@ -57,6 +61,16 @@ class ShopViewModel @Inject constructor(
 
     private fun updateViewState(update: (ShopViewState) -> ShopViewState) {
         _viewState.update { update(it) }
+    }
+
+    private fun launchCoroutine(block: suspend () -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                block()
+            } catch (e: Exception) {
+                sharedViewModel.message(e.message)
+            }
+        }
     }
 
     override fun obtainEvent(event: ShopEvent) {
@@ -129,19 +143,23 @@ class ShopViewModel @Inject constructor(
 
             is ShopEvent.DismissInfoShopDialog -> dismissInfoShopDialog()
             is ShopEvent.OpenInfoShopDialog -> openInfoShopDialog(event.shop)
-            is ShopEvent.DismissInfoBlockDialog -> dismissBlockDialog()
 
             is ShopEvent.DismissDialogAddRequest -> dismissAddRequestDialog()
             is ShopEvent.RequestAddAction -> initSaveOrUpdateRequest()
             is ShopEvent.ShowDialogAddRequest -> showAddRequestDialog()
             is ShopEvent.SwitchPrice -> switchStatePrice()
             is ShopEvent.CopyInfoData -> copyToClip(event.context)
-            is ShopEvent.OnAdminManaged -> changeManage()
             is ShopEvent.ChangeCountExchange -> changeRequestExchangeProduct(editProduct = event.product, exchange = event.exchange)
             is ShopEvent.ChangeAdd -> changeAdd(event.add)
             is ShopEvent.ChangeArrear -> changeArrear(arrear = event.arrear)
             is ShopEvent.ChangeDept -> changeDept(dept = event.dept)
+            is ShopEvent.ChangeAddStatusProduct -> changeAddStatusProduct(event.product)
         }
+    }
+
+    init {
+        getDataShops()
+        getDataProduct()
     }
 
     private fun changeDept(dept: String) {
@@ -172,12 +190,6 @@ class ShopViewModel @Inject constructor(
         }
     }
 
-    private fun changeManage() {
-        if (sharedViewModel.initSysAdm()) {
-            updateViewState { it.copy(isAdminServices = !viewState.value.isAdminServices) }
-        }
-    }
-
     private fun copyToClip(context: Context) {
         var text = ""
         var counter = 0
@@ -191,8 +203,8 @@ class ShopViewModel @Inject constructor(
     }
 
     private fun switchStatePrice() {
-        val isOldPrice = viewState.value.stateSwitchPrice.value
-        updateViewState { it.copy(stateSwitchPrice = MutableStateFlow(!isOldPrice)) }
+        val isOldPrice = !viewState.value.stateSwitchPrice.value
+        updateViewState { it.copy(stateSwitchPrice = MutableStateFlow(isOldPrice)) }
         calculateOrder()
     }
 
@@ -204,34 +216,25 @@ class ShopViewModel @Inject constructor(
         val list = viewState.value.listDataRequests.value.map { it.copy() }
         updateViewState {
             it.copy(
-                showDialogAddRequest = true,
                 listProductRequest = MutableStateFlow(viewState.value.listProduct.value
-                    .filter { p -> p.isActive }
-                    .filterNot { p -> list.any { pr -> pr.id == p.id } }
-                    .map { p -> p.copy() })
+                .filter { p -> p.isActive }
+                .filterNot { p -> list.any { pr -> pr.id == p.id } }
+                .map { p -> p.copy() }),
+                showDialogAddRequest = true,
             )
         }
     }
 
-    init {
-        getDataShops()
-        getDataProduct()
-    }
+
 
     private fun initSaveOrUpdateRequest() {
-        try {
-            val shop = viewState.value.currentShop
-            if (shop != null) {
-                saveRequest(
-                    idShop = shop.id, idTrip = shop.idTrip, idFactory = shop.idFactory
-                )
-            } else {
-                sharedViewModel.message(Constants.ERROR.GENERAL_ERROR)
-            }
-        } catch (e: Exception) {
-            sharedViewModel.message(message = e.message)
-        } finally {
-            dismissAddRequestDialog()
+        val shop = viewState.value.currentShop
+        if (shop != null) {
+            saveRequest(
+                shop = shop
+            )
+        } else {
+            sharedViewModel.message(Constants.ERROR.AGAIN)
         }
     }
 
@@ -241,7 +244,7 @@ class ShopViewModel @Inject constructor(
                 val trip = sharedViewModel.viewState.value.currentTrip
                 val list = viewState.value.listShop.value.map { it.copy() }
                 if (trip != null) {
-                    val response = clientApi.getAllCurrentListClient(
+                    val response = clientApi.getClientsByFactory(
                         idFactory = trip.idFactory
                     )
                     if (response.success) {
@@ -252,7 +255,6 @@ class ShopViewModel @Inject constructor(
                             updateViewState {
                                 it.copy(
                                     listClient = MutableStateFlow(clients),
-                                    isLoadDataClients = true,
                                     currentClient = clients[0]
                                 )
                             }
@@ -273,7 +275,7 @@ class ShopViewModel @Inject constructor(
                 val trip = sharedViewModel.viewState.value.currentTrip
                 val list = viewState.value.listShop.value.map { it.copy() }
                 if (trip != null) {
-                    val response = clientApi.getCurrentListClient(
+                    val response = clientApi.getClientsByRoute(
                         idRoute = trip.idRoute
                     )
                     if (response.success) {
@@ -284,7 +286,6 @@ class ShopViewModel @Inject constructor(
                             updateViewState {
                                 it.copy(
                                     listClient = MutableStateFlow(clients),
-                                    isLoadDataClients = true,
                                     currentClient = clients[0]
                                 )
                             }
@@ -301,58 +302,50 @@ class ShopViewModel @Inject constructor(
     }
 
     private fun getDataProduct() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val user = sharedViewModel.viewState.value.user
-                if (user != null) {
-                    val response = productApi.getCurrentListProduct(idFactory = user.idFactory)
-                    if (response.success) {
-                        val products = response.obj?.sortedBy { it.price }
-                        if (products != null) {
-                            updateViewState {
-                                it.copy(
-                                    listProduct = MutableStateFlow(products),
-                                    isLoadDataProducts = true
-                                )
-                            }
+        launchCoroutine {
+            val user = sharedViewModel.viewState.value.user.value
+            if (user != null) {
+                val response = productApi.getProducts(idFactory = user.idFactory)
+                if (response.success) {
+                    val products = response.obj?.sortedBy { it.price }
+                    if (!products.isNullOrEmpty()) {
+                        updateViewState {
+                            it.copy(
+                                listProduct = MutableStateFlow(products),
+                            )
                         }
-                    } else {
-                        sharedViewModel.message(response.message)
                     }
+                } else {
+                    sharedViewModel.message(response.message)
                 }
-            } catch (e: Exception) {
-                sharedViewModel.message(e.message)
             }
         }
     }
 
     private fun getDataShops() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val factory = sharedViewModel.viewState.value.factory
-                val trip = sharedViewModel.viewState.value.currentTrip
-                if (factory != null && trip != null) {
-                    val response = shopApi.getCurrentShops(idTrip = trip.id)
-                    if (response.success) {
-                        val shops = response.obj?.sortedBy { it.counter }
-                        if (shops != null) {
-                            val list = shops.sortedBy { s -> s.counter }
-                            updateViewState {
-                                it.copy(
-                                    listShop = MutableStateFlow(list),
-                                    isLoadShopsData = true,
-                                    currentTrip = trip
-                                )
-                            }
+        launchCoroutine {
+            val factory = sharedViewModel.viewState.value.factory
+            val trip = sharedViewModel.viewState.value.currentTrip
+            if (factory != null && trip != null) {
+                val response = shopApi.getShopsByTrip(idTrip = trip.id)
+                if (response.success) {
+                    val shops = response.obj?.sortedBy { it.counter }
+                    if (!shops.isNullOrEmpty()) {
+                        updateViewState {
+                            it.copy(
+                                listShop = MutableStateFlow(shops),
+                                currentTrip = trip,
+                            )
                         }
                     } else {
-                        sharedViewModel.message(response.message)
+                        delay(5000)
+                        getDataShops()
                     }
                 } else {
-                    sharedViewModel.message(Constants.ERROR.ERROR)
+                    sharedViewModel.message(response.message)
                 }
-            } catch (e: Exception) {
-                sharedViewModel.message(e.message)
+            } else {
+                sharedViewModel.message(Constants.ERROR.ERROR)
             }
         }
     }
@@ -391,8 +384,19 @@ class ShopViewModel @Inject constructor(
                 stateAddDialog = false,
                 isShowDialogWithListCurrentClients = false,
                 isShowDialogWithListAllClients = false,
-                isAdminServices = false,
                 currentClient = null,
+            )
+        }
+    }
+
+    private fun changeAddStatusProduct(editProduct: ProductModel) {
+        val list = viewState.value.listProductRequest.value.map { it.copy() }.toMutableList()
+        val index = list.indexOfFirst { it.id == editProduct.id }
+        val product = editProduct.copy(isAdd = !editProduct.isAdd)
+        list[index] = product
+        updateViewState {
+            it.copy(
+                listProductRequest = MutableStateFlow(list)
             )
         }
     }
@@ -438,77 +442,81 @@ class ShopViewModel @Inject constructor(
     }
 
     private fun saveShop() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val client = viewState.value.currentClient
-                val trip = sharedViewModel.viewState.value.currentTrip
-                val factory = sharedViewModel.viewState.value.factory
-                if (client != null && trip != null && factory != null) {
-                    val shopRequest = CreateShopRequest(
-                        id = client.id,
-                        idTrip = trip.id,
-                        idFactory = factory.id,
-                        arrears = if (viewState.value.isAdminServices) viewState.value.arrear.value else client.arrears,
-                        date = trip.date,
-                        counter = client.counter,
-                        isOldPrice = false,
-                        nameShop = client.name,
-                        cord = client.cord,
-                        addSum = viewState.value.add.value,
-                        cash = viewState.value.dept.value,
-                        status = if (viewState.value.isAdminServices) true else false
-                    )
-                    val response = shopApi.addShop(shop = shopRequest)
-                    if (response.success) {
-                        val shop = response.obj
-                        if (!sharedViewModel.initSysAdm()) {
-                            loggerApi.addLog(
-                                log = LogRequest(
-                                    idFactory = sharedViewModel.viewState.value.factory?.id!!,
-                                    log = "Пользователь: ${sharedViewModel.viewState.value.user?.name},\nуспешно добавил магазин:${client.name},\nтекущий долг: ${client.arrears},\nв рейс: ${trip.nameRoute}, ${
-                                        convertToTextDate(
-                                            trip.date
-                                        )
-                                    }",
-                                    date = System.currentTimeMillis()
+        launchCoroutine {
+            val client = viewState.value.currentClient
+            val trip = sharedViewModel.viewState.value.currentTrip
+            val factory = sharedViewModel.viewState.value.factory
+            if (client != null && trip != null && factory != null) {
+                val shopRequest = CreateShopRequest(
+                    id = client.id,
+                    idTrip = trip.id,
+                    idFactory = factory.id,
+                    arrears = client.arrears,
+                    date = trip.date,
+                    counter = client.counter,
+                    isOldPrice = false,
+                    nameShop = client.name,
+                    cord = client.cord,
+                    addSum = viewState.value.add.value,
+                    cash = viewState.value.dept.value,
+                    status = false
+                )
+                val response = shopApi.add(shop = shopRequest)
+                if (response.success) {
+                    val shop = response.obj
+                    loggerApi.add(
+                        log = LogRequest(
+                            idFactory = factory.id,
+                            log = "Пользователь: ${sharedViewModel.viewState.value.user.value?.name},\nуспешно добавил магазин:${client.name},\nтекущий долг: ${client.arrears},\nв рейс: ${trip.nameRoute}, ${
+                                convertToTextDate(
+                                    trip.date
                                 )
-                            )
-                        }
-                        if (shop != null) {
-                            val list =
-                                viewState.value.listShop.value.map { it.copy() }.toMutableList()
-                            list.add(shop)
-                            updateViewState { it.copy(listShop = MutableStateFlow(list.sortedBy { s -> s.counter })) }
-                            saveRequest(
-                                idShop = shop.id, idTrip = shop.idTrip, idFactory = shop.idFactory
-                            )
-                        }
-                    } else {
-                        sharedViewModel.message(message = response.message)
+                            }",
+                            date = System.currentTimeMillis()
+                        )
+                    )
+                    if (shop != null) {
+                        shop.listRequest = listOf<RequestModel>()
+                        saveRequest(
+                            shop = shop
+                        )
                     }
+                    dismissAddDialog()
+                } else {
+                    sharedViewModel.message(message = response.message)
                 }
-            } catch (e: Exception) {
-                sharedViewModel.message(message = e.message)
-            } finally {
-                dismissAddDialog()
             }
         }
     }
 
-    private fun saveRequest(idTrip: Long, idFactory: Long, idShop: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val listProduct = viewState.value.listProductRequest.value.map { it.copy() }
-                val listRequest =
-                    viewState.value.listDataRequests.value.map { it.copy() }.toMutableList()
-                var logStr = ""
-                listProduct.forEach { product ->
-                    if ((product.count == 0 && product.addCount > 0) || (product.count > 0 && product.addCount == 0) || ((product.count > 0 && product.addCount > 0))) {
-                        val reqResponse = CreateRequestShopRequest(
+    private fun saveRequest(shop: ShopModel) {
+        launchCoroutine {
+            val listProduct = viewState.value.listProductRequest.value.map { it.copy() }
+            val listRequest = shop.listRequest.toMutableList()
+            var logStr = ""
+            listProduct.forEach { product ->
+                if ((product.count == 0 && product.addCount > 0) || (product.count > 0 && product.addCount == 0) || ((product.count > 0 && product.addCount > 0)) || product.isAdd) {
+                    val reqResponse = CreateRequestShopRequest(
+                        id = product.id,
+                        idShop = shop.id,
+                        idTrip = shop.idTrip,
+                        idFactory = shop.idFactory,
+                        count = product.count,
+                        bonus = product.addCount,
+                        status = false,
+                        exchange = product.exchange ?: 0,
+                        price = product.price,
+                        oldPrice = product.oldPrice,
+                        name = product.name,
+                        counter = product.counter
+                    )
+                    val response = requestApi.add(reqResponse)
+                    if (response.success) {
+                        val requestModel = RequestModel(
                             id = product.id,
-                            idShop = idShop,
-                            idTrip = idTrip,
-                            idFactory = idFactory,
+                            idShop = shop.id,
+                            idTrip = shop.idTrip,
+                            idFactory = shop.idFactory,
                             count = product.count,
                             bonus = product.addCount,
                             status = false,
@@ -518,71 +526,60 @@ class ShopViewModel @Inject constructor(
                             name = product.name,
                             counter = product.counter
                         )
-                        val response = requestApi.addRequest(reqResponse)
-                        if (response.success) {
-                            val requestModel = RequestModel(
-                                id = product.id,
-                                idShop = idShop,
-                                idTrip = idTrip,
-                                idFactory = idFactory,
-                                count = product.count,
-                                bonus = product.addCount,
-                                status = false,
-                                exchange = product.exchange ?: 0,
-                                price = product.price,
-                                oldPrice = product.oldPrice,
-                                name = product.name,
-                                counter = product.counter
-                            )
-                            logStr += "${product.name}, заявка: ${product.count}, бонус: ${product.addCount}\n"
-                            listRequest.add(requestModel)
-                        }
+                        logStr += "${product.name}, заявка: ${product.count}, бонус: ${product.addCount}\n"
+                        listRequest.add(requestModel)
                     }
                 }
-                loggerApi.addLog(
-                    log = LogRequest(
-                        idFactory = sharedViewModel.viewState.value.factory?.id!!,
-                        log = "Пользователь: ${sharedViewModel.viewState.value.user?.name}, успешно добавил заявки: \n$logStr",
-                        date = System.currentTimeMillis()
-                    )
-                )
-                updateViewState { it.copy(listDataRequests = MutableStateFlow(listRequest.sortedBy { r -> r.price })) }
-                calculateOrder()
-            } catch (e: Exception) {
-                sharedViewModel.message(message = e.message)
             }
+            val shops = viewState.value.listShop.value.map { it.copy() }.toMutableList()
+            shop.listRequest = listRequest.sortedBy { it.counter }
+            val existingIndex = shops.indexOfFirst { it.id == shop.id }
+            if (existingIndex != -1) {
+                shops[existingIndex] = shop
+            } else {
+                shops.add(shop)
+            }
+            updateViewState {
+                it.copy(
+                    listShop = MutableStateFlow(shops.sortedBy { s -> s.counter }),
+                    listDataRequests = MutableStateFlow(listRequest.sortedBy { it.counter })
+                )
+            }
+            loggerApi.add(
+                log = LogRequest(
+                    idFactory = shop.idFactory,
+                    log = "Пользователь: ${sharedViewModel.viewState.value.user.value?.name}, успешно добавил заявки: \n$logStr",
+                    date = System.currentTimeMillis()
+                )
+            )
+            calculateOrder()
         }
     }
 
     private fun showDeleteDialog(shop: ShopModel) {
         updateViewState {
             it.copy(
-                showDeleteDialog = true, shopDeleted = shop, itemNameToDelete = shop.nameShop
+                showDeleteDialog = true, shopDeleted = shop
             )
         }
     }
 
     private fun deleteShop() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val shop = viewState.value.shopDeleted
-                if (shop != null) {
-                    val response = shopApi.deleteShop(idShop = shop.id, idTrip = shop.idTrip)
-                    if (response.success) {
-                        val list = viewState.value.listShop.value.map { it.copy() }.toMutableList()
-                        val item = list.first { it.id == shop.id }
-                        val listNew = (list - item).sortedBy { it.counter }
-                        updateViewState { it.copy(listShop = MutableStateFlow(listNew)) }
-                    } else {
-                        sharedViewModel.message(response.message)
-                    }
+        launchCoroutine {
+            val shop = viewState.value.shopDeleted
+            if (shop != null) {
+                val response = shopApi.delete(id = shop.id, idTrip = shop.idTrip)
+                if (response.success) {
+                    val list = viewState.value.listShop.value.map { it.copy() }.toMutableList()
+                    val item = list.first { it.id == shop.id }
+                    val listNew = (list - item).sortedBy { it.counter }
+                    updateViewState { it.copy(listShop = MutableStateFlow(listNew)) }
+                    dismissDeleteDialog()
                 } else {
-                    sharedViewModel.message(Constants.ERROR.GENERAL_ERROR)
+                    sharedViewModel.message(response.message)
                 }
-            } catch (e: Exception) {
-                sharedViewModel.message(e.message)
-            } finally {
-                dismissDeleteDialog()
+            } else {
+                sharedViewModel.message(Constants.ERROR.GENERAL_ERROR)
             }
         }
     }
@@ -590,14 +587,14 @@ class ShopViewModel @Inject constructor(
     private fun dismissDeleteDialog() {
         updateViewState {
             it.copy(
-                showDeleteDialog = false, shopDeleted = null, itemNameToDelete = ""
+                showDeleteDialog = false, shopDeleted = null
             )
         }
     }
 
     private fun openGeoPoint(context: Context, cord: String) {
-        if (cord.isNotEmpty()) {
-            try {
+        launchCoroutine {
+            if (cord.isNotEmpty()) {
                 val cords = cord.split(",")
                 if (cords[0].isNotEmpty() && cords[1].isNotEmpty()) {
                     val url =
@@ -605,11 +602,9 @@ class ShopViewModel @Inject constructor(
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                     context.startActivity(intent)
                 }
-            } catch (e: Exception) {
-                sharedViewModel.message(e.message)
+            } else {
+                sharedViewModel.message(Constants.ERROR.MISSING_CORDS)
             }
-        } else {
-            sharedViewModel.message(Constants.ERROR.MISSING_CORDS)
         }
     }
 
@@ -625,39 +620,13 @@ class ShopViewModel @Inject constructor(
                 typePay = MutableStateFlow(shop.typePay),
                 getCash = MutableStateFlow(shop.cash.toString()),
                 getNoCash = MutableStateFlow(shop.noCash.toString()),
-                stateSwitchPrice = MutableStateFlow(shop.isOldPrice)
+                stateSwitchPrice = MutableStateFlow(shop.isOldPrice),
+                listDataRequests = MutableStateFlow(shop.listRequest)
             )
         }
-        loadRequest(shop = shop)
+        calculateOrder()
     }
 
-    private fun loadRequest(shop: ShopModel) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val response = requestApi.getCurrentShopRequests(
-                    idTrip = shop.idTrip, idShop = shop.id, idFactory = shop.idFactory
-
-                )
-                if (response.success) {
-                    val requests = response.obj
-                    if (!requests.isNullOrEmpty()) {
-                        updateViewState {
-                            it.copy(
-                                listDataRequests = MutableStateFlow(requests.sortedBy { r -> r.price })
-                            )
-                        }
-                        calculateOrder()
-                    } else {
-                        sharedViewModel.message(Constants.EMPTY.EMPTY_LIST)
-                    }
-                } else {
-                    sharedViewModel.message(response.message)
-                }
-            } catch (e: Exception) {
-                sharedViewModel.message(e.message)
-            }
-        }
-    }
 
     private fun showDialogMillage() {
         updateViewState { it.copy(isShowMillageDialog = true) }
@@ -665,37 +634,33 @@ class ShopViewModel @Inject constructor(
     }
 
     private fun getDataForCourier() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val factory = sharedViewModel.viewState.value.factory
-                val trip = sharedViewModel.viewState.value.currentTrip
-                if (factory != null && trip != null) {
-                    val response =
-                        shopApi.getDataForCourier(idTrip = trip.id, idFactory = factory.id)
-                    if (response.success) {
-                        val getData = response.obj
-                        if (getData != null) {
-                            updateViewState {
-                                it.copy(
-                                    noCash = MutableStateFlow(getData.noCash),
-                                    salary = if (trip.millage > 0.0) MutableStateFlow(getData.salary) else MutableStateFlow(
-                                        0.0
-                                    ),
-                                    isDataShopForCourierLoad = true,
-                                    cash = MutableStateFlow(getData.cash),
-                                    allMoney = MutableStateFlow(getData.allMoney),
-                                    remains = if (trip.millage > 0.0) MutableStateFlow(getData.remainCash) else MutableStateFlow(
-                                        0.0
-                                    ),
-                                )
-                            }
+        launchCoroutine {
+            val trip = viewState.value.currentTrip
+            if (trip != null) {
+                val response =
+                    tripApi.getDataAboutTrip(idTrip = trip.id, idFactory = trip.idFactory)
+                if (response.success) {
+                    val getData = response.obj
+                    if (getData != null) {
+                        updateViewState {
+                            it.copy(
+                                millage = MutableStateFlow(trip.millage),
+                                noCash = MutableStateFlow(getData.noCash),
+                                salary = if (trip.millage > 0.0) MutableStateFlow(getData.salary) else MutableStateFlow(
+                                    0.0
+                                ),
+                                isDataShopForCourierLoad = true,
+                                cash = MutableStateFlow(getData.cash),
+                                allMoney = MutableStateFlow(getData.allMoney),
+                                remains = if (trip.millage > 0.0) MutableStateFlow(getData.remainCash) else MutableStateFlow(
+                                    0.0
+                                ),
+                            )
                         }
-                    } else {
-                        sharedViewModel.message(response.message)
                     }
+                } else {
+                    sharedViewModel.message(response.message)
                 }
-            } catch (e: Exception) {
-                sharedViewModel.message(message = e.message)
             }
         }
     }
@@ -706,13 +671,12 @@ class ShopViewModel @Inject constructor(
 
 
     private fun saveMillage() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-
-                val millage = viewState.value.millage.value
-                val trip = viewState.value.currentTrip
-
-                if (trip != null) {
+        launchCoroutine {
+            val millage = viewState.value.millage.value
+            val trip = viewState.value.currentTrip
+            val user = sharedViewModel.viewState.value.user.value
+            if (trip != null && user != null) {
+                if (user.id == trip.idCourier || sharedViewModel.initSysAdm()) {
                     val request = UpdateTripRequest(
                         id = trip.id,
                         factoryId = trip.idFactory,
@@ -726,31 +690,35 @@ class ShopViewModel @Inject constructor(
                         nameRoute = trip.nameRoute,
                         nameCourier = trip.nameCourier,
                     )
-
-                    val response = tripApi.updateTrip(request)
+                    val response = tripApi.update(request)
+                    val newTrip = trip.copy(millage = millage)
                     if (response.success) {
-                        val updatedShop = response.obj
-                        if (updatedShop != null) {
-                            loggerApi.addLog(
-                                log = LogRequest(
-                                    idFactory = sharedViewModel.viewState.value.factory?.id!!,
-                                    log = "Пользователь: ${sharedViewModel.viewState.value.user?.name},\n" +
-                                            "успешно обновил рейс: ${viewState.value.currentTrip?.nameRoute} " +
-                                            "${convertToTextDate(viewState.value.currentTrip?.date!!)}\n" +
-                                            findChangedFields(trip, updatedShop),
-                                    date = System.currentTimeMillis()
-                                )
+
+                        loggerApi.add(
+                            log = LogRequest(
+                                idFactory = sharedViewModel.viewState.value.factory?.id!!,
+                                log = "Пользователь: ${sharedViewModel.viewState.value.user.value?.name},\n" +
+                                        "успешно обновил рейс: ${viewState.value.currentTrip?.nameRoute} " + "${
+                                    convertToTextDate(
+                                        viewState.value.currentTrip?.date!!
+                                    )
+                                }\n" + findChangedFields(
+                                    trip, newTrip
+                                ),
+                                date = System.currentTimeMillis()
                             )
-                            sharedViewModel.initCurrentTrip(tripModel = updatedShop)
-                            updateViewState { it.copy(currentTrip = updatedShop) }
-                            getDataForCourier()
-                        }
+                        )
+                        sharedViewModel.updateViewState { it.copy(currentTrip = newTrip) }
+                        updateViewState { it.copy(currentTrip = newTrip) }
+                        getDataForCourier()
+
                     } else {
                         sharedViewModel.message(response.message)
                     }
+                } else {
+                    dismissMillageDialog()
+                    sharedViewModel.message(Constants.ERROR.RESRTRAINT)
                 }
-            } catch (e: Exception) {
-                sharedViewModel.message(message = e.message)
             }
         }
     }
@@ -797,40 +765,36 @@ class ShopViewModel @Inject constructor(
     }
 
     private fun getListRequestsInfo() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val trip = sharedViewModel.viewState.value.currentTrip
-                if (trip != null) {
-                    val response = requestApi.getCurrentTripRequests(
-                        idTrip = trip.id, idFactory = trip.idFactory
-                    )
-                    if (response.success) {
-                        val requests = response.obj?.sortedBy { it.price }
-                        if (requests != null) {
-                            var count = 0
-                            var exchange = 0
-                            requests.forEach {
-                                count += it.count
-                                count += it.bonus
-                                exchange += it.exchange
-                            }
-                            updateViewState {
-                                it.copy(
-                                    isLoadDataRequestsInfoDialog = true,
-                                    listInfoRequests = MutableStateFlow(requests),
-                                    allCountRequestsInfo = MutableStateFlow(count),
-                                    allExchangeRequestsInfo = MutableStateFlow(exchange)
-                                )
-                            }
-                        } else {
-                            sharedViewModel.message(Constants.EMPTY.EMPTY_LIST)
+        launchCoroutine {
+            val trip = sharedViewModel.viewState.value.currentTrip
+            if (trip != null) {
+                val response = requestApi.getRequestsByTrip(
+                    idTrip = trip.id, idFactory = trip.idFactory
+                )
+                if (response.success) {
+                    val requests = response.obj?.sortedBy { it.price }
+                    if (requests != null) {
+                        var count = 0
+                        var exchange = 0
+                        requests.forEach {
+                            count += it.count
+                            count += it.bonus
+                            exchange += it.exchange
+                        }
+                        updateViewState {
+                            it.copy(
+                                isLoadDataRequestsInfoDialog = true,
+                                listInfoRequests = MutableStateFlow(requests),
+                                allCountRequestsInfo = MutableStateFlow(count),
+                                allExchangeRequestsInfo = MutableStateFlow(exchange)
+                            )
                         }
                     } else {
-                        sharedViewModel.message(message = response.message)
+                        sharedViewModel.message(Constants.EMPTY.EMPTY_LIST)
                     }
+                } else {
+                    sharedViewModel.message(message = response.message)
                 }
-            } catch (e: Exception) {
-                sharedViewModel.message(message = e.message)
             }
         }
     }
@@ -902,90 +866,129 @@ class ShopViewModel @Inject constructor(
     private fun sumOrderAndArrearsAndAdd() {
         val shop = viewState.value.currentShop
         if (shop != null) {
-            updateViewState { it.copy(getCash = MutableStateFlow("${(viewState.value.orderMoney.value + shop.arrears + shop.addSum).toInt()}")) }
+            when (viewState.value.typePay.value) {
+                CASH -> updateCash(viewState.value.orderMoney.value + shop.arrears + shop.addSum)
+                NO_CASH -> updateNoCash(viewState.value.orderMoney.value + shop.arrears + shop.addSum)
+                ANOTHER -> {}
+            }
         }
+    }
+
+    private fun updateNoCash(nocash: Double) {
+        updateViewState { it.copy(getNoCash = MutableStateFlow("$nocash")) }
+    }
+
+    private fun updateCash(cash: Double) {
+        updateViewState { it.copy(getCash = MutableStateFlow("$cash")) }
     }
 
     private fun setArrearsAndAdd() {
         val shop = viewState.value.currentShop
         if (shop != null) {
-            updateViewState { it.copy(getCash = MutableStateFlow("${(shop.arrears + shop.addSum).toInt()}")) }
+            when (viewState.value.typePay.value) {
+                CASH -> updateCash(shop.arrears + shop.addSum)
+                NO_CASH -> updateNoCash(shop.arrears + shop.addSum)
+                ANOTHER -> {}
+            }
         }
     }
 
     private fun setOrderAndAdd() {
         val shop = viewState.value.currentShop
         if (shop != null) {
-            updateViewState { it.copy(getCash = MutableStateFlow("${(viewState.value.orderMoney.value + shop.addSum).toInt()}")) }
+            when (viewState.value.typePay.value) {
+                CASH -> updateCash(viewState.value.orderMoney.value + shop.addSum)
+                NO_CASH -> updateNoCash(viewState.value.orderMoney.value + shop.addSum)
+                ANOTHER -> {}
+            }
         }
     }
 
     private fun setAdd() {
         val shop = viewState.value.currentShop
         if (shop != null) {
-            updateViewState { it.copy(getCash = MutableStateFlow("${(shop.addSum).toInt()}")) }
+            when (viewState.value.typePay.value) {
+                CASH -> updateCash(shop.addSum)
+                NO_CASH -> updateNoCash(shop.addSum)
+                ANOTHER -> {}
+            }
         }
     }
 
     private fun sumOrderAndArrears() {
         val shop = viewState.value.currentShop
         if (shop != null) {
-            updateViewState { it.copy(getCash = MutableStateFlow("${(viewState.value.orderMoney.value + shop.arrears).toInt()}")) }
+            when (viewState.value.typePay.value) {
+                CASH -> updateCash(viewState.value.orderMoney.value + shop.arrears)
+                NO_CASH -> updateNoCash(viewState.value.orderMoney.value + shop.arrears)
+                ANOTHER -> {}
+            }
         }
     }
 
     private fun setOrder() {
-        updateViewState { it.copy(getCash = MutableStateFlow("${(viewState.value.orderMoney.value).toInt()}")) }
+        when (viewState.value.typePay.value) {
+            CASH -> updateCash(viewState.value.orderMoney.value)
+            NO_CASH -> updateNoCash(viewState.value.orderMoney.value)
+            ANOTHER -> {}
+        }
     }
 
     private fun setArrears() {
+
         val shop = viewState.value.currentShop
-        if (shop != null) updateViewState { it.copy(getCash = MutableStateFlow("${shop.arrears.toInt()}")) }
+        if (shop != null) {
+            when (viewState.value.typePay.value) {
+                CASH -> updateCash(shop.arrears)
+                NO_CASH -> updateNoCash(shop.arrears)
+                ANOTHER -> {}
+            }
+        }
     }
 
     private fun deleteRequest(request: RequestModel) {
-        if (sharedViewModel.initSysAdm()) {
-            viewModelScope.launch(Dispatchers.IO) {
-                try {
-                    val response = requestApi.deleteRequest(
-                        id = request.id, idShop = request.idShop, idTrip = request.idTrip
+        if (sharedViewModel.initSysAdmMod()) {
+            launchCoroutine {
+                val response = requestApi.delete(
+                    id = request.id, idShop = request.idShop, idTrip = request.idTrip
+                )
+                if (response.success) {
+                    val date = System.currentTimeMillis()
+                    loggerApi.add(
+                        log = LogRequest(
+                            idFactory = request.idFactory,
+                            log = "Пользователь: ${sharedViewModel.viewState.value.user.value?.name}" + ", успешно удалил заявку: \n${request.name}" + "\nв магазине: ${viewState.value.currentShop?.nameShop}\n" + "в рейсе: ${viewState.value.currentTrip?.nameRoute}\n" + convertToTextDate(
+                                date
+                            ),
+                            date = date
+                        )
                     )
-                    if (response.success) {
-                        if (!sharedViewModel.initSysAdm()) {
-                            loggerApi.addLog(
-                                log = LogRequest(
-                                    idFactory = sharedViewModel.viewState.value.factory?.id!!,
-                                    log = "Пользователь: ${sharedViewModel.viewState.value.user?.name}" +
-                                            ", успешно удалил заявку: \n${request.name}" +
-                                            "\nв магазине: ${viewState.value.currentShop?.nameShop}\n" +
-                                            "в рейсе: ${viewState.value.currentTrip?.nameRoute}\n" +
-                                            convertToTextDate(viewState.value.currentTrip?.date!!),
-                                    date = System.currentTimeMillis()
-                                )
-                            )
-                        }
-                        val list = viewState.value.listDataRequests.value.map { it.copy() }
-                            .toMutableList() - request
-                        updateViewState {
-                            it.copy(
-                                listDataRequests = MutableStateFlow(list)
-                            )
-                        }
-                        calculateOrder()
-                    } else {
-                        sharedViewModel.message(response.message)
+                    val shop = viewState.value.currentShop!!
+                    val listRequest = shop.listRequest.map { it.copy() } - request
+                    shop.listRequest = listRequest
+                    val list = viewState.value.listDataRequests.value.map { it.copy() }
+                        .toMutableList() - request
+                    updateViewState {
+                        it.copy(
+                            listDataRequests = MutableStateFlow(list), currentShop = shop
+                        )
                     }
-                } catch (e: Exception) {
-                    sharedViewModel.message(e.message)
+                    calculateOrder()
+                } else {
+                    sharedViewModel.message(response.message)
                 }
             }
         }
     }
 
     private fun changeCountRequest(item: RequestModel, count: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val list = viewState.value.listDataRequests.value.map { it.copy() }.toMutableList()
+        launchCoroutine {
+            val shop = viewState.value.currentShop
+            val shops = viewState.value.listShop.value.map { it.copy() }.toMutableList()
+
+            if (shop != null) {
+                val list =
+                    viewState.value.listDataRequests.value.map { it.copy() }.toMutableList()
                 val index = list.indexOfFirst { it.id == item.id }
                 val request = if (count.isNotEmpty()) {
                     item.copy(count = count.trim().toInt())
@@ -993,23 +996,35 @@ class ShopViewModel @Inject constructor(
                     item.copy(count = 0)
                 }
                 list[index] = request
+                updateRequest(request, item)
+
+
+
+
+                shop.listRequest = list
+                val existingIndex = shops.indexOfFirst { it.id == shop.id }
+                if (existingIndex != -1) {
+                    shops[existingIndex] = shop
+                }
+
                 updateViewState {
                     it.copy(
-                        listDataRequests = MutableStateFlow(list)
+                        listDataRequests = MutableStateFlow(list),
+                        listShop = MutableStateFlow(shops)
                     )
                 }
                 calculateOrder()
-                updateRequest(request, item)
-            } catch (e: Exception) {
-                sharedViewModel.message(e.message)
             }
         }
     }
 
     private fun changeExchangeRequest(item: RequestModel, exchange: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val list = viewState.value.listDataRequests.value.map { it.copy() }.toMutableList()
+        launchCoroutine {
+            val shop = viewState.value.currentShop
+            val shops = viewState.value.listShop.value.map { it.copy() }.toMutableList()
+            if (shop != null) {
+                val list =
+                    viewState.value.listDataRequests.value.map { it.copy() }.toMutableList()
                 val index = list.indexOfFirst { it.id == item.id }
                 val request = if (exchange.isNotEmpty()) {
                     item.copy(exchange = exchange.trim().toInt())
@@ -1017,24 +1032,30 @@ class ShopViewModel @Inject constructor(
                     item.copy(exchange = 0)
                 }
                 list[index] = request
+                val existingIndex = shops.indexOfFirst { it.id == shop.id }
+                shop.listRequest = list
+                if (existingIndex != -1) {
+                    shops[existingIndex] = shop
+                }
+                updateRequest(request, item)
                 updateViewState {
                     it.copy(
-                        listDataRequests = MutableStateFlow(list)
+                        listDataRequests = MutableStateFlow(list),
+                        listShop = MutableStateFlow(shops)
                     )
                 }
                 calculateOrder()
-                updateRequest(request, item)
-            } catch (e: Exception) {
-                sharedViewModel.message(e.message)
             }
         }
-
     }
 
     private fun changeBonusRequest(item: RequestModel, bonus: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val list = viewState.value.listDataRequests.value.map { it.copy() }.toMutableList()
+        launchCoroutine {
+            val shop = viewState.value.currentShop
+            val shops = viewState.value.listShop.value.map { it.copy() }.toMutableList()
+            if (shop != null) {
+                val list =
+                    viewState.value.listDataRequests.value.map { it.copy() }.toMutableList()
                 val index = list.indexOfFirst { it.id == item.id }
                 val request = if (bonus.isNotEmpty()) {
                     item.copy(bonus = bonus.trim().toInt())
@@ -1042,19 +1063,21 @@ class ShopViewModel @Inject constructor(
                     item.copy(bonus = 0)
                 }
                 list[index] = request
+                updateRequest(request, item)
+                shop.listRequest = list
+                val existingIndex = shops.indexOfFirst { it.id == shop.id }
+                if (existingIndex != -1) {
+                    shops[existingIndex] = shop
+                }
                 updateViewState {
                     it.copy(
-                        listDataRequests = MutableStateFlow(list)
+                        listDataRequests = MutableStateFlow(list),
+                        listShop = MutableStateFlow(shops)
                     )
                 }
-                updateRequest(request, item)
-            } catch (e: Exception) {
-                sharedViewModel.message(e.message)
             }
         }
-
     }
-
 
     private fun changeStateDropDownTypePay(state: Boolean) {
         updateViewState { it.copy(isShowDropDownTypePay = state) }
@@ -1093,71 +1116,175 @@ class ShopViewModel @Inject constructor(
     }
 
     private fun confirmSaveRequest() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val trip = sharedViewModel.viewState.value.currentTrip
-                if (trip != null) {
-                    val shop = viewState.value.currentShop
-                    if (shop != null) {
-                        val getCash = viewState.value.getCash.value
-                        val getNoCash = viewState.value.getNoCash.value
-                        val cash = if (getCash.isEmpty()) 0.0 else getCash.toDouble()
-                        val noCash = if (getNoCash.isEmpty()) 0.0 else getNoCash.toDouble()
-                        val order = viewState.value.orderMoney.value
-                        val arrear = shop.arrears
-                        val addSum = shop.addSum
-                        val typePay = viewState.value.typePay.value
-                        val newArrear = (order + arrear + addSum) - (cash + noCash)
-                        updateClient(shop.copy(arrears = newArrear))
-                        val dataShop = shop.copy(
-                            addSum = addSum,
-                            cash = cash,
-                            noCash = noCash,
-                            typePay = typePay,
-                            status = true,
-                            isOldPrice = viewState.value.stateSwitchPrice.value,
-                        )
-                        updateShop(newShop = dataShop, oldShop = shop)
+        launchCoroutine {
+            val trip = sharedViewModel.viewState.value.currentTrip
+            if (trip != null) {
+                val user = sharedViewModel.viewState.value.user.value
+                user?.let {
+                    if (user.id == trip.idCourier || sharedViewModel.initSysAdm()) {
+                        val shop = viewState.value.currentShop
+                        if (shop != null) {
+                            val getCash = viewState.value.getCash.value
+                            val getNoCash = viewState.value.getNoCash.value
+                            val cash = if (getCash.isEmpty()) 0.0 else getCash.toDouble()
+                            val noCash = if (getNoCash.isEmpty()) 0.0 else getNoCash.toDouble()
+                            val order = viewState.value.orderMoney.value
+                            val arrear = shop.arrears
+                            val addSum = shop.addSum
+                            val typePay = viewState.value.typePay.value
+                            val newArrear = (order + arrear + addSum) - (cash + noCash)
+                            updateClient(shop.copy(arrears = newArrear))
+                            val dataShop = shop.copy(
+                                addSum = addSum,
+                                cash = cash,
+                                noCash = noCash,
+                                typePay = typePay,
+                                status = true,
+                                isOldPrice = viewState.value.stateSwitchPrice.value,
+                            )
+                            updateShop(newShop = dataShop, oldShop = shop)
+                            dismissRequestDialog()
+                        }
+                    } else {
+                        sharedViewModel.message(Constants.ERROR.RESRTRAINT)
                     }
                 }
-            } catch (e: Exception) {
-                sharedViewModel.message(e.message)
-            } finally {
-                dismissRequestDialog()
             }
         }
     }
 
     private fun updateClient(shop: ShopModel) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                shop.apply {
-                    val responseGetClient = clientApi.getClientById(idClient = id)
-                    if (responseGetClient.success) {
-                        val client = responseGetClient.obj
-                        if (client != null ) {
-                            val updateClient = client.copy(arrears = arrears)
-                            val request = ClientRequest(
-                                id = client.id,
-                                idRoute = client.idRoute,
-                                idFactory = client.idFactory,
-                                name = client.name,
-                                phone = client.phone,
-                                cord = client.cord,
-                                counter = client.counter,
-                                arrears = arrears,
-                                date = client.date
+        launchCoroutine {
+            shop.apply {
+                val responseGetClient = clientApi.getClientById(id = id)
+                if (responseGetClient.success) {
+                    val client = responseGetClient.obj
+                    if (client != null ) {
+                        val updateClient = client.copy(arrears = arrears)
+                        val request = ClientRequest(
+                            id = client.id,
+                            idRoute = client.idRoute,
+                            idFactory = client.idFactory,
+                            name = client.name,
+                            phone = client.phone,
+                            cord = client.cord,
+                            counter = client.counter,
+                            arrears = arrears,
+                            date = client.date
+                        )
+                        val response = clientApi.update(request)
+                        if (response.success) {
+                            loggerApi.add(
+                                log = LogRequest(
+                                    idFactory = sharedViewModel.viewState.value.factory?.id!!,
+                                    log = "Пользователь: ${sharedViewModel.viewState.value.user.value?.name}" +
+                                            ", успешно обновил клиента: \n${client.name}" +
+                                            "\n${
+                                                findChangedFields(
+                                                    client, updateClient
+                                                )
+                                            }",
+                                    date = System.currentTimeMillis()
+                                )
                             )
-                            val response = clientApi.updateClient(request)
+                        } else {
+                            sharedViewModel.message(response.message)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun updateShop(newShop: ShopModel, oldShop: ShopModel) {
+        launchCoroutine {
+            newShop.apply {
+                val shopRequest = UpdateShopRequest(
+                    id = id,
+                    idTrip = idTrip,
+                    idFactory = idFactory,
+                    arrears = arrears,
+                    addSum = addSum,
+                    status = status,
+                    date = date,
+                    typePay = typePay.getStringByTypePay(),
+                    cash = cash,
+                    counter = counter,
+                    noCash = noCash,
+                    isOldPrice = isOldPrice,
+                    cord = cord,
+                    nameShop = nameShop
+                )
+                val response = shopApi.update(shopRequest)
+
+                if (response.success) {
+                    val list = viewState.value.listShop.value.map { it.copy() }.toMutableList()
+                    loggerApi.add(
+                        log = LogRequest(
+                            idFactory = newShop.idFactory,
+                            log = "Пользователь: ${sharedViewModel.viewState.value.user.value?.name}" +
+                                    ", успешно обновил магазин: \n${newShop.nameShop}" +
+                                    "\nв рейсе: ${viewState.value.currentTrip?.nameRoute} ${
+                                        convertToTextDate(
+                                            newShop.date
+                                        )
+                                    }" +
+                                    "\n${
+                                        findChangedFields(
+                                            oldShop, newShop
+                                        )
+                                    }",
+                            date = System.currentTimeMillis()
+                        )
+                    )
+
+                    val index = list.indexOfFirst { it.id == newShop.id }
+                    list[index] = newShop
+
+                    updateViewState { it.copy(listShop = MutableStateFlow(list)) }
+                } else {
+                    sharedViewModel.message(response.message)
+                }
+            }
+        }
+    }
+
+    private fun updateRequest(request: RequestModel, item: RequestModel) {
+        val trip = sharedViewModel.viewState.value.currentTrip
+        if (trip != null) {
+            sharedViewModel.viewState.value.user.value?.let { user ->
+                if (user.id == trip.idCourier || sharedViewModel.initSysAdm()) {
+                    launchCoroutine {
+                        request.apply {
+                            val reqResponse = UpdateRequestShopRequest(
+                                id = request.id,
+                                idShop = idShop,
+                                idTrip = idTrip,
+                                idFactory = idFactory,
+                                count = request.count,
+                                bonus = request.bonus,
+                                status = status,
+                                exchange = request.exchange,
+                                price = price,
+                                oldPrice = oldPrice,
+                                name = name,
+                                counter = counter
+                            )
+                            val response = requestApi.update(reqResponse)
                             if (response.success) {
-                                loggerApi.addLog(
+                                loggerApi.add(
                                     log = LogRequest(
-                                        idFactory = sharedViewModel.viewState.value.factory?.id!!,
-                                        log = "Пользователь: ${sharedViewModel.viewState.value.user?.name}" +
-                                                ", успешно обновил клиента: \n${client.name}" +
+                                        idFactory = idFactory,
+                                        log = "Пользователь: ${sharedViewModel.viewState.value.user.value?.name}" +
+                                                ", успешно обновил заявку: \n${request.name}" +
+                                                "\nв магазине: ${viewState.value.currentShop?.nameShop} ${
+                                                    convertToTextDate(
+                                                        viewState.value.currentTrip!!.date
+                                                    )
+                                                }" +
                                                 "\n${
                                                     findChangedFields(
-                                                        client, updateClient
+                                                        item, request
                                                     )
                                                 }",
                                         date = System.currentTimeMillis()
@@ -1168,119 +1295,12 @@ class ShopViewModel @Inject constructor(
                             }
                         }
                     }
+                } else {
+                    sharedViewModel.message(Constants.ERROR.RESRTRAINT)
+                    dismissRequestDialog()
                 }
-            } catch (e: Exception) {
-                sharedViewModel.message(e.message)
             }
         }
-    }
-
-    private fun updateShop(newShop: ShopModel, oldShop: ShopModel) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                oldShop.apply {
-                    val shopRequest = UpdateShopRequest(
-                        id = id,
-                        idTrip = idTrip,
-                        idFactory = idFactory,
-                        arrears = arrears,
-                        addSum = addSum,
-                        status = status,
-                        date = date,
-                        typePay = typePay.getStringByTypePay(),
-                        cash = cash,
-                        counter = counter,
-                        noCash = noCash,
-                        isOldPrice = isOldPrice,
-                        cord = cord,
-                        nameShop = nameShop
-                    )
-                    val response = shopApi.updateShop(shopRequest)
-                    if (response.success) {
-                        loggerApi.addLog(
-                            log = LogRequest(
-                                idFactory = sharedViewModel.viewState.value.factory?.id!!,
-                                log = "Пользователь: ${sharedViewModel.viewState.value.user?.name}" +
-                                        ", успешно обновил магазин: \n${newShop.nameShop}" +
-                                        "\nв рейсе: ${viewState.value.currentTrip?.nameRoute} ${
-                                            convertToTextDate(
-                                                viewState.value.currentTrip?.date!!
-                                            )
-                                        }" +
-                                        "\n${
-                                            findChangedFields(
-                                                oldShop, newShop
-                                            )
-                                        }",
-                                date = System.currentTimeMillis()
-                            )
-                        )
-                        val list = viewState.value.listShop.value.map { it.copy() }.toMutableList()
-                        val index = list.indexOfFirst { it.id == newShop.id }
-                        list[index] = newShop
-                        updateViewState { it.copy(listShop = MutableStateFlow(list)) }
-                    } else {
-                        sharedViewModel.message(response.message)
-                    }
-                }
-
-            } catch (e: Exception) {
-                sharedViewModel.message(e.message)
-            }
-        }
-    }
-
-    private fun updateRequest(request: RequestModel, item: RequestModel) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                request.apply {
-                    val reqResponse = UpdateRequestShopRequest(
-                        id = request.id,
-                        idShop = idShop,
-                        idTrip = idTrip,
-                        idFactory = idFactory,
-                        count = request.count,
-                        bonus = request.bonus,
-                        status = status,
-                        exchange = request.exchange,
-                        price = price,
-                        oldPrice = oldPrice,
-                        name = name,
-                        counter = counter
-                    )
-                    val response = requestApi.updateRequest(reqResponse)
-                    if (response.success) {
-                        loggerApi.addLog(
-                            log = LogRequest(
-                                idFactory = sharedViewModel.viewState.value.factory?.id!!,
-                                log = "Пользователь: ${sharedViewModel.viewState.value.user?.name}" +
-                                        ", успешно обновил заявку: \n${request.name}" +
-                                        "\nв магазине: ${viewState.value.currentShop?.nameShop} ${
-                                            convertToTextDate(
-                                                viewState.value.currentTrip?.date!!
-                                            )
-                                        }" +
-                                        "\n${
-                                            findChangedFields(
-                                                item, request
-                                            )
-                                        }",
-                                date = System.currentTimeMillis()
-                            )
-                        )
-                    } else {
-                        sharedViewModel.message(response.message)
-                    }
-                }
-            } catch (e: Exception) {
-                sharedViewModel.message(e.message)
-            }
-        }
-    }
-
-
-    private fun dismissBlockDialog() {
-        updateViewState { it.copy(stateIsBlocked = false) }
     }
 
     private fun dismissInfoShopDialog() {
@@ -1293,29 +1313,25 @@ class ShopViewModel @Inject constructor(
     }
 
     private fun getDataInfoShop(curShop: ShopModel) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val response = shopApi.getAllCurrentShopsCurrentFactory(
-                    idShop = curShop.id,
-                    idFactory = curShop.idFactory
-                )
-                if (response.success) {
-                    val list = response.obj
-                    if (list != null) {
-                        updateViewState {
-                            it.copy(
-                                listInfoShop = MutableStateFlow(list),
-                                stateInfoShopIsDataLoad = true
-                            )
-                        }
-                    } else {
-                        sharedViewModel.message(Constants.ERROR.LIST_EMPTY)
+        launchCoroutine {
+            val response = shopApi.getCurrentShopsByFactory(
+                id = curShop.id,
+                idFactory = curShop.idFactory
+            )
+            if (response.success) {
+                val list = response.obj
+                if (list != null) {
+                    updateViewState {
+                        it.copy(
+                            listInfoShop = MutableStateFlow(list),
+                            stateInfoShopIsDataLoad = true
+                        )
                     }
                 } else {
-                    sharedViewModel.message(response.message)
+                    sharedViewModel.message(Constants.ERROR.LIST_EMPTY)
                 }
-            } catch (e: Exception) {
-                sharedViewModel.message(e.message)
+            } else {
+                sharedViewModel.message(response.message)
             }
         }
     }

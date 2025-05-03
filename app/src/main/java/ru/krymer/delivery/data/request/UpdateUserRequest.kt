@@ -9,4 +9,5 @@ data class UpdateUserRequest(
     val role: String,
     val isBanned: Boolean,
     val percentSalary: Double,
+    val salary: Double
 )

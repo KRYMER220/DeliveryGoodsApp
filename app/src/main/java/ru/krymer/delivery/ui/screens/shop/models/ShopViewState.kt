@@ -17,21 +17,18 @@ sealed class ShopAction {
 data class ShopViewState(
     val shopAction: ShopAction = ShopAction.None,
 
-    val isLoadShopsData: Boolean = false,
     val listShop: MutableStateFlow<List<ShopModel>> = MutableStateFlow(listOf()),
 
     val listProduct: MutableStateFlow<List<ProductModel>> = MutableStateFlow(listOf()),
     val listProductRequest: MutableStateFlow<List<ProductModel>> = MutableStateFlow(listOf()),
-    val isLoadDataProducts: Boolean = false,
+
 
     val listClient: MutableStateFlow<List<ClientModel>> = MutableStateFlow(listOf()),
-    val isLoadDataClients: Boolean = false,
     val isShowDialogWithListCurrentClients: Boolean = false,
     val isShowDialogWithListAllClients: Boolean = false,
     val stateAddDialog: Boolean = false,
     val currentClient: ClientModel? = null,
     val isShowSelectorClientInAddDialog: Boolean = false,
-    val isAdminServices: Boolean = false,
     val arrear: MutableStateFlow<Double> = MutableStateFlow(0.0),
     val dept: MutableStateFlow<Double> = MutableStateFlow(0.0),
     val add: MutableStateFlow<Double> = MutableStateFlow(0.0),
@@ -66,7 +63,6 @@ data class ShopViewState(
     val isShowAddSumDialog: Boolean = false,
 
     val shopDeleted: ShopModel? = null,
-    val itemNameToDelete: String = "",
     val showDeleteDialog: Boolean = false,
     val typePay: MutableStateFlow<TypePayModel> = MutableStateFlow(TypePayModel.CASH),
     val isShowTypePayChangeDialog: Boolean = false,
@@ -78,6 +74,5 @@ data class ShopViewState(
     val stateInfoShopDialog: Boolean = false,
     val stateInfoShopIsDataLoad: Boolean = false,
     val listInfoShop: MutableStateFlow<List<ShopModel>> = MutableStateFlow(listOf()),
-    val stateIsBlocked: Boolean = false,
     val stateSwitchPrice: MutableStateFlow<Boolean> = MutableStateFlow(false)
 )

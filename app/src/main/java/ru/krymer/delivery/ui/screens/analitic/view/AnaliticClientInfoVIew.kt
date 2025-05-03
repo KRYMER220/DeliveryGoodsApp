@@ -101,7 +101,7 @@ fun AnaliticClientView(viewModel: AnaliticViewModel) {
 @Composable
 fun TextClientInformation(viewState: AnaliticViewState) {
     val client = viewState.currentClient?.collectAsState()?.value
-    val dataClient = viewState.allDataClient.collectAsState().value
+    val dataClient = viewState.data.collectAsState().value
     if (client != null) {
         Column(modifier = Modifier.fillMaxWidth()) {
             TextItemInfo(value = "Имя: ${client.name}")

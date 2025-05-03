@@ -71,21 +71,6 @@ fun ForgotView(
                 )
             }
         }
-        if (viewState.isError) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 5.dp)
-            ) {
-                Text(
-                    text = viewState.errorValue,
-                    fontSize = 14.sp,
-                    modifier = Modifier.align(Alignment.Center),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.Red
-                )
-            }
-        }
 
         Spacer(modifier = Modifier.height(30.dp))
         Box(modifier = Modifier.fillMaxWidth()) {

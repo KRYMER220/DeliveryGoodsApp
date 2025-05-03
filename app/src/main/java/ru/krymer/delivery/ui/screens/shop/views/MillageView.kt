@@ -29,18 +29,39 @@ import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
 import ru.krymer.delivery.ui.theme.AppTheme
 
 @Composable
-fun BottomSheetDialogMillageSave(
+fun MillageAndInfoView(
     viewState: ShopViewState, onMillageTFC: (String) -> Unit
 ) {
     if (viewState.isDataShopForCourierLoad) {
-        var millageInput by remember { mutableStateOf("") }
-        val trip = viewState.currentTrip!!
+        val millage = viewState.millage.collectAsState().value
+        var millageInput by remember { mutableStateOf(if (millage == 0.0) "" else "$millage") }
         val cash = viewState.cash.collectAsState().value
         val noCash = viewState.noCash.collectAsState().value
         val remains = viewState.remains.collectAsState().value
         val allMoney = viewState.allMoney.collectAsState().value
         val salary = viewState.salary.collectAsState().value
+
         Column {
+            CommonTextField(
+                value = millageInput,
+                placeholder = stringResource(id = R.string.km_et),
+                onVC = { newValue ->
+                    millageInput = newValue
+                    onMillageTFC(newValue)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                style = MaterialTheme.typography.labelSmall,
+                text = "ГСМ: $millageInput км",
+                fontSize = 20.sp,
+                color = AppTheme.colors.onSecondary
+            )
+            Spacer(modifier = Modifier.height(10.dp))
             Text(
                 style = MaterialTheme.typography.labelSmall,
                 text = "Зарплата: $salary",
@@ -50,7 +71,7 @@ fun BottomSheetDialogMillageSave(
             Spacer(modifier = Modifier.height(10.dp))
             Text(
                 style = MaterialTheme.typography.labelSmall,
-                text = "ГСМ: ${trip.millage} км",
+                text = "Зарплата(фикс): ${viewState.currentTrip?.salary}",
                 fontSize = 20.sp,
                 color = AppTheme.colors.onSecondary
             )
@@ -80,19 +101,6 @@ fun BottomSheetDialogMillageSave(
                 text = "Остаток: $remains",
                 fontSize = 20.sp,
                 color = AppTheme.colors.onSecondary
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            CommonTextField(
-                value = millageInput,
-                placeholder = stringResource(id = R.string.km_et),
-                onVC = { newValue ->
-                    millageInput = newValue
-                    onMillageTFC(newValue)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
         }
     } else {

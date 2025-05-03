@@ -6,7 +6,7 @@ import ru.krymer.delivery.data.model.user.UserModel
 
 sealed class TripEvent {
     data object TripActionInvoked : TripEvent()
-    data class ShowDeleteDialog(val itemName: String, val itemID: Long) : TripEvent()
+    data class ShowDeleteDialog(val trip: TripModel) : TripEvent()
     data object ShowAddDialog : TripEvent()
     data class ShowChangeCourierDialog(val trip: TripModel) : TripEvent()
     data object TripSaveAction : TripEvent()

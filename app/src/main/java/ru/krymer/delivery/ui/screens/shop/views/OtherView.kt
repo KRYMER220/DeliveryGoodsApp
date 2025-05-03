@@ -2,7 +2,6 @@ package ru.krymer.delivery.ui.screens.shop.views
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,8 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -27,25 +24,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import ru.krymer.delivery.R
+import ru.krymer.delivery.data.model.utilModel.Error
 import ru.krymer.delivery.data.model.utilModel.TypePayModel
 import ru.krymer.delivery.data.model.utilModel.getRuStringByTypePay
 import ru.krymer.delivery.ui.components.CommonTextField
-import ru.krymer.delivery.ui.screens.shop.ShopViewModel
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
 import ru.krymer.delivery.ui.theme.AppTheme
+import ru.krymer.delivery.utills.Constants
+import ru.krymer.delivery.utills.startsWithDigit
 
 @Composable
-fun AlertDialogAddSum(
-    onAddSumTFC: (String) -> Unit, viewModel: ShopViewModel
+fun ChangeAddSumView(
+    changeAddSum: (String) -> Unit
 ) {
     var addSum by remember { mutableStateOf("") }
+    var errorAddSum by remember { mutableStateOf(Error()) }
     Column {
         Spacer(modifier = Modifier.height(5.dp))
         CommonTextField(
@@ -53,7 +51,15 @@ fun AlertDialogAddSum(
             placeholder = "Добавочная сумма",
             onVC = { str ->
                 addSum = str
-                onAddSumTFC(str)
+                errorAddSum = when {
+                    str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
+                    !startsWithDigit(str) -> Error(visible = true, error = Constants.ERROR.ERROR_NUMBER_INPUT)
+                    else -> {
+                        changeAddSum(str)
+                        Error()
+                    }
+                }
+
             },
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(
@@ -66,10 +72,11 @@ fun AlertDialogAddSum(
 }
 
 @Composable
-fun AlertDialogChangeArrears(
-    onChangeArrearsTFC: (String) -> Unit
+fun ChangeArrearsView(
+    changeArrears: (String) -> Unit
 ) {
     var arrears by remember { mutableStateOf("") }
+    var errorArrears by remember { mutableStateOf(Error()) }
     Column {
         Spacer(modifier = Modifier.height(5.dp))
         CommonTextField(
@@ -77,7 +84,14 @@ fun AlertDialogChangeArrears(
             placeholder = "Долг",
             onVC = { str ->
                 arrears = str
-                onChangeArrearsTFC(str)
+                errorArrears = when {
+                    str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
+                    !startsWithDigit(str) -> Error(visible = true, error = Constants.ERROR.ERROR_NUMBER_INPUT)
+                    else -> {
+                        changeArrears(str)
+                        Error()
+                    }
+                }
             },
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(
@@ -90,10 +104,10 @@ fun AlertDialogChangeArrears(
 }
 
 @Composable
-fun AlertDialogChangeTypePay(
+fun ChangeTypePayView(
     viewState: ShopViewState,
-    onChangeType: (TypePayModel) -> Unit,
-    onChangeStateTypePay: (Boolean) -> Unit
+    changeTypePay: (TypePayModel) -> Unit,
+    changeStateChangerTypePay: (Boolean) -> Unit
 ) {
     val type = viewState.typePay.collectAsState().value.getRuStringByTypePay()
     Box(
@@ -104,7 +118,7 @@ fun AlertDialogChangeTypePay(
                 .background(AppTheme.colors.secondary)
                 .fillMaxWidth()
                 .height(60.dp)
-                .clickable(onClick = { onChangeStateTypePay(true) }),
+                .clickable(onClick = { changeStateChangerTypePay(true) }),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -119,46 +133,17 @@ fun AlertDialogChangeTypePay(
                 modifier = Modifier.padding(end = 15.dp)
             )
             DropdownMenu(expanded = viewState.isShowDropDownTypePay, onDismissRequest = {
-                onChangeStateTypePay(false)
+                changeStateChangerTypePay(false)
             }) {
                 val list = TypePayModel.entries.toTypedArray()
                 list.forEach {
                     DropdownMenuItem(text = { Text(text = it.getRuStringByTypePay()) }, onClick = {
-                        onChangeType(it)
-                        onChangeStateTypePay(false)
+                        changeTypePay(it)
+                        changeStateChangerTypePay(false)
                     })
                 }
             }
 
-        }
-    }
-}
-
-
-@Composable
-fun ConfirmView(onSubmit: () -> Unit, onDismiss: () -> Unit) {
-    Column {
-        Text(
-            text = "Подтвердите действие",
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
-            color = AppTheme.colors.onSecondary
-        )
-        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-            Button(
-                onClick = onDismiss, colors = ButtonDefaults.buttonColors(
-                    containerColor = AppTheme.colors.onSecondary
-                )
-            ) {
-                Text(text = stringResource(id = R.string.close), color = AppTheme.colors.onPrimary)
-            }
-            Button(
-                onClick = onSubmit, colors = ButtonDefaults.buttonColors(
-                    containerColor = AppTheme.colors.onSecondary
-                )
-            ) {
-                Text(text = stringResource(id = R.string.ok), color = AppTheme.colors.onPrimary)
-            }
         }
     }
 }

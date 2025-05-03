@@ -63,8 +63,10 @@ class Constants {
     }
 
     object ERROR {
+        const val ERROR_NUMBER_INPUT = "Введите целое или дробное число!"
         const val SERVER_ERROR_RESPONSE = "Ошибка при получении ответа от сервера. Повторите снова!"
         const val ERROR = "Непредвиденная ошибка!"
+        const val AGAIN = "Ошибка! Попробуйте снова!"
         const val RESRTRAINT = "Ограничено!"
         const val PHONE = "Не корректный номер телефона!"
         const val CORD = "Не корректные координаты!"

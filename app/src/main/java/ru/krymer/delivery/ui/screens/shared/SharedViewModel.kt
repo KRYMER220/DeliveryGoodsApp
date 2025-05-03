@@ -1,29 +1,29 @@
 package ru.krymer.delivery.ui.screens.shared
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import ru.krymer.delivery.AppDatabase
 import ru.krymer.delivery.data.TokenManager
 import ru.krymer.delivery.data.api.FactoryApi
-import ru.krymer.delivery.data.api.LoggerApi
 import ru.krymer.delivery.data.api.UserApi
 import ru.krymer.delivery.data.model.FactoryModel
 import ru.krymer.delivery.data.model.RouteModel
-import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.user.StatusModel
 import ru.krymer.delivery.data.model.user.getStringByRole
 import ru.krymer.delivery.data.model.user.getStringByStatus
 import ru.krymer.delivery.data.model.utilModel.MessageModel
 import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
-import ru.krymer.delivery.data.request.LogRequest
 import ru.krymer.delivery.data.request.UpdateUserRequest
 import ru.krymer.delivery.ui.screens.shared.models.AuthAction
 import ru.krymer.delivery.ui.screens.shared.models.SharedViewState
@@ -35,42 +35,49 @@ class SharedViewModel @Inject constructor(
     private val userApi: UserApi,
     private val tokenManager: TokenManager,
     private val factoryApi: FactoryApi,
-    private val loggerApi: LoggerApi
+    private val database: AppDatabase
 ) : ViewModel() {
 
-    fun saveCurrentNavRoute(route: String) {
-        updateViewState { it.copy(currentNavRoute = route) }
-    }
-
-    suspend fun updateUserStatus(statusModel: StatusModel) {
-        try {
-            val user = viewState.value.user
-            if (user != null) {
-                user.apply {
-                    val updatedUser = UpdateUserRequest(
-                        id = id,
-                        login = login,
-                        name = name,
-                        phone = phone,
-                        status = statusModel.getStringByStatus(),
-                        role = role.getStringByRole(),
-                        isBanned = isBanned,
-                        percentSalary = percentSalary
-                    )
-                    userApi.updateUser(updatedUser)
-                }
-            } else {
-                message(Constants.EMPTY.EMPTY_DATA)
+    private fun launchCoroutine(block: suspend () -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                block()
+            } catch (e: Exception) {
+                message(e.message)
+                delay(5000)
+                block()
             }
-        } catch (e: Exception) {
-            message(e.message)
         }
     }
 
     private val _viewState = MutableStateFlow(SharedViewState())
     val viewState: StateFlow<SharedViewState> = _viewState.asStateFlow()
-    private fun updateViewState(update: (SharedViewState) -> SharedViewState) {
+    fun updateViewState(update: (SharedViewState) -> SharedViewState) {
         _viewState.update { update(it) }
+    }
+
+    fun saveCurrentNavRoute(route: String) {
+        updateViewState { it.copy(currentNavRoute = route) }
+    }
+
+    fun updateUserStatus(statusModel: StatusModel) {
+        launchCoroutine {
+            val user = database.userDao().getUser()
+            user?.apply {
+                val updatedUser = UpdateUserRequest(
+                    id = id,
+                    login = login,
+                    name = name,
+                    phone = phone,
+                    status = statusModel.getStringByStatus(),
+                    role = role.getStringByRole(),
+                    isBanned = isBan,
+                    percentSalary = percentSalary,
+                    salary = salary
+                )
+                userApi.update(updatedUser)
+            }
+        }
     }
 
     init {
@@ -81,26 +88,22 @@ class SharedViewModel @Inject constructor(
         updateViewState { it.copy(currentRoute = route) }
     }
 
-    fun initCurrentTrip(tripModel: TripModel) {
-        updateViewState { it.copy(currentTrip = tripModel) }
-    }
-
     fun initSysAdm(): Boolean {
-        val status = viewState.value.user?.role?.getStringByRole() in listOf(
+        val status = viewState.value.user.value?.role?.getStringByRole() in listOf(
             Constants.Role.SYSTEM, Constants.Role.ADMIN
         )
         return status
     }
 
     fun initSysAdmMod(): Boolean {
-        val status = viewState.value.user?.role?.getStringByRole() in listOf(
+        val status = viewState.value.user.value?.role?.getStringByRole() in listOf(
             Constants.Role.SYSTEM, Constants.Role.ADMIN, Constants.Role.MODERATOR
         )
         return status
     }
 
     fun initSys(): Boolean {
-        val status = viewState.value.user?.role?.getStringByRole() == Constants.Role.SYSTEM
+        val status = viewState.value.user.value?.role?.getStringByRole() == Constants.Role.SYSTEM
         return status
     }
 
@@ -108,9 +111,7 @@ class SharedViewModel @Inject constructor(
         tokenManager.saveAccessToken(null)
         updateViewState {
             it.copy(
-                isLoadUserData = false,
-                user = null,
-                isLoadSettingsData = false,
+                user = MutableStateFlow(null),
                 authAction = AuthAction.Unauthorized,
                 isUserBlocked = false
             )
@@ -118,30 +119,36 @@ class SharedViewModel @Inject constructor(
     }
 
     private fun initAuth() {
-        val accessToken = tokenManager.getAccessToken()
-        if (accessToken != null) {
-            checkValidityToken(accessToken)
-        } else {
-            unauthorized()
+        launchCoroutine {
+            val user = database.userDao().getUser()
+            val factory = database.factoryDao().getFactory()
+            val token = tokenManager.getAccessToken()
+            if (user != null && factory != null && token != null) {
+                updateViewState { it.copy(user = MutableStateFlow(user), factory = factory) }
+                authorized()
+            }
+            if (token != null) {
+                checkValidityToken(token)
+            } else {
+                unauthorized()
+            }
         }
     }
 
 
-    fun logout() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val response = userApi.logout()
-                if (response.success) {
-                    clearTokenData()
-                    message(response.message)
-                } else {
-                    message(response.message)
-                }
-            } catch (e: Exception) {
-                message(e.message)
-            } finally {
-                clearTokenData()
+    suspend fun logout() {
+        val response = userApi.logout()
+        if (response.success) {
+            val user = viewState.value.user.value
+            val factory = viewState.value.factory
+            if (user != null && factory != null) {
+                database.userDao().deleteUser(user)
+                database.factoryDao().deleteFactory(factory)
             }
+            clearTokenData()
+            updateUserStatus(statusModel = StatusModel.OFFLINE)
+        } else {
+            message(response.message)
         }
     }
 
@@ -149,9 +156,16 @@ class SharedViewModel @Inject constructor(
         updateViewState { it.copy(authAction = AuthAction.Unauthorized) }
     }
 
-    fun authorized(isSignIn: Boolean = false) {
-        updateViewState { it.copy(authAction = AuthAction.Authorized) }
-        loadUserData(accessToken = tokenManager.getAccessToken()!!, isSignIn)
+    fun authorized() {
+        launchCoroutine {
+            updateViewState { it.copy(authAction = AuthAction.Authorized) }
+            val token = tokenManager.getAccessToken()
+            if (token != null) {
+                loadUserData()
+            } else {
+                unauthorized()
+            }
+        }
     }
 
     fun message(message: String?, typeMessageModel: TypeMessageModel = TypeMessageModel.ERROR) {
@@ -161,84 +175,74 @@ class SharedViewModel @Inject constructor(
             message = message ?: Constants.ERROR.ERROR,
             type = typeMessageModel
         )
+        Log.d("Debag", "$obj")
         listMessage.add(obj)
         updateViewState { it.copy(listMessage = MutableStateFlow(listMessage)) }
     }
 
     private fun checkValidityToken(accessToken: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val response = withContext(Dispatchers.IO) {
-                    userApi.refreshAccessToken(token = Constants.TOKEN.TOKEN_TYPE + accessToken)
+        launchCoroutine {
+            val response = withContext(Dispatchers.IO) {
+                userApi.refreshToken(token = Constants.TOKEN.TOKEN_TYPE + accessToken)
+            }
+            if (response.success) {
+                val tokens = response.obj
+                if (tokens != null) {
+                    tokenManager.saveAccessToken(tokens.accessToken)
+                    authorized()
                 }
-                if (response.success) {
-                    val tokens = response.obj
-                    if (tokens != null) {
-                        tokenManager.saveAccessToken(tokens.accessToken)
-                        authorized()
-                    }
-                } else {
-                    message(response.message)
-                    unauthorized()
-                }
-            } catch (e: Exception) {
-                message(message = e.message)
-                unauthorized()
+            } else {
+                message(response.message)
             }
         }
     }
 
-    private fun loadUserData(accessToken: String, isSignIn: Boolean) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val response = userApi.getUserData()
-                if (response.success) {
-                    val userData = response.obj
-                    if (userData != null) {
+    private fun loadUserData() {
+        launchCoroutine {
+            val response = userApi.getData()
+            if (response.success) {
+                val user = response.obj
+                if (user != null) {
+                    if (user.isBan) updateViewState { it.copy(isUserBlocked = true) }
+                    else {
                         updateViewState {
                             it.copy(
-                                user = userData, isLoadUserData = true
+                                user = MutableStateFlow(user), isUserBlocked = false
                             )
                         }
-                        if (userData.isBanned) updateViewState { it.copy(isUserBlocked = true) }
-                        else {
-                            updateUserStatus(statusModel = StatusModel.ONLINE)
-                            loadFactoryData(
-                                accessToken = accessToken, idFactory = userData.idFactory
-                            )
-                            if (isSignIn) {
-                                loggerApi.addLog(
-                                    log = LogRequest(
-                                        idFactory = userData.idFactory,
-                                        log = "Успешная авторизация пользователя: ${userData.name} - ${userData.id} - ${userData.role}",
-                                        date = System.currentTimeMillis()
-                                    )
-                                )
-                            }
-                            updateViewState { it.copy(isUserBlocked = false) }
+                        val localUser = database.userDao().getUserById(user.id)
+                        if (localUser != null) {
+                            database.userDao().updateUser(user = user)
+                        } else {
+                            database.userDao().insertUser(user = user)
                         }
+                        updateUserStatus(statusModel = StatusModel.ONLINE)
+                        loadFactoryData(idFactory = user.idFactory)
                     }
-                } else {
-                    message(response.message)
                 }
-            } catch (e: Exception) {
-                message(e.message)
-                unauthorized()
+            } else {
+                message(response.message)
             }
         }
     }
 
-    private fun loadFactoryData(accessToken: String, idFactory: Long) {
+    private fun loadFactoryData(idFactory: Long) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val response =
-                    factoryApi.getById(idFactory = idFactory)
+                    factoryApi.getFactoryById(id = idFactory)
                 if (response.success) {
                     val factory = response.obj
                     if (factory != null) {
+                        val localFactory = database.factoryDao().getFactoryById(factory.id)
+                        if (localFactory != null) {
+                            database.factoryDao().updateFactory(factory = factory)
+                        } else {
+                            database.factoryDao().insertFactory(factory = factory)
+                        }
                         updateViewState {
                             it.copy(
-                                factory = factory, isLoadSettingsData = true
+                                factory = factory
                             )
                         }
                     }
@@ -247,7 +251,6 @@ class SharedViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 message(message = e.message)
-                loadFactoryData(accessToken, idFactory)
             }
         }
     }

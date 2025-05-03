@@ -1,9 +1,13 @@
 package ru.krymer.delivery.ui.screens.main
 
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import ru.krymer.delivery.common.EventHandler
 import ru.krymer.delivery.ui.screens.main.models.MenuAction
 import ru.krymer.delivery.ui.screens.main.models.MenuEvent
@@ -16,52 +20,44 @@ class MainViewModel @Inject constructor(
     private val sharedViewModel: SharedViewModel
 ) : ViewModel(), EventHandler<MenuEvent> {
 
-    private val _viewState = mutableStateOf(MenuViewState())
-    val viewState: State<MenuViewState> = _viewState
-
+    private fun updateViewState(update: (MenuViewState) -> MenuViewState) {
+        _viewState.update { update(it) }
+    }
+    
+    private val _viewState = MutableStateFlow(MenuViewState())
+    val viewState: StateFlow<MenuViewState> = _viewState
+    
     override fun obtainEvent(event: MenuEvent) {
         when (event) {
-            is MenuEvent.RouteClickedToOpen -> routeClicked()
+            is MenuEvent.RouteClickedToOpen -> selectAction(menuAction = MenuAction.OpenRoute)
             is MenuEvent.SignOutUser -> signOut()
-            is MenuEvent.MenuActionInvoked -> loginActionInvoked()
-            is MenuEvent.ProductClickedToOpen -> productClicked()
-            is MenuEvent.CourierClickedToOpen -> courierClicked()
-            is MenuEvent.TripClickedToOpen -> tripClicked()
-            is MenuEvent.AnaliticClickedToOpen -> analiticClicked()
+            is MenuEvent.MenuActionInvoked -> selectAction(menuAction = MenuAction.None)
+            is MenuEvent.ProductClickedToOpen ->selectAction(menuAction = MenuAction.OpenProduct)
+            is MenuEvent.CourierClickedToOpen -> selectAction(menuAction = MenuAction.OpenCouriers)
+            is MenuEvent.TripClickedToOpen -> selectAction(menuAction = MenuAction.OpenTrips)
+            is MenuEvent.AnaliticClickedToOpen -> selectAction(menuAction = MenuAction.OpenAnalitic)
         }
     }
-
-    private fun analiticClicked() {
-        _viewState.value =
-            viewState.value.copy(menuAction = MenuAction.OpenAnalitic)
+    
+    private fun selectAction(menuAction: MenuAction) {
+        when(menuAction) {
+            MenuAction.None -> changeState(acton = menuAction)
+            MenuAction.OpenAnalitic -> changeState(acton = menuAction)
+            MenuAction.OpenCouriers -> changeState(acton = menuAction)
+            MenuAction.OpenProduct -> changeState(acton = menuAction)
+            MenuAction.OpenRoute -> changeState(acton = menuAction)
+            MenuAction.OpenTrips -> changeState(acton = menuAction)
+        }
+    }
+    
+    private fun changeState(acton: MenuAction) {
+        updateViewState { it.copy(menuAction = acton) }
     }
 
-    private fun tripClicked() {
-        _viewState.value =
-            viewState.value.copy(menuAction = MenuAction.OpenTrips)
-    }
-
-    private fun courierClicked() {
-        _viewState.value =
-            viewState.value.copy(menuAction = MenuAction.OpenCouriers)
-    }
-
-    private fun productClicked() {
-        _viewState.value =
-            viewState.value.copy(menuAction = MenuAction.OpenProduct)
-    }
-
-
-    private fun loginActionInvoked() {
-        _viewState.value = viewState.value.copy(menuAction = MenuAction.None)
-    }
 
     private fun signOut() {
-        sharedViewModel.logout()
-    }
-
-    private fun routeClicked() {
-        _viewState.value =
-            viewState.value.copy(menuAction = MenuAction.OpenRoute)
+        viewModelScope.launch(Dispatchers.IO) {
+            sharedViewModel.logout()
+        }
     }
 }

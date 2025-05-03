@@ -9,5 +9,5 @@ data class ClientModel(
     val cord: String,
     var counter: Int,
     val arrears: Double,
-    val date: Long,
+    val date: Long
 )

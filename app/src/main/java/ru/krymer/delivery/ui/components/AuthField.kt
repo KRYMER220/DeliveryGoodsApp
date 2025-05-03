@@ -9,18 +9,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.autofill.AutofillNode
-import androidx.compose.ui.autofill.AutofillType
-import androidx.compose.ui.composed
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.boundsInWindow
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalAutofill
-import androidx.compose.ui.platform.LocalAutofillTree
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -30,7 +21,7 @@ import ru.krymer.delivery.ui.theme.AppTheme
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun AuthFields(
+fun AuthField(
     value: String,
     placeholder: String,
     onVC: (String) -> Unit,
@@ -42,18 +33,10 @@ fun AuthFields(
     errorValue: String = "",
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     textStyle: TextStyle = TextStyle.Default,
-    autofillTypes: List<AutofillType>? = null
 ) {
 
-
     TextField(
-        modifier = Modifier.then(
-            if (autofillTypes != null) {
-                Modifier.autofill(autofillTypes) { onVC(it) }
-            } else {
-                modifier
-            }
-        ),
+        modifier = modifier,
         value = value,
         placeholder = {
             Text(
@@ -86,29 +69,4 @@ fun AuthFields(
     if (isError) {
         Text(text = errorValue, color = Color.Red, fontSize = 12.sp)
     }
-}
-
-
-@OptIn(ExperimentalComposeUiApi::class)
-fun Modifier.autofill(
-    autofillTypes: List<AutofillType>,
-    onFill: (String) -> Unit
-): Modifier = composed {
-    val autofillNode = remember { AutofillNode(autofillTypes = autofillTypes, onFill = onFill) }
-    val autofill = LocalAutofill.current
-    val autofillTree = LocalAutofillTree.current
-
-    autofillTree += autofillNode
-
-    this
-        .onGloballyPositioned { coordinates ->
-            autofillNode.boundingBox = coordinates.boundsInWindow()
-        }
-        .onFocusChanged { focusState ->
-            if (focusState.isFocused) {
-                autofill?.requestAutofillForNode(autofillNode)
-            } else {
-                autofill?.cancelAutofillForNode(autofillNode)
-            }
-        }
 }

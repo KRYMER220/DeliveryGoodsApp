@@ -43,10 +43,11 @@ fun ClientView(
     onItemClicked: (ClientModel) -> Unit,
     onItemDelete: (ClientModel) -> Unit,
     viewModel: ClientViewModel,
-    sharedViewModel: SharedViewModel
+    sharedViewModel: SharedViewModel,
+    clients: List<ClientModel>
 ) {
     LazyColumn {
-        itemsIndexed(viewState.listClient.value, key = { _, item -> item.id }) { index, client ->
+        itemsIndexed(clients, key = { _, item -> item.id }) { index, client ->
             ClientItem(
                 index = index,
                 client = client,

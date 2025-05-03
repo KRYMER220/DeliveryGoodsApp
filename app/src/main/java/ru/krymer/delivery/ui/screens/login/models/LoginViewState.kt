@@ -16,8 +16,6 @@ data class LoginViewState(
     val isLoginProgress: Boolean = false,
     val isForgotProgress: Boolean = false,
     val loginAction: LoginAction = LoginAction.None,
-    val isError: Boolean = false,
-    val errorValue: String = "",
     val isErrorEmail: Boolean = false,
     val isErrorPass: Boolean = false,
     val valueErrorEmail: String = "",

@@ -12,5 +12,5 @@ data class CreateRequestShopRequest(
     val price: Double,
     val oldPrice: Double,
     val name: String,
-    val counter: Int,
+    val counter: Int
 )
