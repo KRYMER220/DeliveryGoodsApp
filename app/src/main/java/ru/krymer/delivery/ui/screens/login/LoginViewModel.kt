@@ -34,12 +34,22 @@ class LoginViewModel @Inject constructor(
         _viewState.update { update(it) }
     }
 
+    private fun launchCoroutine(block: suspend () -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                block()
+            } catch (e: Exception) {
+                sharedViewModel.message(e.message)
+            }
+        }
+    }
+
     override fun obtainEvent(event: LoginEvent) {
         when (event) {
             is LoginEvent.EmailChanged -> emailChanged(event.value)
             is LoginEvent.PassChanged -> passChanged(event.value)
             is LoginEvent.LoginClicked -> loginClicked()
-            is LoginEvent.ForgotAction -> forgotAction()
+            is LoginEvent.ForgotAction -> TODO("forgotAction()")
             is LoginEvent.ForgotClicked -> TODO("forgotClicked()")
             is LoginEvent.LoginAction -> loginAction()
 
@@ -50,33 +60,28 @@ class LoginViewModel @Inject constructor(
         updateViewState { it.copy(loginSubState = LoginSubState.SignIn) }
     }
 
-    private fun forgotAction() {
-        //updateViewState { it.copy(loginSubState = LoginSubState.Forgot) }
-    }
-
     private fun loginClicked() {
-        _viewState.value = viewState.value.copy(isLoginProgress = true)
-        viewModelScope.launch(Dispatchers.IO) {
+        launchCoroutine {
+            updateViewState { it.copy(isLoginProgress = true) }
             val email = viewState.value.emailValue
             val pass = viewState.value.passValue
-            try {
-                val signInRequest = SignInRequest(email = email, password = pass)
-                val tokenResponse = withContext(Dispatchers.IO) {
-                    userApi.signInUser(signInRequest)
-                }
-                if (tokenResponse.success) {
-                    val tokens = tokenResponse.obj
-                    if (tokens != null) {
-                        tokenManager.saveAccessToken(tokens.accessToken)
-                        sharedViewModel.authorized(isSignIn = true)
-                    }
+            val signInRequest = SignInRequest(email = email, password = pass)
+            val tokenResponse = withContext(Dispatchers.IO) {
+                userApi.signIn(signInRequest)
+            }
+            if (tokenResponse.success) {
+                val tokens = tokenResponse.obj
+                if (tokens != null) {
+                    tokenManager.saveAccessToken(tokens.accessToken)
+                    sharedViewModel.authorized()
+                    updateViewState { it.copy(isLoginProgress = false) }
                 } else {
-                    sharedViewModel.message(tokenResponse.message)
+                    updateViewState { it.copy(isLoginProgress = false) }
+                    sharedViewModel.message(Constants.ERROR.AGAIN)
                 }
-            } catch (e: Exception) {
-                sharedViewModel.message(message = e.message ?: Constants.ERROR.GENERAL_ERROR)
-            } finally {
+            } else {
                 updateViewState { it.copy(isLoginProgress = false) }
+                sharedViewModel.message(tokenResponse.message)
             }
         }
     }
@@ -88,5 +93,4 @@ class LoginViewModel @Inject constructor(
     private fun emailChanged(value: String) {
         updateViewState { it.copy(emailValue = value) }
     }
-
 }

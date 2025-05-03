@@ -13,12 +13,10 @@ sealed class TripAction {
 data class TripViewState(
     val isError: Boolean = false,
     val errorValue: String = "",
-    val isLoadDataTrip: Boolean = false,
     val listTrip: MutableStateFlow<List<TripModel>> = MutableStateFlow(listOf()),
 
 
-    val itemIdToDelete: Long? = null,
-    val itemNameToDelete: String = "",
+    val deleteTrip: TripModel? = null,
     val showDeleteDialog: Boolean = false,
 
     val showAddSheetDialog: Boolean = false,
@@ -27,8 +25,6 @@ data class TripViewState(
     val dropDownStateCourier: Boolean = false,
     val dropDownStateTrips: Boolean = false,
     val dropDownStateDatePicker: Boolean = false,
-    val isLoadDataDropMenuRoute: Boolean = false,
-    val isLoadDataDropMenuCourier: Boolean = false,
     var currentRoute: RouteModel? = null,
     var currentCourier: UserModel? = null,
     val listRoute: MutableStateFlow<List<RouteModel>> = MutableStateFlow(listOf()),

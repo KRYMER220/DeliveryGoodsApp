@@ -9,5 +9,5 @@ data class ClientRequest(
     val cord: String,
     val counter: Int,
     val arrears: Double,
-    val date: Long,
+    val date: Long
 )

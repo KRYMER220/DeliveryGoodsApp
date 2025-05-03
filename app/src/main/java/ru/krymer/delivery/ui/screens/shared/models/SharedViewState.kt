@@ -16,10 +16,9 @@ sealed class AuthAction {
 }
 
 data class SharedViewState(
-    val authAction: AuthAction = AuthAction.None, val user: UserModel? = null,
+    val authAction: AuthAction = AuthAction.None,
+    val user: MutableStateFlow<UserModel?> = MutableStateFlow(null),
     val factory: FactoryModel? = null,
-    var isLoadUserData: Boolean = false,
-    val isLoadSettingsData: Boolean = false,
     val isUserBlocked: Boolean = false,
     val navController: NavController? = null,
     val currentNavRoute: String? = null,

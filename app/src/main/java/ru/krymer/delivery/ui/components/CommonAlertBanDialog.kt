@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import ru.krymer.delivery.ui.theme.AppTheme
 
 @Composable
-fun CommonShowBanDialog(
+fun BanDialog(
     itemName: String,
     isVisible: Boolean,
     onDismiss: () -> Unit,

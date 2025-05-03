@@ -4,5 +4,5 @@ data class RouteModel(
     val id: Long,
     var name: String,
     val date: Long,
-    val idFactory: Long,
+    val idFactory: Long
 )

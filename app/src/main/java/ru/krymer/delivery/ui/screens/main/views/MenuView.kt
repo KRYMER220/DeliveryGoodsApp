@@ -16,6 +16,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.R
+import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.ui.screens.shared.models.SharedViewState
 import ru.krymer.delivery.ui.theme.AppTheme
@@ -28,9 +29,9 @@ fun MenuView(
     onTripClick: () -> Unit,
     onAnaliticClick: () -> Unit,
     sharedViewState: SharedViewState,
-    sharedViewModel: SharedViewModel
+    sharedViewModel: SharedViewModel,
+    user: UserModel
 ) {
-    val user = sharedViewState.user!!
     Column {
         Text(
             text = user.name,
@@ -39,21 +40,6 @@ fun MenuView(
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.textColor
         )
-        Spacer(modifier = Modifier.height(20.dp))
-        Button(
-            onClick = onRouteClick, shape = RoundedCornerShape(10.dp), modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = AppTheme.colors.onSecondary
-            )
-        ) {
-            Text(
-                text = stringResource(id = R.string.route), style = TextStyle(
-                    color = AppTheme.colors.onPrimary
-                ), fontSize = 20.sp
-            )
-        }
         Spacer(modifier = Modifier.height(10.dp))
         Button(
             onClick = onTripClick, shape = RoundedCornerShape(10.dp), modifier = Modifier
@@ -68,6 +54,23 @@ fun MenuView(
                     color = AppTheme.colors.onPrimary
                 ), fontSize = 20.sp
             )
+        }
+        if (sharedViewModel.initSysAdmMod()) {
+            Spacer(modifier = Modifier.height(20.dp))
+            Button(
+                onClick = onRouteClick, shape = RoundedCornerShape(10.dp), modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppTheme.colors.onSecondary
+                )
+            ) {
+                Text(
+                    text = stringResource(id = R.string.route), style = TextStyle(
+                        color = AppTheme.colors.onPrimary
+                    ), fontSize = 20.sp
+                )
+            }
         }
         if (sharedViewModel.initSysAdm()) {
             Spacer(modifier = Modifier.height(10.dp))

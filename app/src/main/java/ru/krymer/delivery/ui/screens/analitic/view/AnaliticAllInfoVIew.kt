@@ -35,7 +35,7 @@ import ir.ehsannarmani.compose_charts.LineChart
 import ir.ehsannarmani.compose_charts.models.BarProperties
 import ir.ehsannarmani.compose_charts.models.HorizontalIndicatorProperties
 import ir.ehsannarmani.compose_charts.models.LabelProperties
-import ru.krymer.delivery.data.model.RequestModel
+import ru.krymer.delivery.data.response.AggregatedRequest
 import ru.krymer.delivery.ui.screens.analitic.AnaliticViewModel
 import ru.krymer.delivery.ui.screens.analitic.models.AnaliticViewState
 import ru.krymer.delivery.ui.theme.AppTheme
@@ -75,6 +75,7 @@ fun AnaliticFactoryView(viewModel: AnaliticViewModel) {
             item {
                 BarsView(viewState = viewState)
                 LinesView(viewState = viewState)
+
             }
         }
     } else {
@@ -99,18 +100,15 @@ fun BarsView(viewState: AnaliticViewState) {
             data = bars,
             modifier = Modifier
                 .horizontalScroll(stateScroll)
-                .width((400 + (50 * bars.size)).dp)
+                .width((400 + (30 * bars.size)).dp)
                 .height(400.dp)
                 .heightIn(max = 1000.dp)
                 .padding(bottom = 50.dp),
-            barProperties = BarProperties(spacing = 0.dp),
+            barProperties = BarProperties(spacing = 1.dp),
             labelProperties = LabelProperties(
                 padding = 0.dp,
                 enabled = true,
                 textStyle = TextStyle(color = AppTheme.colors.onSecondary),
-                rotation = LabelProperties.Rotation(
-                    mode = LabelProperties.Rotation.Mode.Force, degree = -90f
-                ),
             ),
             indicatorProperties = HorizontalIndicatorProperties(
                 textStyle = TextStyle(
@@ -118,6 +116,7 @@ fun BarsView(viewState: AnaliticViewState) {
                 )
             )
         )
+
     }
 }
 
@@ -190,7 +189,7 @@ fun TextItemInfo(
 
 @Composable
 fun TextFactoryInformation(viewState: AnaliticViewState) {
-    val dataTrips = viewState.allDataFactoryOfDateRange.collectAsState().value
+    val dataTrips = viewState.data.collectAsState().value
     Column(modifier = Modifier.fillMaxWidth()) {
         TextItemInfo(value = "Пробег: ${dataTrips.millage}")
         TextItemInfo(value = "Выручка: ${dataTrips.money}")
@@ -206,7 +205,7 @@ fun TextFactoryInformation(viewState: AnaliticViewState) {
 }
 
 @Composable
-fun RequestItems(request: RequestModel) {
+fun RequestItems(request: AggregatedRequest) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -222,7 +221,7 @@ fun RequestItems(request: RequestModel) {
             size = 14.sp,
         )
         TextItemInfo(
-            value = "${request.bonus}",
+            value = "${request.totalBonus}",
             modifier = Modifier
                 .weight(0.2f)
                 .padding(3.dp),
@@ -230,7 +229,7 @@ fun RequestItems(request: RequestModel) {
             textAlign = TextAlign.Center
         )
         TextItemInfo(
-            value = "${request.count}",
+            value = "${request.totalCount}",
             modifier = Modifier
                 .weight(0.2f)
                 .padding(3.dp),
@@ -238,7 +237,7 @@ fun RequestItems(request: RequestModel) {
             textAlign = TextAlign.Center
         )
         TextItemInfo(
-            value = "${request.exchange}",
+            value = "${request.totalExchange}",
             modifier = Modifier
                 .weight(0.2f)
                 .padding(3.dp),

@@ -26,6 +26,7 @@ import ru.krymer.delivery.ui.screens.analitic.models.AnaliticViewState
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.colorChangerDay
+import ru.krymer.delivery.utills.colorChangerMonth
 import java.util.Calendar
 import javax.inject.Inject
 
@@ -73,7 +74,7 @@ class AnaliticViewModel @Inject constructor(
             if (data != null) {
                 updateViewState {
                     it.copy(
-                        allDataTrip = MutableStateFlow(data),
+                        data = MutableStateFlow(data),
                         isLoadTripData = true,
                         requests = MutableStateFlow(data.requests),
                     )
@@ -103,7 +104,7 @@ class AnaliticViewModel @Inject constructor(
     private suspend fun getTrips() {
         val factory = sharedViewModel.viewState.value.factory
         if (factory != null) {
-            val result = tripApi.getRoutesForTrip(idFactory = factory.id)
+            val result = tripApi.getRoutesByTrip(idFactory = factory.id)
             if (result.success) {
                 val routes = result.obj
                 if (!routes.isNullOrEmpty()) {
@@ -132,7 +133,7 @@ class AnaliticViewModel @Inject constructor(
             if (data != null) {
                 updateViewState {
                     it.copy(
-                        allDataClient = MutableStateFlow(data),
+                        data = MutableStateFlow(data),
                         isLoadClientData = true,
                         requests = MutableStateFlow(data.requests),
                     )
@@ -163,7 +164,7 @@ class AnaliticViewModel @Inject constructor(
     private suspend fun getClients() {
         val factory = sharedViewModel.viewState.value.factory
         if (factory != null) {
-            val result = clientApi.getAllCurrentListClient(idFactory = factory.id)
+            val result = clientApi.getClientsByFactory(idFactory = factory.id)
             if (result.success) {
                 val clients = result.obj
                 if (!clients.isNullOrEmpty()) {
@@ -245,7 +246,7 @@ class AnaliticViewModel @Inject constructor(
     }
 
     private suspend fun getLogData() {
-        val result = logApi.getAllFactoryLogs(sharedViewModel.viewState.value.factory!!.id)
+        val result = logApi.getLogs(sharedViewModel.viewState.value.factory!!.id)
         if (result.success) {
             val logs = result.obj
             if (logs.isNullOrEmpty()) {
@@ -275,7 +276,7 @@ class AnaliticViewModel @Inject constructor(
             data?.let {
                 updateViewState {
                     it.copy(
-                        allDataFactoryOfDateRange = MutableStateFlow(data),
+                        data = MutableStateFlow(data),
                         isLoadDataFactoryInRangeDate = true,
                         requests = MutableStateFlow(data.requests),
                     )
@@ -287,31 +288,38 @@ class AnaliticViewModel @Inject constructor(
     }
 
     private fun convertDataFactoryToBars() {
-        val data = viewState.value.allDataFactoryOfDateRange.value.bars
+        val data = viewState.value.data.value.bars
         val bars = mutableListOf<Bars>()
         data.forEach { item ->
             val bar = Bars(
-                label = item.title.trim() + "/" + item.day.trim(), values = listOf(
+                label = item.title.substringBefore(".") + "\n" + item.title.substringAfter(".")
+                    .substringBefore(".") + "\n" + item.day, values = listOf(
                     Bars.Data(
                         value = item.value,
-                        color = Brush.verticalGradient(colorChangerDay(item.day))
+                        color = Brush.verticalGradient(colorChangerDay(day = item.day))
                     )
                 )
             )
             bars.add(bar)
         }
-        updateViewState { it.copy(bars = MutableStateFlow(bars)) }
+        updateViewState {
+            it.copy(
+                bars = MutableStateFlow(bars)
+            )
+        }
     }
 
     private fun convertDataClientToBars() {
-        val data = viewState.value.allDataClient.value.bars
+        val data = viewState.value.data.value.bars
         val bars = mutableListOf<Bars>()
         data.forEach { item ->
+            val year = item.title.substringAfter(".")
+            val month = item.title.substringBefore(".")
             val bar = Bars(
-                label = item.title.trim(), values = listOf(
+                label = month + "\n" + year.substring(year.length - 2), values = listOf(
                     Bars.Data(
                         value = item.value,
-                        color = Brush.verticalGradient(colorChangerDay(item.day))
+                        color = Brush.verticalGradient(colorChangerMonth(month = item.day))
                     )
                 )
             )
@@ -321,24 +329,30 @@ class AnaliticViewModel @Inject constructor(
     }
 
     private fun convertDataTripToBars() {
-        val data = viewState.value.allDataTrip.value.bars
+        val data = viewState.value.data.value.bars
         val bars = mutableListOf<Bars>()
         data.forEach { item ->
+            val year = item.title.substringAfter(".")
+            val month = item.title.substringBefore(".")
             val bar = Bars(
-                label = item.title.trim() + "/" + item.day.trim(), values = listOf(
+                label = month + "\n" + year.substring(year.length - 2), values = listOf(
                     Bars.Data(
                         value = item.value,
-                        color = Brush.verticalGradient(colorChangerDay(item.day))
+                        color = Brush.verticalGradient(colorChangerMonth(month = item.day))
                     )
                 )
             )
             bars.add(bar)
         }
-        updateViewState { it.copy(bars = MutableStateFlow(bars)) }
+        updateViewState {
+            it.copy(
+                bars = MutableStateFlow(bars)
+            )
+        }
     }
 
     private fun convertDataToLine() {
-        val data = viewState.value.allDataFactoryOfDateRange.value.bars
+        val data = viewState.value.data.value.bars
         val values = mutableListOf<Double>()
 
         data.forEach { item ->

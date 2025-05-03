@@ -41,6 +41,7 @@ fun InfoContent(viewState: ShopViewState, onUpdate: () -> Unit) {
     if (viewState.isLoadDataRequestsInfoDialog) {
         val count = viewState.allCountRequestsInfo.collectAsState().value
         val exchange = viewState.allExchangeRequestsInfo.collectAsState().value
+        val requests = viewState.listInfoRequests.collectAsState().value
 
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             Image(
@@ -101,7 +102,7 @@ fun InfoContent(viewState: ShopViewState, onUpdate: () -> Unit) {
         }
 
         LazyColumn(horizontalAlignment = Alignment.CenterHorizontally) {
-            items(viewState.listInfoRequests.value) { product ->
+            items(requests) { product ->
                 InfoContentProductItem(product = product)
             }
         }
@@ -205,6 +206,7 @@ fun ItemInfoShop(shop: ShopModel) {
             .fillMaxWidth()
             .padding(10.dp)
     ) {
+        val sumDept = shop.listRequest.sumOf { it.price * it.count - it.price * it.exchange }
         Text(
             style = MaterialTheme.typography.labelSmall,
             text = convertToTextDate(shop.date),
@@ -225,6 +227,14 @@ fun ItemInfoShop(shop: ShopModel) {
         Text(
             style = MaterialTheme.typography.labelSmall,
             text = "Пред. реал: " + shop.arrears,
+            fontSize = 12.sp,
+            modifier = Modifier.fillMaxWidth(),
+            color = AppTheme.colors.onSecondary
+        )
+        Spacer(modifier = Modifier.height(5.dp))
+        Text(
+            style = MaterialTheme.typography.labelSmall,
+            text = "Заявка: " + sumDept,
             fontSize = 12.sp,
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
@@ -317,7 +327,7 @@ fun ItemInfoShop(shop: ShopModel) {
                 .fillMaxWidth()
                 .heightIn(max = 200.dp)
         ) {
-            items(shop.listRequest!!) { request ->
+            items(shop.listRequest) { request ->
                 RequestInfoItem(request)
             }
         }

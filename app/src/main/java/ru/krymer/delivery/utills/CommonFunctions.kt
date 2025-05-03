@@ -3,15 +3,11 @@ package ru.krymer.delivery.utills
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.net.ConnectivityManager
-import android.net.Network
-import android.net.NetworkCapabilities
-import android.net.NetworkRequest
 import androidx.compose.ui.graphics.Color
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
 import java.text.SimpleDateFormat
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
@@ -25,6 +21,20 @@ fun isValidEmail(email: String): Boolean {
 
 fun isEmptyInput(str: String): Boolean {
     return str.isNotEmpty()
+}
+
+fun startsWithDigit(input: String): Boolean {
+    if (input.isEmpty()) return false
+    return input.first().isDigit()
+}
+
+fun getStartOfNextDay(): Long {
+    return LocalDateTime.now()
+        .plusDays(1)
+        .truncatedTo(ChronoUnit.DAYS)
+        .atZone(ZoneId.systemDefault())
+        .toInstant()
+        .toEpochMilli()
 }
 
 fun isValidCords(cords: String): Boolean {
@@ -105,3 +115,25 @@ fun colorChangerDay(day: String): List<Color> {
         }
     }
 }
+
+fun colorChangerMonth(month: String): List<Color> {
+    return when (month) {
+        "Янв" -> listOf(Color.Red, Color.Red)
+        "Фев" -> listOf(Color.Yellow, Color.Yellow)
+        "Мар" -> listOf(Color.Green, Color.Green)
+        "Апр" -> listOf(Color.Cyan, Color.Cyan)
+        "Май" -> listOf(Color.Blue, Color.Blue)
+        "Июн" -> listOf(Color.Magenta, Color.Magenta)
+        "Июл" -> listOf(Color.Black, Color.Black)
+        "Авг" -> listOf(Color.Gray, Color.Gray)
+        "Сен" -> listOf(Color.DarkGray, Color.DarkGray)
+        "Окт" -> listOf(Color.LightGray, Color.LightGray)
+        "Ноя" -> listOf(Color.Black, Color.Red)
+        "Дек" -> listOf(Color.Red, Color.Yellow)
+        else -> {
+            listOf(Color.Red, Color.Blue)
+        }
+    }
+}
+
+

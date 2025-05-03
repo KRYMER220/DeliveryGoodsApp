@@ -16,7 +16,6 @@ sealed class ShopEvent {
     data class ChangeCountBonusProduct(val bonus: String, val product: ProductModel) : ShopEvent()
     data class ChangeCountProduct(val count: String, val product: ProductModel) : ShopEvent()
     data class ChangeCountExchange(val exchange: String, val product: ProductModel) : ShopEvent()
-    data object OnAdminManaged: ShopEvent()
     data object DismissAddDialog : ShopEvent()
     data object ShopAddAction : ShopEvent()
     data class ShowDeleteDialog(val shop: ShopModel) : ShopEvent()
@@ -67,11 +66,12 @@ sealed class ShopEvent {
 
     data class OpenInfoShopDialog(val shop: ShopModel) : ShopEvent()
     data object DismissInfoShopDialog : ShopEvent()
-    data object DismissInfoBlockDialog : ShopEvent()
 
     data object ShowDialogAddRequest : ShopEvent()
     data object DismissDialogAddRequest : ShopEvent()
     data object RequestAddAction : ShopEvent()
     data object SwitchPrice : ShopEvent()
     data class CopyInfoData(val context: Context) : ShopEvent()
+
+    data class ChangeAddStatusProduct(val product: ProductModel) : ShopEvent()
 }

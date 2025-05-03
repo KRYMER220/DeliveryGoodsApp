@@ -15,7 +15,7 @@ data class ShopModel(
     val cash: Double,
     val counter: Int,
     val noCash: Double,
-    val listRequest: List<RequestModel>? = null,
+    var listRequest: List<RequestModel>,
     val isOldPrice: Boolean,
-    val cord: String,
+    val cord: String
 )

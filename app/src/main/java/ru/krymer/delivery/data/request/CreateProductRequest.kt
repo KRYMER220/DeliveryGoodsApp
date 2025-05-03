@@ -8,5 +8,5 @@ data class CreateProductRequest(
     val price: Double,
     val isActive: Boolean,
     val date: Long,
-    val oldPrice: Double,
+    val oldPrice: Double
 )

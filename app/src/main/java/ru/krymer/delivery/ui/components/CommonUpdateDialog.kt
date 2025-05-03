@@ -24,7 +24,7 @@ import ru.krymer.delivery.ui.theme.AppTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CommonUpdateBottomSheetDialog(
+fun CommonUpdateDialog(
     isVisible: Boolean,
     onDismiss: () -> Unit,
     content: @Composable () -> Unit,

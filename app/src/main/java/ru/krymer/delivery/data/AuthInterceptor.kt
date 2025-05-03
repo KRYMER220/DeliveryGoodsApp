@@ -58,7 +58,7 @@ class AuthInterceptor @Inject constructor(
                     .build()
 
                 val userApi = retrofit.create(UserApi::class.java)
-                val response = userApi.refreshAccessToken("Bearer $accessToken")
+                val response = userApi.refreshToken("Bearer $accessToken")
                 if (response.success) {
                     val newToken = response.obj?.accessToken
                     if (newToken != null) {

@@ -22,8 +22,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -51,7 +49,6 @@ import ru.krymer.delivery.data.model.RequestModel
 import ru.krymer.delivery.data.model.utilModel.TypePayModel
 import ru.krymer.delivery.ui.components.CommonTextField
 import ru.krymer.delivery.ui.components.KeyBoardDialog
-import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.ui.screens.shop.ShopViewModel
 import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
@@ -60,12 +57,13 @@ import ru.krymer.delivery.ui.theme.AppTheme
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AlertDialogRequestShop(
-    viewState: ShopViewState, viewModel: ShopViewModel, sharedViewModel: SharedViewModel
+    viewState: ShopViewState, viewModel: ShopViewModel
 ) {
-    if (viewState.currentShop != null) {
-        val listMenu = listOf("Долг", "Доп.сумму", "Тип оплаты", "Старая цена")
+    viewState.currentShop?.let { shop ->
+
+        val listMenu = listOf("Долг", "Доп.сумму", "Тип оплаты", "Старая цена", "Добавить заявку")
         var isExpandedMenu by remember { mutableStateOf(false) }
-        val list = viewState.listDataRequests.collectAsState().value
+        val requests = viewState.listDataRequests.collectAsState().value
         val orderMoney = viewState.orderMoney.collectAsState().value.toString()
         val stateCash = viewState.getCash.collectAsState().value
         val stateNoCash = viewState.getNoCash.collectAsState().value
@@ -91,7 +89,7 @@ fun AlertDialogRequestShop(
             ) {
                 Text(
                     style = MaterialTheme.typography.labelSmall,
-                    text = viewState.currentShop.nameShop,
+                    text = shop.nameShop,
                     fontSize = 16.sp,
                     color = AppTheme.colors.onSecondary,
                     modifier = Modifier.weight(0.7f)
@@ -138,6 +136,10 @@ fun AlertDialogRequestShop(
 
                                     "Старая цена" -> {
                                         viewModel.obtainEvent(ShopEvent.SwitchPrice)
+                                    }
+
+                                    "Добавить заявку" -> {
+                                        viewModel.obtainEvent(ShopEvent.ShowDialogAddRequest)
                                     }
                                 }
                             }, text = {
@@ -236,12 +238,15 @@ fun AlertDialogRequestShop(
                     .wrapContentHeight(),
                 verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
-                if (list.isNotEmpty()) {
-                    items(list) { request ->
+                if (requests.isNotEmpty()) {
+                    items(
+                        items = requests,
+                        key = { request -> request.id }
+                    ) { request ->
                         ProductRequestItem(
                             product = request,
-                            onDeleteRequest = {
-                                viewModel.obtainEvent(ShopEvent.DeleteRequest(it))
+                            deleteRequest = {
+                                viewModel.obtainEvent(ShopEvent.DeleteRequest(request))
                             }, viewModel = viewModel
                         )
                     }
@@ -256,21 +261,6 @@ fun AlertDialogRequestShop(
                                 color = Color.White
                             )
                         }
-                    }
-                }
-
-                item {
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Button(
-                            colors = ButtonColors(
-                                containerColor = AppTheme.colors.onSecondary,
-                                contentColor = AppTheme.colors.onSecondary,
-                                disabledContainerColor = AppTheme.colors.onSecondary,
-                                disabledContentColor = AppTheme.colors.onSecondary
-                            ), onClick = {
-                                viewModel.obtainEvent(ShopEvent.ShowDialogAddRequest)
-                            }
-                        ) { Text(text = "Добавить", color = AppTheme.colors.onPrimary) }
                     }
                 }
             }
@@ -302,7 +292,7 @@ fun AlertDialogRequestShop(
                     )
                     Text(
                         style = MaterialTheme.typography.labelSmall,
-                        text = viewState.currentShop.arrears.toString(),
+                        text = "${shop.arrears}",
                         fontSize = 14.sp,
                         color = AppTheme.colors.onSecondary
                     )
@@ -326,7 +316,7 @@ fun AlertDialogRequestShop(
                     )
                     Text(
                         style = MaterialTheme.typography.labelSmall,
-                        text = viewState.currentShop.addSum.toString(),
+                        text = "${shop.addSum}",
                         fontSize = 14.sp,
                         color = AppTheme.colors.onSecondary
                     )
@@ -432,23 +422,13 @@ fun AlertDialogRequestShop(
             }
 
         }
-    } else {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            CircularProgressIndicator(
-                modifier = Modifier
-                    .size(30.dp)
-                    .align(Alignment.Center),
-                strokeWidth = 2.dp,
-                color = Color.White
-            )
-        }
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ProductRequestItem(
-    product: RequestModel, onDeleteRequest: (RequestModel) -> Unit, viewModel: ShopViewModel
+    product: RequestModel, deleteRequest: (RequestModel) -> Unit, viewModel: ShopViewModel
 ) {
 
 
@@ -537,7 +517,7 @@ fun ProductRequestItem(
             modifier = Modifier
                 .weight(0.4f)
                 .padding(end = 5.dp)
-                .combinedClickable(onDoubleClick = { onDeleteRequest(product) }, onClick = {}),
+                .combinedClickable(onDoubleClick = { deleteRequest(product) }, onClick = {}),
             color = AppTheme.colors.onSecondary
         )
         Box(

@@ -1,6 +1,11 @@
 package ru.krymer.delivery.data.model.user
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "users")
 data class UserModel(
+    @PrimaryKey
     val id: Long,
     val email: String,
     val login: String,
@@ -12,5 +17,5 @@ data class UserModel(
     val isBan: Boolean,
     val role: RoleModel,
     val percentSalary: Double,
-    val salary: Double,
+    val salary: Double
 )

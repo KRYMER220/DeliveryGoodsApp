@@ -16,26 +16,26 @@ import ru.krymer.delivery.utills.Constants
 
 interface UserApi {
     @POST("user/sign/up")
-    suspend fun signUpUser(@Body request: SignUpRequest): BaseResponse<UserModel>
+    suspend fun signUp(@Body request: SignUpRequest): BaseResponse<UserModel>
 
     @POST("user/sign/in")
-    suspend fun signInUser(@Body request: SignInRequest): BaseResponse<TokenResponse>
+    suspend fun signIn(@Body request: SignInRequest): BaseResponse<TokenResponse>
 
     @GET("token/refresh")
-    suspend fun refreshAccessToken(@Header("Authorization") token: String): BaseResponse<TokenResponse>
+    suspend fun refreshToken(@Header("Authorization") token: String): BaseResponse<TokenResponse>
 
     @GET("user/info")
-    suspend fun getUserData(): BaseResponse<UserModel>
+    suspend fun getData(): BaseResponse<UserModel>
 
     @DELETE("user/logout")
     suspend fun logout(): BaseResponse<UserModel>
 
     @DELETE("user/delete")
-    suspend fun deleteUser(@Query(Constants.ID.ID) idUser: Long): BaseResponse<UserModel>
+    suspend fun delete(@Query(Constants.ID.ID) id: Long): BaseResponse<UserModel>
 
     @POST("user/update")
-    suspend fun updateUser(@Body request: UpdateUserRequest): BaseResponse<UserModel>
+    suspend fun update(@Body request: UpdateUserRequest): BaseResponse<UserModel>
 
     @GET("users")
-    suspend fun getListUser(@Query(Constants.ID.ID_FACTORY) idFactory: Long): BaseResponse<List<UserModel>>
+    suspend fun getUsers(@Query(Constants.ID.ID_FACTORY) idFactory: Long): BaseResponse<List<UserModel>>
 }

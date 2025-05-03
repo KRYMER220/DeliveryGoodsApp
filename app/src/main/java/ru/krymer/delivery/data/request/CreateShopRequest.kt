@@ -17,5 +17,5 @@ data class CreateShopRequest(
     val noCash: Double = 0.0,
     val isOldPrice: Boolean,
     val nameShop: String,
-    val cord: String,
+    val cord: String
 )

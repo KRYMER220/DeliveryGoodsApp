@@ -5,11 +5,9 @@ import ir.ehsannarmani.compose_charts.models.Line
 import kotlinx.coroutines.flow.MutableStateFlow
 import ru.krymer.delivery.data.model.ClientModel
 import ru.krymer.delivery.data.model.LoggerModel
-import ru.krymer.delivery.data.model.RequestModel
 import ru.krymer.delivery.data.model.TripModel
-import ru.krymer.delivery.data.response.Client
-import ru.krymer.delivery.data.response.Factory
-import ru.krymer.delivery.data.response.Trip
+import ru.krymer.delivery.data.response.AggregatedRequest
+import ru.krymer.delivery.data.response.Analitic
 import ru.krymer.delivery.utills.getCurrentDayRangeTimestamps
 
 sealed class AnaliticAction {
@@ -31,11 +29,12 @@ data class AnaliticViewState(
     val isShowDatePicker: Boolean = false,
 
     val isLoadDataFactoryInRangeDate: Boolean = false,
-    val requests: MutableStateFlow<List<RequestModel>> = MutableStateFlow(listOf()),
+    val requests: MutableStateFlow<List<AggregatedRequest>> = MutableStateFlow(listOf()),
     val bars: MutableStateFlow<List<Bars>> = MutableStateFlow(listOf()),
     val lines: MutableStateFlow<List<Line>> = MutableStateFlow(listOf()),
-    val allDataFactoryOfDateRange: MutableStateFlow<Factory> = MutableStateFlow(
-        Factory()
+
+    val data: MutableStateFlow<Analitic> = MutableStateFlow(
+        Analitic()
     ),
 
     val isLoadClientData: Boolean = false,
@@ -43,18 +42,12 @@ data class AnaliticViewState(
     val clients: MutableStateFlow<List<ClientModel>> = MutableStateFlow(listOf()),
     val currentClient: MutableStateFlow<ClientModel>? = null,
     val stateDropDownMenuClients: Boolean = false,
-    val allDataClient: MutableStateFlow<Client> = MutableStateFlow(
-        Client()
-    ),
 
     val isLoadTripData: Boolean = false,
     val isLoadAnaliticTrip: Boolean = false,
     val trips: MutableStateFlow<List<TripModel>> = MutableStateFlow(listOf()),
     val currentTrip: MutableStateFlow<TripModel> ?= null,
     val stateDropDownMenuTrip: Boolean = false,
-    val allDataTrip: MutableStateFlow<Trip> = MutableStateFlow(
-        Trip()
-    ),
 
 
     )

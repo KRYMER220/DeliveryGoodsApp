@@ -64,28 +64,16 @@ fun LoginScreen(
             item {
                 when (loginSubState) {
                     LoginSubState.SignIn -> SignInView(viewState = this@with,
-                        onEmailTFC = {
+                        onEmailChange = {
                             loginViewModel.obtainEvent(LoginEvent.EmailChanged(it))
-                        }, onPassTFC = {
+                        }, onPassChange = {
                             loginViewModel.obtainEvent(LoginEvent.PassChanged(it))
-                        }, onAuthClick = {
+                        }, onSignIn = {
                             loginViewModel.obtainEvent(LoginEvent.LoginClicked)
                             keyboardController?.hide()
-                        }, onForgotClick = {
-                            loginViewModel.obtainEvent(LoginEvent.ForgotAction)
                         })
 
-                    LoginSubState.Forgot -> {
-//                        ForgotView(
-//                            viewState = this@with,
-//                            onLoginClick = {
-//                                loginViewModel.obtainEvent(LoginEvent.LoginAction)
-//                            }, onEmailTFC = {
-//                                loginViewModel.obtainEvent(LoginEvent.EmailChanged(it))
-//                            }, onRestorePassClick = {
-//                                loginViewModel.obtainEvent(LoginEvent.ForgotClicked)
-//                            })
-                    }
+                    LoginSubState.Forgot -> {}
                 }
             }
         }

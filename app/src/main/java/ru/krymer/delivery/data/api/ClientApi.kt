@@ -11,21 +11,21 @@ import ru.krymer.delivery.data.response.BaseResponse
 import ru.krymer.delivery.utills.Constants
 
 interface ClientApi {
-    @POST("create-client")
-    suspend fun addClient(@Body client: ClientRequest): BaseResponse<ClientModel>
+    @POST("client/create")
+    suspend fun add(@Body client: ClientRequest): BaseResponse<ClientModel>
 
-    @POST("update-client")
-    suspend fun updateClient(@Body client: ClientRequest): BaseResponse<ClientModel>
+    @POST("client/update")
+    suspend fun update(@Body client: ClientRequest): BaseResponse<ClientModel>
 
-    @DELETE("delete-client")
-    suspend fun deleteClient(@Query(Constants.ID.ID) idClient: Long): BaseResponse<ClientModel>
+    @DELETE("client/delete")
+    suspend fun delete(@Query(Constants.ID.ID) id: Long): BaseResponse<ClientModel>
 
-    @GET("get-client")
-    suspend fun getClientById(@Query(Constants.ID.ID) idClient: Long): BaseResponse<ClientModel?>
+    @GET("client")
+    suspend fun getClientById(@Query(Constants.ID.ID) id: Long): BaseResponse<ClientModel?>
 
-    @GET("get-clients")
-    suspend fun getCurrentListClient(@Query(Constants.ID.ID_ROUTE) idRoute: Long): BaseResponse<List<ClientModel>>
+    @GET("clients/route")
+    suspend fun getClientsByRoute(@Query(Constants.ID.ID_ROUTE) idRoute: Long): BaseResponse<List<ClientModel>>
 
-    @GET("get-all-clients")
-    suspend fun getAllCurrentListClient(@Query(Constants.ID.ID_FACTORY) idFactory: Long): BaseResponse<List<ClientModel>>
+    @GET("clients/factory")
+    suspend fun getClientsByFactory(@Query(Constants.ID.ID_FACTORY) idFactory: Long): BaseResponse<List<ClientModel>>
 }
