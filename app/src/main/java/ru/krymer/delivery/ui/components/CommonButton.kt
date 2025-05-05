@@ -11,14 +11,14 @@ import androidx.compose.ui.unit.dp
 import ru.krymer.delivery.ui.theme.AppTheme
 
 @Composable
-fun CommonButton(onClick: () -> Unit, text: String = "") {
+fun CommonButton(onClick: () -> Unit, text: String = "", modifier: Modifier = Modifier) {
     Button(
         onClick = onClick, colors = ButtonColors(
             containerColor = AppTheme.colors.onSecondary,
             contentColor = AppTheme.colors.onSecondary,
             disabledContainerColor = AppTheme.colors.onSecondary,
             disabledContentColor = AppTheme.colors.onSecondary,
-        ), modifier = Modifier
+        ), modifier = modifier
             .height(60.dp)
             .width(70.dp)
     ) { Text(text = text, color = AppTheme.colors.onPrimary) }

@@ -7,6 +7,7 @@ sealed class MenuAction {
     data object OpenCouriers : MenuAction()
     data object OpenTrips : MenuAction()
     data object OpenAnalitic : MenuAction()
+    data object Chat: MenuAction()
     data object None : MenuAction()
 }
 

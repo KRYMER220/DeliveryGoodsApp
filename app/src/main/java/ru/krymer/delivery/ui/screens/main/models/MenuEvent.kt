@@ -8,4 +8,5 @@ sealed class MenuEvent {
     data object AnaliticClickedToOpen : MenuEvent()
     data object SignOutUser : MenuEvent()
     data object MenuActionInvoked : MenuEvent()
+    data object Chat: MenuEvent()
 }

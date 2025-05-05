@@ -36,6 +36,7 @@ class MainViewModel @Inject constructor(
             is MenuEvent.CourierClickedToOpen -> selectAction(menuAction = MenuAction.OpenCouriers)
             is MenuEvent.TripClickedToOpen -> selectAction(menuAction = MenuAction.OpenTrips)
             is MenuEvent.AnaliticClickedToOpen -> selectAction(menuAction = MenuAction.OpenAnalitic)
+            is MenuEvent.Chat -> selectAction(menuAction = MenuAction.Chat)
         }
     }
     
@@ -47,6 +48,7 @@ class MainViewModel @Inject constructor(
             MenuAction.OpenProduct -> changeState(acton = menuAction)
             MenuAction.OpenRoute -> changeState(acton = menuAction)
             MenuAction.OpenTrips -> changeState(acton = menuAction)
+            MenuAction.Chat -> changeState(acton = menuAction)
         }
     }
     

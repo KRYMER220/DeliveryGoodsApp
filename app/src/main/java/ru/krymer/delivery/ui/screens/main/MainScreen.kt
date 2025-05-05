@@ -58,18 +58,22 @@ fun MenuScreen(
                             .size(40.dp))
                 }
                 Spacer(modifier = Modifier.padding(20.dp))
-                MenuView(onRouteClick = {
+                MenuView(
+                    openRoutes = {
                     menuViewModel.obtainEvent(MenuEvent.RouteClickedToOpen)
-                }, onProductClick = {
+                }, openProducts = {
                     menuViewModel.obtainEvent(MenuEvent.ProductClickedToOpen)
-                }, onCourierClick = {
+                }, openCouriers = {
                     menuViewModel.obtainEvent(MenuEvent.CourierClickedToOpen)
-                }, onTripClick = {
+                }, openTrips = {
                     menuViewModel.obtainEvent(MenuEvent.TripClickedToOpen)
-                }, onAnaliticClick = {
+                }, openAnalitic = {
                     menuViewModel.obtainEvent(MenuEvent.AnaliticClickedToOpen)
-                }, sharedViewModel = sharedViewModel, sharedViewState = sharedViewState,
-                    user = user
+                }, sharedViewModel = sharedViewModel,
+                    user = user,
+                    openChat = {
+                        menuViewModel.obtainEvent(MenuEvent.Chat)
+                    }
                 )
                 Box(modifier = Modifier.fillMaxSize()) {
                     Text(
@@ -105,6 +109,10 @@ fun MenuScreen(
 
                 is MenuAction.OpenAnalitic -> {
                     navController.navigate(NavigationTree.Analitic.name)
+                }
+
+                is MenuAction.Chat -> {
+                    navController.navigate(NavigationTree.Chat.name)
                 }
             }
         }

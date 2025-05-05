@@ -22,7 +22,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -37,6 +36,8 @@ import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
 import ru.krymer.delivery.ui.navigation.NavigationTree
 import ru.krymer.delivery.ui.screens.analitic.AnaliticScreen
 import ru.krymer.delivery.ui.screens.analitic.AnaliticViewModel
+import ru.krymer.delivery.ui.screens.chat.ChatScreen
+import ru.krymer.delivery.ui.screens.chat.ChatViewModel
 import ru.krymer.delivery.ui.screens.client.ClientShopScreen
 import ru.krymer.delivery.ui.screens.client.ClientViewModel
 import ru.krymer.delivery.ui.screens.courier.CourierScreen
@@ -188,6 +189,12 @@ fun ApplicationScreen(
                     navController = navController
                 )
                 sharedViewModel.saveCurrentNavRoute(NavigationTree.Analitic.name)
+            }
+
+            composable(NavigationTree.Chat.name) {
+                val chatViewModel = hiltViewModel<ChatViewModel>()
+                ChatScreen(viewModel = chatViewModel, navController = navController)
+                sharedViewModel.saveCurrentNavRoute(NavigationTree.Chat.name)
             }
         }
     }

@@ -18,17 +18,16 @@ import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
-import ru.krymer.delivery.ui.screens.shared.models.SharedViewState
 import ru.krymer.delivery.ui.theme.AppTheme
 
 @Composable
 fun MenuView(
-    onRouteClick: () -> Unit,
-    onProductClick: () -> Unit,
-    onCourierClick: () -> Unit,
-    onTripClick: () -> Unit,
-    onAnaliticClick: () -> Unit,
-    sharedViewState: SharedViewState,
+    openRoutes: () -> Unit,
+    openProducts: () -> Unit,
+    openCouriers: () -> Unit,
+    openTrips: () -> Unit,
+    openAnalitic: () -> Unit,
+    openChat: () -> Unit,
     sharedViewModel: SharedViewModel,
     user: UserModel
 ) {
@@ -42,7 +41,7 @@ fun MenuView(
         )
         Spacer(modifier = Modifier.height(10.dp))
         Button(
-            onClick = onTripClick, shape = RoundedCornerShape(10.dp), modifier = Modifier
+            onClick = openTrips, shape = RoundedCornerShape(10.dp), modifier = Modifier
                 .fillMaxWidth()
                 .height(60.dp),
             colors = ButtonDefaults.buttonColors(
@@ -58,7 +57,7 @@ fun MenuView(
         if (sharedViewModel.initSysAdmMod()) {
             Spacer(modifier = Modifier.height(20.dp))
             Button(
-                onClick = onRouteClick, shape = RoundedCornerShape(10.dp), modifier = Modifier
+                onClick = openRoutes, shape = RoundedCornerShape(10.dp), modifier = Modifier
                     .fillMaxWidth()
                     .height(60.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -75,7 +74,7 @@ fun MenuView(
         if (sharedViewModel.initSysAdm()) {
             Spacer(modifier = Modifier.height(10.dp))
             Button(
-                onClick = onProductClick, shape = RoundedCornerShape(10.dp), modifier = Modifier
+                onClick = openProducts, shape = RoundedCornerShape(10.dp), modifier = Modifier
                     .fillMaxWidth()
                     .height(60.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -90,7 +89,7 @@ fun MenuView(
             }
             Spacer(modifier = Modifier.height(10.dp))
             Button(
-                onClick = onCourierClick, shape = RoundedCornerShape(10.dp), modifier = Modifier
+                onClick = openCouriers, shape = RoundedCornerShape(10.dp), modifier = Modifier
                     .fillMaxWidth()
                     .height(60.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -105,7 +104,7 @@ fun MenuView(
             }
             Spacer(modifier = Modifier.height(10.dp))
             Button(
-                onClick = onAnaliticClick, shape = RoundedCornerShape(10.dp), modifier = Modifier
+                onClick = openAnalitic, shape = RoundedCornerShape(10.dp), modifier = Modifier
                     .fillMaxWidth()
                     .height(60.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -114,6 +113,23 @@ fun MenuView(
             ) {
                 Text(
                     text = stringResource(id = R.string.analitic), style = TextStyle(
+                        color = AppTheme.colors.onPrimary
+                    ), fontSize = 20.sp
+                )
+            }
+        }
+        if (sharedViewModel.initSys()) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Button(
+                onClick = openChat, shape = RoundedCornerShape(10.dp), modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppTheme.colors.onSecondary
+                )
+            ) {
+                Text(
+                    text = stringResource(id = R.string.chat), style = TextStyle(
                         color = AppTheme.colors.onPrimary
                     ), fontSize = 20.sp
                 )
