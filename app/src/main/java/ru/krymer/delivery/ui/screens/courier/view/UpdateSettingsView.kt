@@ -39,7 +39,7 @@ fun UpdateSettingsView(
                 placeholder = stringResource(
                     id = R.string.salary
                 ),
-                onVC = {
+                changerText = {
                     salary = it
                     errorSalary = when {
                        it == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
@@ -63,7 +63,7 @@ fun UpdateSettingsView(
                 placeholder = stringResource(
                     id = R.string.km_price
                 ),
-                onVC = {
+                changerText = {
 
                     priceMillage = it
                     errorPrice = when {

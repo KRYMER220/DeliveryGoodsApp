@@ -3,6 +3,7 @@ package ru.krymer.delivery.ui.screens.shop.views
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -42,88 +43,84 @@ fun InfoContent(viewState: ShopViewState, onUpdate: () -> Unit) {
         val count = viewState.allCountRequestsInfo.collectAsState().value
         val exchange = viewState.allExchangeRequestsInfo.collectAsState().value
         val requests = viewState.listInfoRequests.collectAsState().value
-
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            Image(
-                painter = painterResource(id = R.drawable.folow),
-                contentDescription = "clip",
-                modifier = Modifier
-                    .clickable(onClick = {
-                        onUpdate()
-                    })
-                    .size(40.dp)
-            )
-        }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(5.dp)
-        ) {
-            Text(
-                style = MaterialTheme.typography.labelSmall,
-                text = "Продукт",
-                fontSize = 12.sp,
-                color = AppTheme.colors.onSecondary,
-                modifier = Modifier.weight(0.2f),
-            )
-            Text(
-                style = MaterialTheme.typography.labelSmall,
-                text = "Цена",
-                fontSize = 12.sp,
-                color = AppTheme.colors.onSecondary,
-                modifier = Modifier.weight(0.2f),
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                style = MaterialTheme.typography.labelSmall,
-                text = "Бонус",
-                fontSize = 12.sp,
-                color = AppTheme.colors.onSecondary,
-                modifier = Modifier.weight(0.2f),
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                style = MaterialTheme.typography.labelSmall,
-                text = "Заявка",
-                fontSize = 12.sp,
-                color = AppTheme.colors.onSecondary,
-                modifier = Modifier.weight(0.2f),
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                style = MaterialTheme.typography.labelSmall,
-                text = "Возврат",
-                fontSize = 12.sp,
-                color = AppTheme.colors.onSecondary,
-                modifier = Modifier.weight(0.2f),
-                textAlign = TextAlign.Center,
-            )
-        }
-
-        LazyColumn(horizontalAlignment = Alignment.CenterHorizontally) {
-            items(requests) { product ->
-                InfoContentProductItem(product = product)
+        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Image(
+                    painter = painterResource(id = R.drawable.folow),
+                    contentDescription = "clip",
+                    modifier = Modifier
+                        .clickable(onClick = {
+                            onUpdate()
+                        })
+                        .size(40.dp)
+                )
             }
-        }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(5.dp)
+            ) {
+                Spacer(
+                    modifier = Modifier.weight(0.2f),
+                )
+                Text(
+                    style = AppTheme.typography.titleMedium,
+                    text = "Цена",
+                    fontSize = 14.sp,
+                    color = AppTheme.colors.onSecondary,
+                    modifier = Modifier.weight(0.2f),
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    style = AppTheme.typography.titleMedium,
+                    text = "Бонус",
+                    fontSize = 14.sp,
+                    color = AppTheme.colors.onSecondary,
+                    modifier = Modifier.weight(0.2f),
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    style = AppTheme.typography.titleMedium,
+                    text = "Заявка",
+                    fontSize = 14.sp,
+                    color = AppTheme.colors.onSecondary,
+                    modifier = Modifier.weight(0.2f),
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    style = AppTheme.typography.titleMedium,
+                    text = "Возврат",
+                    fontSize = 14.sp,
+                    color = AppTheme.colors.onSecondary,
+                    modifier = Modifier.weight(0.2f),
+                    textAlign = TextAlign.Center,
+                )
+            }
 
-        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                style = MaterialTheme.typography.labelSmall,
-                text = "Общее: $count",
-                fontSize = 20.sp,
-                color = AppTheme.colors.onSecondary
-            )
-            Spacer(modifier = Modifier.height(5.dp))
-            Text(
-                style = MaterialTheme.typography.labelSmall,
-                text = "Обмены: $exchange",
-                fontSize = 20.sp,
-                color = AppTheme.colors.onSecondary
-            )
-        }
+            LazyColumn(horizontalAlignment = Alignment.CenterHorizontally) {
+                items(requests) { product ->
+                    InfoContentProductItem(product = product)
+                }
+            }
 
-        Spacer(modifier = Modifier.height(10.dp))
+            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    style = AppTheme.typography.titleMedium,
+                    text = "Общее: $count",
+                    fontSize = 18.sp,
+                    color = AppTheme.colors.onSecondary
+                )
+                Spacer(modifier = Modifier.height(5.dp))
+                Text(
+                    style = AppTheme.typography.titleMedium,
+                    text = "Обмены: $exchange",
+                    fontSize = 18.sp,
+                    color = AppTheme.colors.onSecondary
+                )
+            }
+            Spacer(modifier = Modifier.height(20.dp))
+        }
     } else {
         Box(modifier = Modifier.fillMaxSize()) {
             CircularProgressIndicator(
@@ -139,61 +136,54 @@ fun InfoContent(viewState: ShopViewState, onUpdate: () -> Unit) {
 
 @Composable
 fun InfoContentProductItem(product: RequestModel) {
-    Box(
+    Row(
         modifier = Modifier
+            .fillMaxWidth()
             .padding(5.dp)
-            .height(30.dp)
-            .wrapContentHeight()
-            .background(color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp))
+            .background(color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        Text(
+            style = AppTheme.typography.titleSmall,
+            text = product.name,
+            fontSize = 14.sp,
             modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.CenterStart),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                style = MaterialTheme.typography.labelSmall,
-                text = product.name,
-                fontSize = 14.sp,
-                modifier = Modifier
-                    .weight(0.2f)
-                    .padding(start = 3.dp),
-                color = AppTheme.colors.onSecondary
-            )
-            Text(
-                style = MaterialTheme.typography.labelSmall,
-                text = "${product.price}",
-                fontSize = 14.sp,
-                textAlign = TextAlign.Center,
-                color = AppTheme.colors.onSecondary,
-                modifier = Modifier.weight(0.2f)
-            )
-            Text(
-                style = MaterialTheme.typography.labelSmall,
-                text = "${product.bonus}",
-                fontSize = 14.sp,
-                textAlign = TextAlign.Center,
-                color = AppTheme.colors.onSecondary,
-                modifier = Modifier.weight(0.2f)
-            )
-            Text(
-                style = MaterialTheme.typography.labelSmall,
-                text = "${product.count}",
-                fontSize = 14.sp,
-                textAlign = TextAlign.Center,
-                color = AppTheme.colors.onSecondary,
-                modifier = Modifier.weight(0.2f)
-            )
-            Text(
-                style = MaterialTheme.typography.labelSmall,
-                text = "${product.exchange}",
-                fontSize = 14.sp,
-                textAlign = TextAlign.Center,
-                color = AppTheme.colors.onSecondary,
-                modifier = Modifier.weight(0.2f)
-            )
-        }
+                .padding(5.dp)
+                .weight(0.2f),
+            color = AppTheme.colors.onSecondary
+        )
+        Text(
+            style = AppTheme.typography.titleSmall,
+            text = "${product.price.toInt()}",
+            fontSize = 14.sp,
+            textAlign = TextAlign.Center,
+            color = AppTheme.colors.onSecondary,
+            modifier = Modifier.weight(0.2f)
+        )
+        Text(
+            style = AppTheme.typography.titleSmall,
+            text = "${product.bonus}",
+            fontSize = 14.sp,
+            textAlign = TextAlign.Center,
+            color = AppTheme.colors.onSecondary,
+            modifier = Modifier.weight(0.2f)
+        )
+        Text(
+            style = AppTheme.typography.titleSmall,
+            text = "${product.count}",
+            fontSize = 14.sp,
+            textAlign = TextAlign.Center,
+            color = AppTheme.colors.onSecondary,
+            modifier = Modifier.weight(0.2f)
+        )
+        Text(
+            style = AppTheme.typography.titleSmall,
+            text = "${product.exchange}",
+            fontSize = 14.sp,
+            textAlign = TextAlign.Center,
+            color = AppTheme.colors.onSecondary,
+            modifier = Modifier.weight(0.2f)
+        )
     }
 }
 
@@ -201,69 +191,86 @@ fun InfoContentProductItem(product: RequestModel) {
 @Composable
 fun ItemInfoShop(shop: ShopModel) {
     Column(
-        Modifier
+        modifier = Modifier
             .background(colorResource(id = R.color.tint), shape = RoundedCornerShape(15.dp))
             .fillMaxWidth()
-            .padding(10.dp)
+            .padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
         val sumDept = shop.listRequest.sumOf { it.price * it.count - it.price * it.exchange }
         Text(
-            style = MaterialTheme.typography.labelSmall,
+            style = AppTheme.typography.titleMedium,
             text = convertToTextDate(shop.date),
-            fontSize = 12.sp,
+            fontSize = 14.sp,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
             color = AppTheme.colors.onSecondary
         )
-        Spacer(modifier = Modifier.height(5.dp))
+
         Text(
-            style = MaterialTheme.typography.labelSmall,
+            style = AppTheme.typography.titleMedium,
             text = shop.nameShop,
-            fontSize = 12.sp,
+            fontSize = 14.sp,
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
-        Spacer(modifier = Modifier.height(5.dp))
+
         Text(
-            style = MaterialTheme.typography.labelSmall,
-            text = "Пред. реал: " + shop.arrears,
-            fontSize = 12.sp,
+            style = AppTheme.typography.titleMedium,
+            text = "Пред. реал: " + shop.arrears.toInt(),
+            fontSize = 14.sp,
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
-        Spacer(modifier = Modifier.height(5.dp))
+
         Text(
-            style = MaterialTheme.typography.labelSmall,
-            text = "Заявка: " + sumDept,
-            fontSize = 12.sp,
+            style = AppTheme.typography.titleMedium,
+            text = "Заявка: " + sumDept.toInt(),
+            fontSize = 14.sp,
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
-        Spacer(modifier = Modifier.height(5.dp))
+
         Text(
-            style = MaterialTheme.typography.labelSmall,
-            text = "Доп. сумма: " + shop.addSum,
-            fontSize = 12.sp,
+            style = AppTheme.typography.titleMedium,
+            text = "Доп. сумма: " + shop.addSum.toInt(),
+            fontSize = 14.sp,
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
-        Spacer(modifier = Modifier.height(5.dp))
+
         Text(
-            style = MaterialTheme.typography.labelSmall,
-            text = "Нал: " + shop.cash,
-            fontSize = 12.sp,
+            style = AppTheme.typography.titleMedium,
+            text = "Нал: " + shop.cash.toInt(),
+            fontSize = 14.sp,
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
-        Spacer(modifier = Modifier.height(5.dp))
+
         Text(
-            style = MaterialTheme.typography.labelSmall,
-            text = "Без/Нал: " + shop.noCash,
+            style = AppTheme.typography.titleMedium,
+            text = "Без/Нал: " + shop.noCash.toInt(),
+            fontSize = 14.sp,
+            modifier = Modifier.fillMaxWidth(),
+            color = AppTheme.colors.onSecondary
+        )
+
+        Text(
+            style = AppTheme.typography.titleSmall,
+            text = "Получено: " + (shop.cash + shop.noCash).toInt(),
             fontSize = 12.sp,
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
-        Spacer(modifier = Modifier.height(5.dp))
+
+        Text(
+            style = AppTheme.typography.titleSmall,
+            text = "Новый долг: " + (shop.arrears - (shop.cash + shop.noCash) + sumDept).toInt(),
+            fontSize = 12.sp,
+            modifier = Modifier.fillMaxWidth(),
+            color = AppTheme.colors.onSecondary
+        )
+
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -272,13 +279,26 @@ fun ItemInfoShop(shop: ShopModel) {
             Box(
                 modifier = Modifier
                     .weight(0.40f)
-            ) {
-                Text(
-                    style = MaterialTheme.typography.labelSmall,
-                    text = "Товар",
-                    fontSize = 12.sp,
-                    color = AppTheme.colors.onSecondary
-                )
+            ) {}
+            if (shop.isBonus) {
+                Box(
+                    modifier = Modifier
+                        .weight(0.20f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        style = AppTheme.typography.titleSmall,
+                        text = "Бонус",
+                        fontSize = 12.sp,
+                        modifier = Modifier.align(Alignment.Center),
+                        color = AppTheme.colors.onSecondary
+                    )
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .weight(0.20f)
+                ) {}
             }
             Box(
                 modifier = Modifier
@@ -286,20 +306,7 @@ fun ItemInfoShop(shop: ShopModel) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    style = MaterialTheme.typography.labelSmall,
-                    text = "Бонус",
-                    fontSize = 12.sp,
-                    modifier = Modifier.align(Alignment.Center),
-                    color = AppTheme.colors.onSecondary
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .weight(0.20f),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    style = MaterialTheme.typography.labelSmall,
+                    style = AppTheme.typography.titleSmall,
                     text = "Заявка",
                     fontSize = 12.sp,
                     modifier = Modifier.align(Alignment.Center),
@@ -312,7 +319,7 @@ fun ItemInfoShop(shop: ShopModel) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    style = MaterialTheme.typography.labelSmall,
+                    style = AppTheme.typography.titleSmall,
                     text = "Обмен",
                     fontSize = 12.sp,
                     modifier = Modifier.align(Alignment.Center),
@@ -325,7 +332,9 @@ fun ItemInfoShop(shop: ShopModel) {
             modifier =
             Modifier
                 .fillMaxWidth()
-                .heightIn(max = 200.dp)
+                .wrapContentHeight()
+                .heightIn(max = 1000.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             items(shop.listRequest) { request ->
                 RequestInfoItem(request)
@@ -340,6 +349,7 @@ fun RequestInfoItem(requestModel: RequestModel) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
+                .background(AppTheme.colors.secondary, shape = RoundedCornerShape(5.dp))
                 .fillMaxWidth()
         ) {
             Box(
@@ -347,9 +357,9 @@ fun RequestInfoItem(requestModel: RequestModel) {
                     .weight(0.40f)
             ) {
                 Text(
-                    style = MaterialTheme.typography.labelSmall,
+                    style = AppTheme.typography.titleSmall,
                     text = requestModel.name,
-                    fontSize = 12.sp,
+                    fontSize = 14.sp,
                     color = AppTheme.colors.onSecondary
                 )
             }
@@ -359,9 +369,9 @@ fun RequestInfoItem(requestModel: RequestModel) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    style = MaterialTheme.typography.labelSmall,
-                    text = "${requestModel.bonus}",
-                    fontSize = 12.sp,
+                    style = AppTheme.typography.titleSmall,
+                    text = if (requestModel.bonus != 0) "${requestModel.bonus}" else "",
+                    fontSize = 14.sp,
                     modifier = Modifier.align(Alignment.Center),
                     color = AppTheme.colors.onSecondary
                 )
@@ -372,9 +382,9 @@ fun RequestInfoItem(requestModel: RequestModel) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    style = MaterialTheme.typography.labelSmall,
-                    text = "${requestModel.count}",
-                    fontSize = 12.sp,
+                    style = AppTheme.typography.titleSmall,
+                    text = if (requestModel.count != 0) "${requestModel.count}" else "",
+                    fontSize = 14.sp,
                     modifier = Modifier.align(Alignment.Center),
                     color = AppTheme.colors.onSecondary
                 )
@@ -385,9 +395,9 @@ fun RequestInfoItem(requestModel: RequestModel) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    style = MaterialTheme.typography.labelSmall,
-                    text = "${requestModel.exchange}",
-                    fontSize = 12.sp,
+                    style = AppTheme.typography.titleSmall,
+                    text = if (requestModel.exchange != 0) "${requestModel.exchange}" else "",
+                    fontSize = 14.sp,
                     modifier = Modifier.align(Alignment.Center),
                     color = AppTheme.colors.onSecondary
                 )
@@ -398,13 +408,12 @@ fun RequestInfoItem(requestModel: RequestModel) {
 
 
 @Composable
-fun InfoShopContent(viewState: ShopViewState) {
-    if (viewState.stateInfoShopIsDataLoad) {
-        val listShop = viewState.listInfoShop.collectAsState().value
+fun InfoShopContent(viewState: ShopViewState, modifier: Modifier = Modifier.fillMaxWidth()) {
+    val listShop = viewState.listInfoShop.collectAsState().value
+    if (listShop.isNotEmpty()) {
         LazyColumn(
             modifier =
-            Modifier
-                .fillMaxWidth()
+            modifier
         ) {
             items(listShop) { shop ->
                 ItemInfoShop(shop)

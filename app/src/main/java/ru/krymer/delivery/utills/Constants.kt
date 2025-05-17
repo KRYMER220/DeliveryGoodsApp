@@ -2,6 +2,21 @@ package ru.krymer.delivery.utills
 
 class Constants {
 
+
+    object MENU {
+        const val ROUTE = "Маршруты"
+        const val TRIP = "Рейсы"
+        const val PRODUCT = "Товары"
+        const val COURIER = "Курьеры"
+        const val ANALITIC = "Аналитика"
+    }
+
+    object KEYS {
+        const val COURIER_FILTER = "courier"
+        const val FONT = "font"
+        const val ROUTE = "route"
+    }
+
     object PatternDate {
         const val DEFAULT = "dd.MM.yyyy"
         const val FULL = "dd-MM-yyyy\nHH:mm:ss"
@@ -14,6 +29,7 @@ class Constants {
 
     object ID {
         const val ID = "id"
+        const val ID_CLIENT = "idClient"
         const val ID_FACTORY = "idFactory"
         const val ID_ROUTE = "idRoute"
         const val ID_TRIP = "idTrip"

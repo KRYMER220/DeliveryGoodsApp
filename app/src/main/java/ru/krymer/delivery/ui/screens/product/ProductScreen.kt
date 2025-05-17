@@ -108,9 +108,9 @@ fun ProductScreen(
     }
 
     if (viewState.showUpdateSheetDialog) {
-        CommonUpdateDialog(isVisible = true, onDismiss = {
+        CommonUpdateDialog(isVisible = true, dismiss = {
             viewModel.obtainEvent(ProductEvent.DismissUpdateDialog)
-        }, onConfirm = {
+        }, confirm = {
             viewModel.obtainEvent(ProductEvent.ProductUpdateAction)
         }, content = {
             UpdateProductView(viewState = viewState, changeName = {

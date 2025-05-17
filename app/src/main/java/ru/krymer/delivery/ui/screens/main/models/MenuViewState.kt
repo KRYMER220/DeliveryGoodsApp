@@ -1,6 +1,5 @@
 package ru.krymer.delivery.ui.screens.main.models
 
-
 sealed class MenuAction {
     data object OpenRoute : MenuAction()
     data object OpenProduct : MenuAction()

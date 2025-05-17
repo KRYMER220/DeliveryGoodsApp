@@ -1,4 +1,4 @@
-package ru.krymer.delivery.data
+package ru.krymer.delivery.di
 
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
@@ -7,7 +7,6 @@ import okhttp3.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import ru.krymer.delivery.data.api.UserApi
-import ru.krymer.delivery.di.BASE_URL
 import javax.inject.Inject
 
 class AuthInterceptor @Inject constructor(

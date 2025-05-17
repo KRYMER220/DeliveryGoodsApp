@@ -65,7 +65,7 @@ fun UpdateClientView(
             placeholder = stringResource(
                 id = R.string.name
             ),
-            onVC = { str ->
+            changerText = { str ->
                 name = str
                 errorName = when {
                     str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
@@ -88,7 +88,7 @@ fun UpdateClientView(
             placeholder = stringResource(
                 id = R.string.arrears
             ),
-            onVC = { str ->
+            changerText = { str ->
                 arrears = str
                 errorArrears = when {
                     !startsWithDigit(str) -> Error(visible = true, error = Constants.ERROR.ERROR_NUMBER_INPUT)
@@ -111,7 +111,7 @@ fun UpdateClientView(
             placeholder = stringResource(
                 id = R.string.phone
             ),
-            onVC = { str ->
+            changerText = { str ->
                 phone = str
                 errorPhone = when {
                     !isValidPhone(str) -> Error(visible = true, error = Constants.ERROR.PHONE)
@@ -134,7 +134,7 @@ fun UpdateClientView(
             placeholder = stringResource(
                 id = R.string.cords
             ),
-            onVC = { str ->
+            changerText = { str ->
                 cords = str
                 errorCords = when {
                     !isValidCords(str) -> Error(visible = true, error = Constants.ERROR.CORD)

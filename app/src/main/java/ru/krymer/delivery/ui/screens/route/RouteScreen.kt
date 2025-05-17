@@ -123,9 +123,9 @@ fun RouteScreen(
     }
 
     if (viewState.isDialogUpdate) {
-        CommonUpdateDialog(isVisible = true, onDismiss = {
+        CommonUpdateDialog(isVisible = true, dismiss = {
             viewModel.obtainEvent(RouteEvent.DismissUpdateDialog)
-        }, onConfirm = {
+        }, confirm = {
             viewModel.obtainEvent(RouteEvent.RouteUpdateAction)
         }, content = {
             UpdateRouteView(viewState = viewState, changeName = {

@@ -1,5 +1,6 @@
 package ru.krymer.delivery.ui.screens.login.views
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,83 +28,74 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.R
+import ru.krymer.delivery.data.model.utilModel.Error
 import ru.krymer.delivery.ui.components.AuthField
 import ru.krymer.delivery.ui.screens.login.models.LoginViewState
+import ru.krymer.delivery.ui.screens.main.views.MenuButton
+import ru.krymer.delivery.utills.Constants
+import ru.krymer.delivery.utills.isValidEmail
+import java.nio.file.WatchEvent
+import kotlin.compareTo
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun SignInView(
     viewState: LoginViewState,
-    onEmailChange: (String) -> Unit,
-    onPassChange: (String) -> Unit,
+    changeEmail: (String) -> Unit,
+    changePass: (String) -> Unit,
     onSignIn: () -> Unit
 ) {
     var email by remember {
         mutableStateOf(viewState.emailValue)
     }
 
-    var password by remember {
+    var pass by remember {
         mutableStateOf(viewState.passValue)
     }
+    var errorEmail by remember { mutableStateOf(Error()) }
+    var errorPass by remember { mutableStateOf(Error()) }
 
-    Column {
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         AuthField(
             value = email,
             placeholder = stringResource(id = R.string.email_hint),
-            onVC = {
+            changerText = {
                 email = it
-                onEmailChange(it)
+                errorEmail = when {
+                    it == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
+                    !isValidEmail(it) -> Error(visible = true, error = Constants.ERROR.EMAIL_INVALID)
+                    else -> {
+                        changeEmail(it)
+                        Error()
+                    }
+                }
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp),
-            isError = viewState.isErrorEmail,
-            errorValue = viewState.valueErrorEmail,
+            isError = errorEmail.visible,
+            errorValue = errorEmail.error,
             enabled = !viewState.isLoginProgress,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
         )
-        Spacer(modifier = Modifier.padding(top = 10.dp))
-
         AuthField(
-            value = password,
+            value = pass,
             placeholder = stringResource(id = R.string.pass_hint),
-            onVC = {
-                password = it
-                onPassChange(it)
+            changerText = {
+                pass = it
+                errorPass = when {
+                    it == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
+                    it.length < 8 -> Error(visible = true, error = Constants.ERROR.PASS_INVALID)
+                    else -> {
+                        changePass(it)
+                        Error()
+                    }
+                }
             },
-            isError = viewState.isErrorPass,
-            errorValue = viewState.valueErrorPass,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp),
+            isError = errorPass.visible,
+            errorValue = errorPass.error,
             enabled = !viewState.isLoginProgress,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             visualTransformation = PasswordVisualTransformation(),
         )
-        Spacer(modifier = Modifier.padding(top = 10.dp))
-
-        Button(
-            onClick = onSignIn, shape = RoundedCornerShape(10.dp), modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp),
-            enabled = !viewState.isLoginProgress,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Black
-            )
-        ) {
-            if (viewState.isLoginProgress) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp,
-                    color = Color.White
-                )
-            } else {
-                Text(
-                    text = stringResource(id = R.string.sign_in), style = TextStyle(
-                        color = Color.White
-                    ), fontSize = 20.sp
-                )
-            }
-        }
+        MenuButton(routeTo = onSignIn, buttonName = stringResource(id = R.string.sign_in))
+        Spacer(modifier = Modifier.height(20.dp))
     }
 }

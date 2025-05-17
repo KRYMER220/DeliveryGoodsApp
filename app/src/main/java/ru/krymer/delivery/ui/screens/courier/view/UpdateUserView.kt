@@ -58,7 +58,7 @@ fun UpdateCourierView(
             placeholder = stringResource(
                 id = R.string.name
             ),
-            onVC = {
+            changerText = {
                 username = it
                 onNameChange(it)
             },
@@ -75,7 +75,7 @@ fun UpdateCourierView(
             placeholder = stringResource(
                 id = R.string.percent_double
             ),
-            onVC = {
+            changerText = {
                 percent = it
                 errorPercent = when {
                 it == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
@@ -100,7 +100,7 @@ fun UpdateCourierView(
             placeholder = stringResource(
                 id = R.string.salary
             ),
-            onVC = {
+            changerText = {
                 salary = it
                 errorSalary = when {
                     it == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)

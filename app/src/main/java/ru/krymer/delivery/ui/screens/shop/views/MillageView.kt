@@ -33,19 +33,19 @@ fun MillageAndInfoView(
     viewState: ShopViewState, onMillageTFC: (String) -> Unit
 ) {
     if (viewState.isDataShopForCourierLoad) {
-        val millage = viewState.millage.collectAsState().value
-        var millageInput by remember { mutableStateOf(if (millage == 0.0) "" else "$millage") }
-        val cash = viewState.cash.collectAsState().value
-        val noCash = viewState.noCash.collectAsState().value
-        val remains = viewState.remains.collectAsState().value
-        val allMoney = viewState.allMoney.collectAsState().value
-        val salary = viewState.salary.collectAsState().value
+        val millage = viewState.millage.collectAsState().value.toInt()
+        var millageInput by remember { mutableStateOf(if (millage == 0) "" else "$millage") }
+        val cash = viewState.cash.collectAsState().value.toInt()
+        val noCash = viewState.noCash.collectAsState().value.toInt()
+        val remains = viewState.remains.collectAsState().value.toInt()
+        val allMoney = viewState.allMoney.collectAsState().value.toInt()
+        val salary = viewState.salary.collectAsState().value.toInt()
 
         Column {
             CommonTextField(
                 value = millageInput,
                 placeholder = stringResource(id = R.string.km_et),
-                onVC = { newValue ->
+                changerText = { newValue ->
                     millageInput = newValue
                     onMillageTFC(newValue)
                 },
@@ -56,49 +56,50 @@ fun MillageAndInfoView(
             )
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                style = MaterialTheme.typography.labelSmall,
+                style = AppTheme.typography.titleMedium,
                 text = "ГСМ: $millageInput км",
                 fontSize = 20.sp,
                 color = AppTheme.colors.onSecondary
             )
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                style = MaterialTheme.typography.labelSmall,
+                style = AppTheme.typography.titleMedium,
                 text = "Зарплата: $salary",
                 fontSize = 20.sp,
                 color = AppTheme.colors.onSecondary
             )
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                style = MaterialTheme.typography.labelSmall,
-                text = "Зарплата(фикс): ${viewState.currentTrip?.salary}",
+                style = AppTheme.typography.titleMedium,
+                text = "Остаток: $remains",
                 fontSize = 20.sp,
                 color = AppTheme.colors.onSecondary
             )
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                style = MaterialTheme.typography.labelSmall, text = "Нал: $cash",
-                fontSize = 20.sp,
-                color = AppTheme.colors.onSecondary
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                style = MaterialTheme.typography.labelSmall,
-                text = "Без/нал: $noCash",
-                fontSize = 20.sp,
-                color = AppTheme.colors.onSecondary
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                style = MaterialTheme.typography.labelSmall,
+                style = AppTheme.typography.titleMedium,
                 text = "Общая: $allMoney",
                 fontSize = 20.sp,
                 color = AppTheme.colors.onSecondary
             )
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                style = MaterialTheme.typography.labelSmall,
-                text = "Остаток: $remains",
+                style = AppTheme.typography.titleMedium,
+                text = "Нал: $cash",
+                fontSize = 20.sp,
+                color = AppTheme.colors.onSecondary
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                style = AppTheme.typography.titleMedium,
+                text = "Без/нал: $noCash",
+                fontSize = 20.sp,
+                color = AppTheme.colors.onSecondary
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                style = AppTheme.typography.titleMedium,
+                text = "Зарплата(фикс): ${viewState.currentTrip?.salary?.toInt()}",
                 fontSize = 20.sp,
                 color = AppTheme.colors.onSecondary
             )

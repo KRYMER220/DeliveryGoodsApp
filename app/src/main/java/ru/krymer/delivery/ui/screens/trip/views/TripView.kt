@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,8 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -27,77 +26,50 @@ import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
-import ru.krymer.delivery.ui.screens.trip.models.TripViewState
 import ru.krymer.delivery.ui.theme.AppTheme
 import ru.krymer.delivery.utills.convertToTextDate
 
-@Composable
-fun TripView(
-    viewState: TripViewState,
-    onItemLongClicked: (TripModel) -> Unit,
-    onItemDelete: (TripModel) -> Unit,
-    onItemClick: (TripModel) -> Unit,
-    sharedViewModel: SharedViewModel
-) {
-    LazyColumn {
-        items(viewState.listTrip.value) { trip ->
-            TripItem(
-                trip = trip,
-                onItemLongClicked = onItemLongClicked,
-                onItemDelete = onItemDelete,
-                onItemClick = onItemClick,
-                sharedViewModel = sharedViewModel
-            )
-            Spacer(modifier = Modifier.padding(bottom = 10.dp))
-        }
-    }
-}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TripItem(
     trip: TripModel,
-    onItemLongClicked: (TripModel) -> Unit,
-    onItemDelete: (TripModel) -> Unit,
-    onItemClick: (TripModel) -> Unit,
+    updateTrip: (TripModel) -> Unit,
+    deleteTrip: (TripModel) -> Unit,
+    routeToTrip: (TripModel) -> Unit,
     sharedViewModel: SharedViewModel
 ) {
     Box(
         modifier = Modifier
-            .combinedClickable(onLongClick = { onItemLongClicked(trip) },
-                onClick = { onItemClick(trip) })
+            .combinedClickable(onLongClick = { updateTrip(trip) },
+                onClick = { routeToTrip(trip) })
             .background(
-                color = AppTheme.colors.secondary, shape = RoundedCornerShape(16.dp)
+                color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)
             )
-            .padding(15.dp)
+            .padding(10.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically
         ) {
             Column(
                 Modifier
                     .align(Alignment.CenterVertically)
-                    .weight(1f)
-                    .padding(end = 8.dp)
+                    .weight(1f),
+                verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 Text(
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = AppTheme.typography.titleMedium,
                     text = trip.nameRoute,
-                    fontSize = 20.sp,
                     color = AppTheme.colors.onSecondary
                 )
-                Spacer(modifier = Modifier.height(5.dp))
                 Text(
-                    style = MaterialTheme.typography.labelLarge,
+                    style = AppTheme.typography.titleSmall,
                     text = convertToTextDate(trip.date),
-                    fontSize = 16.sp,
                     color = AppTheme.colors.onSecondary
                 )
-                Spacer(modifier = Modifier.height(5.dp))
                 Text(
-                    style = MaterialTheme.typography.labelLarge,
+                    style = AppTheme.typography.titleSmall,
                     text = trip.nameCourier,
-                    fontSize = 16.sp,
                     color = AppTheme.colors.onSecondary
                 )
             }
@@ -107,8 +79,7 @@ fun TripItem(
                     painter = painterResource(id = R.drawable.delete),
                     modifier = Modifier
                         .size(40.dp)
-                        .clickable(onClick = { onItemDelete(trip) })
-                        .align(Alignment.CenterVertically)
+                        .clickable(onClick = { deleteTrip(trip) })
                 )
             }
         }

@@ -32,7 +32,7 @@ fun UpdateRouteView(
                 placeholder = stringResource(
                     id = R.string.name
                 ),
-                onVC = { str ->
+                changerText = { str ->
                     name = str
                     errorName = when {
                         str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)

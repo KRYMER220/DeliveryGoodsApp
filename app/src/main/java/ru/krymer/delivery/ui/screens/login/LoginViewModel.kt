@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ru.krymer.delivery.common.EventHandler
-import ru.krymer.delivery.data.TokenManager
+import ru.krymer.delivery.di.TokenManager
 import ru.krymer.delivery.data.api.UserApi
 import ru.krymer.delivery.data.request.SignInRequest
 import ru.krymer.delivery.ui.screens.login.models.LoginEvent

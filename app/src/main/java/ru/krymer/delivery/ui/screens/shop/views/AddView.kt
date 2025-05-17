@@ -1,5 +1,6 @@
 package ru.krymer.delivery.ui.screens.shop.views
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -34,9 +36,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.android.play.core.integrity.v
+import ru.krymer.delivery.R
+import ru.krymer.delivery.data.model.MessageModel
 import ru.krymer.delivery.data.model.ProductModel
 import ru.krymer.delivery.ui.components.KeyBoardDialog
 import ru.krymer.delivery.ui.screens.shop.ShopViewModel
@@ -44,6 +50,7 @@ import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
 import ru.krymer.delivery.ui.theme.AppTheme
 import ru.krymer.delivery.utills.Constants
+import ru.krymer.delivery.utills.convertToTextDate
 
 @Composable
 fun AddShopAndRequestView(
@@ -72,7 +79,8 @@ fun AddShopAndRequestView(
                     Text(
                         text = viewState.currentClient?.name ?: Constants.EMPTY.EMPTY_DATA,
                         modifier = Modifier.padding(start = 15.dp),
-                        color = AppTheme.colors.onSecondary
+                        color = AppTheme.colors.onSecondary,
+                        style = AppTheme.typography.titleMedium
                     )
                     Spacer(modifier = Modifier.weight(1f))
                     Icon(
@@ -88,7 +96,7 @@ fun AddShopAndRequestView(
                         }) {
                         val list = viewState.listClient.collectAsState().value
                         list.forEach {
-                            DropdownMenuItem(text = { Text(text = it.name) }, onClick = {
+                            DropdownMenuItem(text = { Text(text = it.name, style = AppTheme.typography.titleSmall) }, onClick = {
                                 viewModel.obtainEvent(
                                     ShopEvent.DropDownSelectClient(it)
                                 )
@@ -110,10 +118,13 @@ fun AddShopAndRequestView(
                 Box(modifier = Modifier.weight(0.4f))
                 Box(
                     modifier = Modifier
+                        .clickable(onClick = {
+                            viewModel.obtainEvent(ShopEvent.SwitchBonusState)
+                        })
                         .weight(0.2f)
                 ) {
                     Text(
-                        style = MaterialTheme.typography.labelSmall,
+                        style = AppTheme.typography.titleSmall,
                         text = "Бонусы",
                         fontSize = 12.sp,
                         modifier = Modifier.align(Alignment.Center),
@@ -124,7 +135,7 @@ fun AddShopAndRequestView(
                     modifier = Modifier.weight(0.2f)
                 ) {
                     Text(
-                        style = MaterialTheme.typography.labelSmall,
+                        style = AppTheme.typography.titleSmall,
                         text = "Заявка",
                         fontSize = 12.sp,
                         modifier = Modifier.align(Alignment.Center),
@@ -148,8 +159,19 @@ fun AddShopAndRequestView(
                             )
                         )
                     },
-                        onChangeStatus = { viewModel.obtainEvent(ShopEvent.ChangeAddStatusProduct(it)) })
+                        onChangeStatus = { viewModel.obtainEvent(ShopEvent.ChangeAddStatusProduct(it)) },
+                        stateBonus = viewState.isBonusState)
                     Spacer(modifier = Modifier.height(10.dp))
+                }
+
+                item {
+                    Column(Modifier.fillMaxWidth()) {
+                        MessagesView(viewState = viewState, deleteMessage = {
+                            viewModel.obtainEvent(ShopEvent.DeleteMessage(it))
+                        })
+                        Spacer(modifier = Modifier.fillMaxWidth().height(1.dp).background(AppTheme.colors.onSecondary))
+                        InfoShopContent(viewState = viewState, modifier = Modifier.fillMaxWidth().height(500.dp))
+                    }
                 }
             }
         }
@@ -165,6 +187,35 @@ fun AddShopAndRequestView(
         }
     }
 
+}
+
+@Composable
+fun MessagesView(viewState: ShopViewState, deleteMessage: (MessageModel) -> Unit) {
+    val messages = viewState.messages.collectAsState().value
+    if (messages.isNotEmpty()) {
+        LazyColumn(modifier = Modifier.fillMaxWidth().height(300.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            items(messages) { message ->
+                MessageItem(messageModel = message, deleteMessage = deleteMessage)
+            }
+        }
+    }
+}
+
+@Composable
+fun MessageItem(messageModel: MessageModel, deleteMessage: (MessageModel) -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth().background(AppTheme.colors.secondary, shape = RoundedCornerShape(5.dp))) {
+        Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Text(text = convertToTextDate(messageModel.date), color = AppTheme.colors.error, textAlign = TextAlign.Center)
+            Image(
+                contentDescription = "delete message",
+                painter = painterResource(id = R.drawable.delete),
+                modifier = Modifier
+                    .size(40.dp)
+                    .clickable(onClick = { deleteMessage(messageModel) })
+            )
+        }
+        Text(modifier = Modifier.fillMaxWidth(), text = messageModel.text, color = AppTheme.colors.onSecondary)
+    }
 }
 
 @Composable
@@ -185,7 +236,7 @@ fun AddRequestView(
                     modifier = Modifier.weight(0.2f)
                 ) {
                     Text(
-                        style = MaterialTheme.typography.labelSmall,
+                        style = AppTheme.typography.titleSmall,
                         text = "Бонусы",
                         fontSize = 12.sp,
                         modifier = Modifier.align(Alignment.Center),
@@ -196,7 +247,7 @@ fun AddRequestView(
                     modifier = Modifier.weight(0.2f)
                 ) {
                     Text(
-                        style = MaterialTheme.typography.labelSmall,
+                        style = AppTheme.typography.titleSmall,
                         text = "Заявка",
                         fontSize = 12.sp,
                         modifier = Modifier.align(Alignment.Center),
@@ -220,7 +271,7 @@ fun AddRequestView(
                             )
                         )
                     },
-                        onChangeStatus = { viewModel.obtainEvent(ShopEvent.ChangeAddStatusProduct(it)) })
+                        onChangeStatus = { viewModel.obtainEvent(ShopEvent.ChangeAddStatusProduct(it)) } )
                     Spacer(modifier = Modifier.height(10.dp))
                 }
             }
@@ -244,6 +295,7 @@ fun ProductAddShopWithOrderItem(
     onVCCount: (String) -> Unit,
     onVCCountBonus: (String) -> Unit,
     onChangeStatus: (ProductModel) -> Unit,
+    stateBonus: Boolean = false
 ) {
 
     var count by remember {
@@ -268,7 +320,7 @@ fun ProductAddShopWithOrderItem(
                 editCount = false
                 count = it.toString()
                 onVCCount(count)
-            }, text = "Изменить заявку - " + product.name, value = count
+            }, text = "Заявка: " + product.name, value = count
             )
         }
         if (editBonus) {
@@ -280,7 +332,7 @@ fun ProductAddShopWithOrderItem(
                 editBonus = false
                 countBonus = it.toString()
                 onVCCountBonus(countBonus)
-            }, text = "Изменить бонус - " + product.name, value = countBonus
+            }, text = "Бонус: " + product.name, value = countBonus
             )
         }
     }
@@ -295,10 +347,10 @@ fun ProductAddShopWithOrderItem(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            style = MaterialTheme.typography.labelSmall,
+            style = AppTheme.typography.titleMedium,
             textAlign = TextAlign.Center,
             text = product.name,
-            fontSize = 14.sp,
+            fontSize = 16.sp,
             modifier = Modifier
                 .weight(0.4f)
                 .wrapContentHeight()
@@ -306,26 +358,28 @@ fun ProductAddShopWithOrderItem(
                 .clickable(onClick = { onChangeStatus(product) }),
             color = if (product.isAdd) Color.Red else AppTheme.colors.onSecondary
         )
-        Box(
-            modifier = Modifier
-                .clickable(onClick = {
-                    stateKeyBoard = true
-                    editBonus = true
-                })
-                .fillMaxHeight()
-                .weight(0.2f)
-                .padding(end = 5.dp)
-                .background(
-                    shape = RoundedCornerShape(10.dp), color = AppTheme.colors.secondaryVariant
+        if (stateBonus) {
+            Box(
+                modifier = Modifier
+                    .clickable(onClick = {
+                        stateKeyBoard = true
+                        editBonus = true
+                    })
+                    .fillMaxHeight()
+                    .weight(0.2f)
+                    .padding(end = 5.dp)
+                    .background(
+                        shape = RoundedCornerShape(10.dp), color = AppTheme.colors.secondaryVariant
+                    )
+            ) {
+                Text(
+                    style = AppTheme.typography.titleMedium,
+                    text = countBonus,
+                    fontSize = 16.sp,
+                    modifier = Modifier.align(Alignment.Center),
+                    color = AppTheme.colors.onSecondary
                 )
-        ) {
-            Text(
-                style = MaterialTheme.typography.labelSmall,
-                text = countBonus,
-                fontSize = 14.sp,
-                modifier = Modifier.align(Alignment.Center),
-                color = AppTheme.colors.onSecondary
-            )
+            }
         }
         Box(
             modifier = Modifier
@@ -341,9 +395,9 @@ fun ProductAddShopWithOrderItem(
                 )
         ) {
             Text(
-                style = MaterialTheme.typography.labelSmall,
+                style = AppTheme.typography.titleMedium,
                 text = count,
-                fontSize = 14.sp,
+                fontSize = 16.sp,
                 modifier = Modifier
                     .align(Alignment.Center),
                 color = AppTheme.colors.onSecondary

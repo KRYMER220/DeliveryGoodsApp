@@ -40,7 +40,7 @@ fun ForgotView(
         CommonTextField(
             value = viewState.emailValue,
             placeholder = stringResource(id = R.string.email_hint),
-            onVC = onEmailTFC,
+            changerText = onEmailTFC,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(60.dp),

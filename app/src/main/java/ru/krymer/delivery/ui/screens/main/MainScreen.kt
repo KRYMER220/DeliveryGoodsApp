@@ -68,7 +68,7 @@ fun MenuScreen(
                     menuViewModel.obtainEvent(MenuEvent.TripClickedToOpen)
                 }, onAnaliticClick = {
                     menuViewModel.obtainEvent(MenuEvent.AnaliticClickedToOpen)
-                }, sharedViewModel = sharedViewModel, sharedViewState = sharedViewState,
+                }, sharedViewModel = sharedViewModel,
                     user = user
                 )
                 Box(modifier = Modifier.fillMaxSize()) {

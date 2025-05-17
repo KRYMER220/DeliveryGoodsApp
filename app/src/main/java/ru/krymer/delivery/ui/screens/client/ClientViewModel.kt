@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.krymer.delivery.common.EventHandler
 import ru.krymer.delivery.data.api.ClientApi
-import ru.krymer.delivery.data.api.LoggerApi
 import ru.krymer.delivery.data.model.ClientModel
 import ru.krymer.delivery.data.model.RouteModel
 import ru.krymer.delivery.data.request.ClientRequest

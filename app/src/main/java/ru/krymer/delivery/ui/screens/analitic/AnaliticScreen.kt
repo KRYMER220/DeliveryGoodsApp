@@ -41,7 +41,7 @@ import ru.krymer.delivery.utills.getCurrentDayRangeTimestamps
 @ExperimentalMaterial3Api
 @Composable
 fun AnaliticScreen(
-    viewModel: AnaliticViewModel, navController: NavController, sharedViewModel: SharedViewModel
+    viewModel: AnaliticViewModel, navController: NavController
 ) {
     val viewState = viewModel.viewState.collectAsState().value
     val dateRange = viewState.dateRangeForSearch
@@ -76,8 +76,6 @@ fun AnaliticScreen(
             when (viewState.analiticAction) {
                 AnaliticAction.None -> {}
                 AnaliticAction.OpenLog -> {}
-                AnaliticAction.OpenClient -> {}
-                AnaliticAction.OpenTrip -> {}
                 else -> {
                     Text(
                         text = convertToTextDate(dateRange.first) + " - " + convertToTextDate(
@@ -95,6 +93,9 @@ fun AnaliticScreen(
                                     }
 
                                     AnaliticAction.OpenTrip -> {
+                                        viewModel.obtainEvent(AnaliticEvent.ShowDatePicker)
+                                    }
+                                    AnaliticAction.OpenClient -> {
                                         viewModel.obtainEvent(AnaliticEvent.ShowDatePicker)
                                     }
 

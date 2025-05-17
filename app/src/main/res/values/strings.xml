@@ -8,6 +8,7 @@
     <string name="close">Закрыть</string>
     <string name="add">Добавить</string>
     <string name="save">Сохранить</string>
+    <string name="confirm">Подтвердить</string>
     <string name="price">Цена</string>
     //auth
     <string name="sign_in_title">Авторизация</string>

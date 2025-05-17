@@ -1,11 +1,11 @@
-package ru.krymer.delivery.data
+package ru.krymer.delivery.di
 
 import android.content.SharedPreferences
 import ru.krymer.delivery.utills.Constants
 import javax.inject.Inject
-
-class TokenManager @Inject constructor(private val sharedPreferences: SharedPreferences) {
-
+class TokenManager @Inject constructor(
+    @EncryptedPref private val sharedPreferences: SharedPreferences
+) {
     fun getAccessToken(): String? {
         return sharedPreferences.getString(Constants.TOKEN.ACCESS, null)
     }

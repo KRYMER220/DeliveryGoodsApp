@@ -136,9 +136,9 @@ fun ClientShopScreen(
 
 
     if (viewState.isDialogUpdate) {
-        CommonUpdateDialog(isVisible = true, onDismiss = {
+        CommonUpdateDialog(isVisible = true, dismiss = {
             viewModel.obtainEvent(ClientEvent.DismissUpdateDialog)
-        }, onConfirm = {
+        }, confirm = {
             viewModel.obtainEvent(ClientEvent.ClientUpdateAction)
         }, content = {
             UpdateClientView(

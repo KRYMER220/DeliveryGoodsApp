@@ -44,7 +44,7 @@ fun AddTripView(
 ) {
     val routes = viewState.listRoute.collectAsState().value
     val couriers = viewState.listCourier.collectAsState().value
-    Column {
+    Column(modifier = Modifier.padding(5.dp)) {
         Box(modifier = Modifier
             .fillMaxWidth()
             .padding(top = 10.dp)
@@ -60,7 +60,8 @@ fun AddTripView(
                 modifier = Modifier
                     .padding(start = 15.dp)
                     .align(Alignment.Center),
-                color = AppTheme.colors.onSecondary
+                color = AppTheme.colors.onSecondary,
+                style = AppTheme.typography.titleMedium
             )
 
             if (viewState.dropDownStateDatePicker) {
@@ -82,7 +83,8 @@ fun AddTripView(
                             )
                         }
                     }) {
-                        Text(stringResource(id = R.string.ok))
+                        Text(stringResource(id = R.string.ok),
+                            style = AppTheme.typography.titleMedium)
                     }
                 }, dismissButton = {
                     TextButton(onClick = {
@@ -119,7 +121,8 @@ fun AddTripView(
                     Text(
                         text = viewState.currentRoute!!.name,
                         modifier = Modifier.padding(start = 15.dp),
-                        color = AppTheme.colors.onSecondary
+                        color = AppTheme.colors.onSecondary,
+                        style = AppTheme.typography.titleMedium
                     )
                     Spacer(modifier = Modifier.weight(1f))
                     Icon(
@@ -132,7 +135,8 @@ fun AddTripView(
                     }) {
                         val list = viewState.listRoute.collectAsState().value
                         list.forEach {
-                            DropdownMenuItem(text = { Text(text = it.name) }, onClick = {
+                            DropdownMenuItem(text = { Text(text = it.name,
+                                style = AppTheme.typography.titleSmall) }, onClick = {
                                 viewModel.obtainEvent(
                                     TripEvent.SelectDropDownRoute(it)
                                 )
@@ -180,7 +184,8 @@ fun AddTripView(
                     Text(
                         text = viewState.currentCourier!!.name,
                         modifier = Modifier.padding(start = 15.dp),
-                        color = AppTheme.colors.onSecondary
+                        color = AppTheme.colors.onSecondary,
+                        style = AppTheme.typography.titleMedium
                     )
                     Spacer(modifier = Modifier.weight(1f))
                     Icon(
@@ -194,7 +199,8 @@ fun AddTripView(
                         }) {
                         val list = viewState.listCourier.collectAsState().value
                         list.forEach {
-                            DropdownMenuItem(text = { Text(text = it.name) }, onClick = {
+                            DropdownMenuItem(text = { Text(text = it.name,
+                                style = AppTheme.typography.titleSmall) }, onClick = {
                                 viewModel.obtainEvent(
                                     TripEvent.SelectDropDownCourier(it)
                                 )

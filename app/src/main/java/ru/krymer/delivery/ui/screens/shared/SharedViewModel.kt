@@ -1,9 +1,12 @@
 package ru.krymer.delivery.ui.screens.shared
 
 import android.util.Log
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -14,7 +17,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ru.krymer.delivery.AppDatabase
-import ru.krymer.delivery.data.TokenManager
+import ru.krymer.delivery.di.TokenManager
 import ru.krymer.delivery.data.api.FactoryApi
 import ru.krymer.delivery.data.api.UserApi
 import ru.krymer.delivery.data.model.FactoryModel
@@ -25,6 +28,7 @@ import ru.krymer.delivery.data.model.user.getStringByStatus
 import ru.krymer.delivery.data.model.utilModel.MessageModel
 import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
 import ru.krymer.delivery.data.request.UpdateUserRequest
+import ru.krymer.delivery.di.AppPreferencesManager
 import ru.krymer.delivery.ui.screens.shared.models.AuthAction
 import ru.krymer.delivery.ui.screens.shared.models.SharedViewState
 import ru.krymer.delivery.utills.Constants
@@ -35,7 +39,8 @@ class SharedViewModel @Inject constructor(
     private val userApi: UserApi,
     private val tokenManager: TokenManager,
     private val factoryApi: FactoryApi,
-    private val database: AppDatabase
+    private val database: AppDatabase,
+    private val manager: AppPreferencesManager
 ) : ViewModel() {
 
     private fun launchCoroutine(block: suspend () -> Unit) {
@@ -49,6 +54,7 @@ class SharedViewModel @Inject constructor(
             }
         }
     }
+
 
     private val _viewState = MutableStateFlow(SharedViewState())
     val viewState: StateFlow<SharedViewState> = _viewState.asStateFlow()
@@ -81,6 +87,8 @@ class SharedViewModel @Inject constructor(
     }
 
     init {
+        val keyFont = manager.getIntData(Constants.KEYS.FONT) ?: 0
+        updateViewState { it.copy(currentFont = keyFont) }
         initAuth()
     }
 

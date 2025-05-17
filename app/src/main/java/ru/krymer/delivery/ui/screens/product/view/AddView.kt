@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.dp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.utilModel.Error
 import ru.krymer.delivery.ui.components.CommonTextField
-import ru.krymer.delivery.ui.screens.product.models.ProductViewState
 import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.startsWithDigit
 
@@ -40,7 +39,7 @@ fun AddProductView(
             placeholder = stringResource(
                 id = R.string.name
             ),
-            onVC = { str ->
+            changerText = { str ->
                 name = str
                 errorName = when {
                     str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
@@ -64,7 +63,7 @@ fun AddProductView(
             placeholder = stringResource(
                 id = R.string.price
             ),
-            onVC = { str ->
+            changerText = { str ->
                 price = str
                 errorPrice = when {
                     str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)

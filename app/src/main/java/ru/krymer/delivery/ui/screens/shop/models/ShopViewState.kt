@@ -2,6 +2,7 @@ package ru.krymer.delivery.ui.screens.shop.models
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import ru.krymer.delivery.data.model.ClientModel
+import ru.krymer.delivery.data.model.MessageModel
 import ru.krymer.delivery.data.model.ProductModel
 import ru.krymer.delivery.data.model.RequestModel
 import ru.krymer.delivery.data.model.ShopModel
@@ -61,8 +62,8 @@ data class ShopViewState(
 
     val isShowDialogArrears: Boolean = false,
     val isShowAddSumDialog: Boolean = false,
+    val isShowAddSumView: Boolean = false,
 
-    val shopDeleted: ShopModel? = null,
     val showDeleteDialog: Boolean = false,
     val typePay: MutableStateFlow<TypePayModel> = MutableStateFlow(TypePayModel.CASH),
     val isShowTypePayChangeDialog: Boolean = false,
@@ -72,7 +73,16 @@ data class ShopViewState(
 
 
     val stateInfoShopDialog: Boolean = false,
-    val stateInfoShopIsDataLoad: Boolean = false,
     val listInfoShop: MutableStateFlow<List<ShopModel>> = MutableStateFlow(listOf()),
-    val stateSwitchPrice: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val stateSwitchPrice: MutableStateFlow<Boolean> = MutableStateFlow(false),
+
+    val messages: MutableStateFlow<List<MessageModel>> = MutableStateFlow(listOf()),
+    val isShowMessageDialog: Boolean = false,
+    val message: String = "",
+    val messageDelete: MessageModel? =null,
+    val isShowDeleteMessage: Boolean = false,
+    val isBonusState: Boolean = false,
+
+    val isShowAnaliticTrip: Boolean = false,
+
 )

@@ -9,6 +9,12 @@ import ru.krymer.delivery.data.response.BaseResponse
 import ru.krymer.delivery.utills.Constants
 
 interface AnaliticApi {
+    @POST("analitic/trip/dateRange")
+    suspend fun getDataTripOfRange(@Body dateRange: DateRequest): BaseResponse<Analitic>
+
+    @POST("analitic/client/dateRange")
+    suspend fun getDataClientOfRange(@Body dateRange: DateRequest): BaseResponse<Analitic>
+
     @POST("analitic/factory/dateRange")
     suspend fun getDataFactoryOfRange(@Body dateRange: DateRequest): BaseResponse<Analitic>
 

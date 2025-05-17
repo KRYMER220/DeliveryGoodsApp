@@ -119,7 +119,7 @@ fun ApplicationScreen(
             composable(NavigationTree.Login.name) {
                 val loginViewModel = hiltViewModel<LoginViewModel>()
                 LoginScreen(
-                    loginViewModel = loginViewModel,
+                    viewModel = loginViewModel
                 )
             }
             composable(NavigationTree.Main.name) {
@@ -184,7 +184,6 @@ fun ApplicationScreen(
                 val analiticViewModel = hiltViewModel<AnaliticViewModel>()
                 AnaliticScreen(
                     viewModel = analiticViewModel,
-                    sharedViewModel = sharedViewModel,
                     navController = navController
                 )
                 sharedViewModel.saveCurrentNavRoute(NavigationTree.Analitic.name)

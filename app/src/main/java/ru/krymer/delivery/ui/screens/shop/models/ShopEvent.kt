@@ -2,6 +2,7 @@ package ru.krymer.delivery.ui.screens.shop.models
 
 import android.content.Context
 import ru.krymer.delivery.data.model.ClientModel
+import ru.krymer.delivery.data.model.MessageModel
 import ru.krymer.delivery.data.model.ProductModel
 import ru.krymer.delivery.data.model.RequestModel
 import ru.krymer.delivery.data.model.ShopModel
@@ -18,9 +19,9 @@ sealed class ShopEvent {
     data class ChangeCountExchange(val exchange: String, val product: ProductModel) : ShopEvent()
     data object DismissAddDialog : ShopEvent()
     data object ShopAddAction : ShopEvent()
-    data class ShowDeleteDialog(val shop: ShopModel) : ShopEvent()
+    data object ShowDeleteDialog: ShopEvent()
     data object DismissDeleteDialog : ShopEvent()
-    data object DeleteAction : ShopEvent()
+    data object DeleteShop : ShopEvent()
     data class OpenRequest(val shop: ShopModel) : ShopEvent()
     data object ShopActionInvoked : ShopEvent()
     data class OpenGeoPoint(val context: Context, val cord: String) : ShopEvent()
@@ -71,7 +72,16 @@ sealed class ShopEvent {
     data object DismissDialogAddRequest : ShopEvent()
     data object RequestAddAction : ShopEvent()
     data object SwitchPrice : ShopEvent()
+    data object SwitchBonus: ShopEvent()
+
     data class CopyInfoData(val context: Context) : ShopEvent()
 
     data class ChangeAddStatusProduct(val product: ProductModel) : ShopEvent()
+    data object ShowMessageAddDialog: ShopEvent()
+    data object DismissMessageAddDialog: ShopEvent()
+    data object SendMessage: ShopEvent()
+    data class ChangeMessage(val message: String): ShopEvent()
+    data class DeleteMessage(val message: MessageModel): ShopEvent()
+    data object SwitchBonusState: ShopEvent()
+    data object ShowHideDialogAnalitic: ShopEvent()
 }

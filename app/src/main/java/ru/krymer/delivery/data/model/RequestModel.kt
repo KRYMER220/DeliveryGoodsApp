@@ -1,5 +1,9 @@
 package ru.krymer.delivery.data.model
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "request", primaryKeys = ["id", "idTrip", "idShop"])
 data class RequestModel(
     val id: Long,
     val idShop: Long,

@@ -20,7 +20,6 @@ import ru.krymer.delivery.ui.components.CommonTextField
 import ru.krymer.delivery.ui.screens.courier.models.CourierViewState
 import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.isValidEmail
-import ru.krymer.delivery.utills.startsWithDigit
 
 @Composable
 fun BottomSheetDialogAddUser(
@@ -45,7 +44,7 @@ fun BottomSheetDialogAddUser(
             placeholder = stringResource(
                 id = R.string.name_user
             ),
-            onVC = {
+            changerText = {
                 name = it
                 errorName = when {
                     it == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
@@ -69,7 +68,7 @@ fun BottomSheetDialogAddUser(
             placeholder = stringResource(
                 id = R.string.email_hint
             ),
-            onVC = {
+            changerText = {
                 email = it
                 errorEmail = when {
                     it == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
@@ -93,7 +92,7 @@ fun BottomSheetDialogAddUser(
             placeholder = stringResource(
                 id = R.string.pass_hint
             ),
-            onVC = {
+            changerText = {
 
                 pass = it
                 errorPass = when {

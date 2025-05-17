@@ -137,9 +137,9 @@ fun CourierScreen(
     }
 
     if (viewState.showUpdateSheetDialog) {
-        CommonUpdateDialog(isVisible = true, onDismiss = {
+        CommonUpdateDialog(isVisible = true, dismiss = {
             viewModel.obtainEvent(CourierEvent.DismissUpdateUserDataDialog)
-        }, onConfirm = {
+        }, confirm = {
             viewModel.obtainEvent(CourierEvent.UserUpdateAction)
         }, content = {
             UpdateCourierView(
@@ -157,9 +157,9 @@ fun CourierScreen(
     }
 
     if (viewState.showUpdateSettingsSheetDialog) {
-        CommonUpdateDialog(isVisible = true, onDismiss = {
+        CommonUpdateDialog(isVisible = true, dismiss = {
             viewModel.obtainEvent(CourierEvent.DismissUpdateSettingsDataDialog)
-        }, onConfirm = {
+        }, confirm = {
             viewModel.obtainEvent(CourierEvent.SettingsUpdateAction)
         }, content = {
             UpdateSettingsView(viewState = viewState,

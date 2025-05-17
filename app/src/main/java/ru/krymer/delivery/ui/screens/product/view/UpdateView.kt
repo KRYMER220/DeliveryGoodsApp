@@ -49,7 +49,7 @@ fun UpdateProductView(
                 placeholder = stringResource(
                     id = R.string.name
                 ),
-                onVC = { str ->
+                changerText = { str ->
                     name = str
                     errorName = when {
                         str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
@@ -72,7 +72,7 @@ fun UpdateProductView(
                 placeholder = stringResource(
                     id = R.string.price
                 ),
-                onVC = { str ->
+                changerText = { str ->
                     price = str
                     errorPrice = when {
                         str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)

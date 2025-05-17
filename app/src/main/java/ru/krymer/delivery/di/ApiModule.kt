@@ -9,6 +9,7 @@ import ru.krymer.delivery.data.api.AnaliticApi
 import ru.krymer.delivery.data.api.ClientApi
 import ru.krymer.delivery.data.api.FactoryApi
 import ru.krymer.delivery.data.api.LoggerApi
+import ru.krymer.delivery.data.api.MessageApi
 import ru.krymer.delivery.data.api.ProductApi
 import ru.krymer.delivery.data.api.RequestApi
 import ru.krymer.delivery.data.api.RouteApi
@@ -20,6 +21,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object ApiModule {
+
     @Singleton
     @Provides
     fun provideApiService(retrofit: Retrofit): UserApi {
@@ -78,5 +80,11 @@ object ApiModule {
     @Provides
     fun provideAnaliticApiService(retrofit: Retrofit): AnaliticApi {
         return retrofit.create(AnaliticApi::class.java)
+    }
+
+    @Singleton
+    @Provides
+    fun provideMessageApiService(retrofit: Retrofit): MessageApi {
+        return retrofit.create(MessageApi::class.java)
     }
 }

@@ -22,4 +22,7 @@ sealed class TripEvent {
     data object DismissAddDialog : TripEvent()
     data object DismissUpdateDialog : TripEvent()
     data object DeleteTrip : TripEvent()
+    data object SwitcherFilterDialog: TripEvent()
+    data class ChangerCheckBoxFilterCourier(val boolean: Boolean): TripEvent()
+    data object SubmitFilter: TripEvent()
 }

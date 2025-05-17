@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -49,7 +50,7 @@ fun ChangeAddSumView(
         CommonTextField(
             value = addSum,
             placeholder = "Добавочная сумма",
-            onVC = { str ->
+            changerText = { str ->
                 addSum = str
                 errorAddSum = when {
                     str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
@@ -82,7 +83,7 @@ fun ChangeArrearsView(
         CommonTextField(
             value = arrears,
             placeholder = "Долг",
-            onVC = { str ->
+            changerText = { str ->
                 arrears = str
                 errorArrears = when {
                     str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
@@ -104,6 +105,30 @@ fun ChangeArrearsView(
 }
 
 @Composable
+fun MessageTextView(
+    changeTextMessage: (String) -> Unit
+) {
+    var text by remember { mutableStateOf("") }
+    Column {
+        Spacer(modifier = Modifier.height(5.dp))
+        CommonTextField(
+            value = text,
+            placeholder = "Сообщение",
+            changerText = { str ->
+                text = str
+                changeTextMessage(str)
+            },
+            modifier = Modifier.fillMaxSize(),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Text
+            ),
+            textStyle = TextStyle(textAlign = TextAlign.Start)
+        )
+        Spacer(modifier = Modifier.height(5.dp))
+    }
+}
+
+@Composable
 fun ChangeTypePayView(
     viewState: ShopViewState,
     changeTypePay: (TypePayModel) -> Unit,
@@ -111,7 +136,7 @@ fun ChangeTypePayView(
 ) {
     val type = viewState.typePay.collectAsState().value.getRuStringByTypePay()
     Box(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().padding(5.dp)
     ) {
         Row(
             modifier = Modifier
@@ -124,20 +149,21 @@ fun ChangeTypePayView(
             Text(
                 text = type,
                 modifier = Modifier.padding(start = 15.dp),
-                color = AppTheme.colors.onPrimary
+                color = AppTheme.colors.onSecondary, style = AppTheme.typography.titleMedium
             )
             Spacer(modifier = Modifier.weight(1f))
             Icon(
                 imageVector = Icons.Filled.ArrowDropDown,
                 contentDescription = null,
-                modifier = Modifier.padding(end = 15.dp)
+                modifier = Modifier.padding(end = 15.dp),
+                tint = AppTheme.colors.onSecondary
             )
             DropdownMenu(expanded = viewState.isShowDropDownTypePay, onDismissRequest = {
                 changeStateChangerTypePay(false)
-            }) {
+            }, modifier = Modifier.background(AppTheme.colors.onPrimary)) {
                 val list = TypePayModel.entries.toTypedArray()
                 list.forEach {
-                    DropdownMenuItem(text = { Text(text = it.getRuStringByTypePay()) }, onClick = {
+                    DropdownMenuItem(text = { Text(text = it.getRuStringByTypePay(), style = AppTheme.typography.titleSmall, color = AppTheme.colors.onSecondary) }, onClick = {
                         changeTypePay(it)
                         changeStateChangerTypePay(false)
                     })
