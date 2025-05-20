@@ -22,4 +22,12 @@ class AppPreferencesManager @Inject constructor(
     fun saveInt(key: String, data: Int) {
         sharedPreferences.edit().putInt(key, data).apply()
     }
+
+    fun getStringData(key: String): String? {
+        return sharedPreferences.getString(key, "")
+    }
+
+    fun saveString(key: String, data: String) {
+        sharedPreferences.edit().putString(key, data).apply()
+    }
 }

@@ -28,6 +28,7 @@ import ru.krymer.delivery.ui.navigation.NavigationTree
 import ru.krymer.delivery.ui.screens.main.models.MenuAction
 import ru.krymer.delivery.ui.screens.main.models.MenuEvent
 import ru.krymer.delivery.ui.screens.main.views.MenuView
+import ru.krymer.delivery.ui.screens.navigateToTap
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.ui.theme.AppTheme
 
@@ -86,25 +87,25 @@ fun MenuScreen(
         LaunchedEffect(key1 = viewState.menuAction) {
             when (viewState.menuAction) {
                 is MenuAction.OpenRoute -> {
-                    navController.navigate(NavigationTree.Route.name)
+                    navigateToTap(navController = navController, NavigationTree.Route.name)
                 }
 
                 is MenuAction.OpenProduct -> {
-                    navController.navigate(NavigationTree.Product.name)
+                    navigateToTap(navController = navController, NavigationTree.Product.name)
                 }
 
                 is MenuAction.OpenCouriers -> {
-                    navController.navigate(NavigationTree.Courier.name)
+                    navigateToTap(navController = navController, NavigationTree.Courier.name)
                 }
 
                 is MenuAction.OpenTrips -> {
-                    navController.navigate(NavigationTree.Trip.name)
+                    navigateToTap(navController = navController, NavigationTree.Trip.name)
                 }
 
                 is MenuAction.None -> {}
 
                 is MenuAction.OpenAnalitic -> {
-                    navController.navigate(NavigationTree.Analitic.name)
+                    navigateToTap(navController = navController, NavigationTree.Analitic.name)
                 }
             }
         }

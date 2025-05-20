@@ -22,11 +22,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.NavHost
@@ -67,9 +67,12 @@ fun ApplicationScreen(
     sharedViewModel: SharedViewModel,
     sharedViewState: SharedViewState
 ) {
+
+
     if (sharedViewState.isUserBlocked) {
         UserBlocked(sharedViewModel = sharedViewModel)
     } else {
+
         LaunchedEffect(sharedViewState.authAction) {
             val navOptions = NavOptions.Builder()
                 .setLaunchSingleTop(true)
@@ -78,11 +81,11 @@ fun ApplicationScreen(
 
             when (sharedViewState.authAction) {
                 AuthAction.Authorized -> {
-                    navController.navigate(NavigationTree.Main.name, navOptions)
+                    navigateToTap(navController = navController, NavigationTree.Main.name, navOptions = navOptions)
                 }
 
                 AuthAction.Unauthorized -> {
-                    navController.navigate(NavigationTree.Login.name, navOptions)
+                    navigateToTap(navController = navController, NavigationTree.Login.name, navOptions = navOptions)
                 }
 
                 AuthAction.None -> {}
@@ -128,7 +131,6 @@ fun ApplicationScreen(
                     menuViewModel = mainViewModel,
                     navController = navController
                 )
-                sharedViewModel.saveCurrentNavRoute(NavigationTree.Main.name)
             }
             composable(NavigationTree.Route.name) {
                 val routeViewModel = hiltViewModel<RouteViewModel>()
@@ -136,7 +138,6 @@ fun ApplicationScreen(
                     viewModel = routeViewModel,
                     navController = navController
                 )
-                sharedViewModel.saveCurrentNavRoute(NavigationTree.Route.name)
             }
             composable(NavigationTree.Clients.name) {
                 val clientViewModel = hiltViewModel<ClientViewModel>()
@@ -144,7 +145,6 @@ fun ApplicationScreen(
                     viewModel = clientViewModel,
                     navController = navController
                 )
-                sharedViewModel.saveCurrentNavRoute(NavigationTree.Clients.name)
             }
             composable(NavigationTree.Product.name) {
                 val productViewModel = hiltViewModel<ProductViewModel>()
@@ -152,7 +152,6 @@ fun ApplicationScreen(
                     viewModel = productViewModel,
                     navController = navController
                 )
-                sharedViewModel.saveCurrentNavRoute(NavigationTree.Product.name)
             }
             composable(NavigationTree.Courier.name) {
                 val courierViewModel = hiltViewModel<CourierViewModel>()
@@ -160,7 +159,6 @@ fun ApplicationScreen(
                     navController = navController,
                     viewModel = courierViewModel
                 )
-                sharedViewModel.saveCurrentNavRoute(NavigationTree.Courier.name)
             }
             composable(NavigationTree.Trip.name) {
                 val tripViewModel = hiltViewModel<TripViewModel>()
@@ -168,7 +166,6 @@ fun ApplicationScreen(
                     viewModel = tripViewModel,
                     navController = navController
                 )
-                sharedViewModel.saveCurrentNavRoute(NavigationTree.Trip.name)
             }
 
             composable(NavigationTree.Shop.name) {
@@ -177,7 +174,6 @@ fun ApplicationScreen(
                     viewModel = shopViewModel,
                     navController = navController
                 )
-                sharedViewModel.saveCurrentNavRoute(NavigationTree.Shop.name)
             }
 
             composable(NavigationTree.Analitic.name) {
@@ -186,7 +182,6 @@ fun ApplicationScreen(
                     viewModel = analiticViewModel,
                     navController = navController
                 )
-                sharedViewModel.saveCurrentNavRoute(NavigationTree.Analitic.name)
             }
         }
     }
@@ -272,5 +267,21 @@ fun MessageSnackBar(sharedViewState: SharedViewState) {
             }
         }
 
+    }
+}
+
+fun navigateToTap(navController: NavController, route: String, navOptions: NavOptions? = null) {
+    if (navOptions != null) {
+        navController.navigate(route, navOptions)
+    } else {
+        navController.navigate(route) {
+            navController.graph.startDestinationRoute?.let { homeScreen ->
+                popUpTo(homeScreen) {
+                    saveState = true
+                }
+            }
+            restoreState = true
+            launchSingleTop = true
+        }
     }
 }

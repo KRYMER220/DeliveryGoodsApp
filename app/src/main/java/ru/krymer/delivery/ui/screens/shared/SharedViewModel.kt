@@ -54,16 +54,18 @@ class SharedViewModel @Inject constructor(
             }
         }
     }
+    fun saveCurrentRoute(route: String) {
+        manager.saveString("CURRENT_ROUTE", route)
+    }
 
+    fun getSavedRoute(): String? {
+        return manager.getStringData("CURRENT_ROUTE")
+    }
 
     private val _viewState = MutableStateFlow(SharedViewState())
     val viewState: StateFlow<SharedViewState> = _viewState.asStateFlow()
     fun updateViewState(update: (SharedViewState) -> SharedViewState) {
         _viewState.update { update(it) }
-    }
-
-    fun saveCurrentNavRoute(route: String) {
-        updateViewState { it.copy(currentNavRoute = route) }
     }
 
     fun updateUserStatus(statusModel: StatusModel) {
@@ -183,7 +185,6 @@ class SharedViewModel @Inject constructor(
             message = message ?: Constants.ERROR.ERROR,
             type = typeMessageModel
         )
-        Log.d("Debag", "$obj")
         listMessage.add(obj)
         updateViewState { it.copy(listMessage = MutableStateFlow(listMessage)) }
     }
