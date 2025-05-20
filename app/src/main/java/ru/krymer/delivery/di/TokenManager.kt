@@ -10,6 +10,10 @@ class TokenManager @Inject constructor(
         return sharedPreferences.getString(Constants.TOKEN.ACCESS, null)
     }
 
+    fun deleteToken() {
+        sharedPreferences.edit().remove(Constants.TOKEN.ACCESS).apply()
+    }
+
     fun saveAccessToken(token: String?) {
         sharedPreferences.edit().putString(Constants.TOKEN.ACCESS, token).apply()
     }
