@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.krymer.delivery.common.EventHandler
@@ -25,7 +26,7 @@ class MainViewModel @Inject constructor(
     }
     
     private val _viewState = MutableStateFlow(MenuViewState())
-    val viewState: StateFlow<MenuViewState> = _viewState
+    val viewState = _viewState.asStateFlow()
     
     override fun obtainEvent(event: MenuEvent) {
         when (event) {
@@ -37,6 +38,10 @@ class MainViewModel @Inject constructor(
             is MenuEvent.TripClickedToOpen -> selectAction(menuAction = MenuAction.OpenTrips)
             is MenuEvent.AnaliticClickedToOpen -> selectAction(menuAction = MenuAction.OpenAnalitic)
         }
+    }
+
+    init {
+
     }
     
     private fun selectAction(menuAction: MenuAction) {

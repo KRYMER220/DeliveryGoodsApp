@@ -16,9 +16,6 @@ interface TripApi {
     @POST("trip/create")
     suspend fun add(@Body trip: CreateTripRequest): BaseResponse<TripModel>
 
-    @GET("trips")
-    suspend fun getTrips(@Query(Constants.ID.ID_FACTORY) idFactory: Long): BaseResponse<List<TripModel>>
-
     @GET("routes/by/trips")
     suspend fun getRoutesByTrip(@Query(Constants.ID.ID_FACTORY) idFactory: Long): BaseResponse<List<TripModel>>
 
@@ -33,5 +30,17 @@ interface TripApi {
         @Query(Constants.ID.ID_FACTORY) idFactory: Long,
         @Query(Constants.ID.ID_TRIP) idTrip: Long
     ): BaseResponse<CourierInfoModel>
+
+    @GET("trips")
+    suspend fun getTrips(
+        @Query(Constants.ID.ID_FACTORY) idFactory: Long
+    ): BaseResponse<List<TripModel>>
+
+    @GET("trips/paginated")
+    suspend fun gePaginatedTrips(
+        @Query(Constants.ID.ID_FACTORY) idFactory: Long,
+        @Query("limit") limit: Int = 10,
+        @Query("offset") offset: Long = 0
+    ): BaseResponse<List<TripModel>>
 }
 

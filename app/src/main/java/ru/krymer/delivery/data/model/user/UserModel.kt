@@ -18,4 +18,7 @@ data class UserModel(
     val role: RoleModel,
     val percentSalary: Double,
     val salary: Double
-)
+) {
+    fun isSysOrAdmin(): Boolean = role == RoleModel.ADMIN || role == RoleModel.SYSTEM
+    fun isModeratorOrAdmin(): Boolean = role == RoleModel.MODERATOR || role == RoleModel.ADMIN || role == RoleModel.SYSTEM
+}

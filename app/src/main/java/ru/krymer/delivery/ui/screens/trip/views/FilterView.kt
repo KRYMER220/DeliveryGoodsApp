@@ -1,6 +1,5 @@
 package ru.krymer.delivery.ui.screens.trip.views
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,9 +20,9 @@ import ru.krymer.delivery.ui.screens.trip.models.TripViewState
 import ru.krymer.delivery.ui.theme.AppTheme
 
 @Composable
-fun FilterView(changeFilterCourier: (Boolean) -> Unit, viewState: TripViewState) {
+fun FilterView(changeFilterCourier: (Boolean) -> Unit, state: TripViewState) {
 
-    var isFilterByCourier by remember { mutableStateOf(viewState.checkBoxIsFilterCourier) }
+    var isFilterByCourier by remember { mutableStateOf(state.checkBoxIsFilterCourier) }
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {

@@ -17,9 +17,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ru.krymer.delivery.AppDatabase
+import ru.krymer.delivery.common.EventHandler
 import ru.krymer.delivery.di.TokenManager
 import ru.krymer.delivery.data.api.FactoryApi
 import ru.krymer.delivery.data.api.UserApi
+import ru.krymer.delivery.data.dao.FailedDao
 import ru.krymer.delivery.data.model.FactoryModel
 import ru.krymer.delivery.data.model.RouteModel
 import ru.krymer.delivery.data.model.user.StatusModel
@@ -29,9 +31,12 @@ import ru.krymer.delivery.data.model.utilModel.MessageModel
 import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
 import ru.krymer.delivery.data.request.UpdateUserRequest
 import ru.krymer.delivery.di.AppPreferencesManager
+import ru.krymer.delivery.di.RetryManager
 import ru.krymer.delivery.ui.screens.shared.models.AuthAction
+import ru.krymer.delivery.ui.screens.shared.models.SharedEvents
 import ru.krymer.delivery.ui.screens.shared.models.SharedViewState
 import ru.krymer.delivery.utills.Constants
+import java.security.PrivateKey
 import javax.inject.Inject
 
 @HiltViewModel
@@ -40,8 +45,15 @@ class SharedViewModel @Inject constructor(
     private val tokenManager: TokenManager,
     private val factoryApi: FactoryApi,
     private val database: AppDatabase,
-    private val manager: AppPreferencesManager
-) : ViewModel() {
+    private val manager: AppPreferencesManager,
+    private val retryManager: RetryManager
+) : ViewModel(), EventHandler<SharedEvents> {
+
+    override fun obtainEvent(event: SharedEvents) {
+        when(event) {
+            SharedEvents.ClearToken -> clearTokenData()
+        }
+    }
 
     private fun launchCoroutine(block: suspend () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -49,49 +61,27 @@ class SharedViewModel @Inject constructor(
                 block()
             } catch (e: Exception) {
                 message(e.message)
-                delay(5000)
-                block()
             }
         }
     }
-    fun saveCurrentRoute(route: String) {
-        manager.saveString("CURRENT_ROUTE", route)
-    }
-
-    fun getSavedRoute(): String? {
-        return manager.getStringData("CURRENT_ROUTE")
-    }
 
     private val _viewState = MutableStateFlow(SharedViewState())
-    val viewState: StateFlow<SharedViewState> = _viewState.asStateFlow()
+    val viewState = _viewState.asStateFlow()
     fun updateViewState(update: (SharedViewState) -> SharedViewState) {
         _viewState.update { update(it) }
     }
 
-    fun updateUserStatus(statusModel: StatusModel) {
-        launchCoroutine {
-            val user = database.userDao().getUser()
-            user?.apply {
-                val updatedUser = UpdateUserRequest(
-                    id = id,
-                    login = login,
-                    name = name,
-                    phone = phone,
-                    status = statusModel.getStringByStatus(),
-                    role = role.getStringByRole(),
-                    isBanned = isBan,
-                    percentSalary = percentSalary,
-                    salary = salary
-                )
-                userApi.update(updatedUser)
-            }
-        }
-    }
-
     init {
         val keyFont = manager.getIntData(Constants.KEYS.FONT) ?: 0
-        updateViewState { it.copy(currentFont = keyFont) }
+        updateViewState { it.copy(currentFont = MutableStateFlow(keyFont)) }
         initAuth()
+        retryFailedRequests()
+    }
+
+    fun retryFailedRequests() {
+        viewModelScope.launch(Dispatchers.IO) {
+            retryManager.retryFailedRequests()
+        }
     }
 
     fun initCurrentRoute(route: RouteModel) {
@@ -112,20 +102,17 @@ class SharedViewModel @Inject constructor(
         return status
     }
 
-    fun initSys(): Boolean {
-        val status = viewState.value.user.value?.role?.getStringByRole() == Constants.Role.SYSTEM
-        return status
-    }
-
     fun clearTokenData() {
-        tokenManager.saveAccessToken(null)
+        tokenManager.deleteToken()
         updateViewState {
             it.copy(
                 user = MutableStateFlow(null),
+                factory = null,
                 authAction = AuthAction.Unauthorized,
                 isUserBlocked = false
             )
         }
+        message("Требуется повторная авторизация!")
     }
 
     private fun initAuth() {
@@ -156,7 +143,6 @@ class SharedViewModel @Inject constructor(
                 database.factoryDao().deleteFactory(factory)
             }
             clearTokenData()
-            updateUserStatus(statusModel = StatusModel.OFFLINE)
         } else {
             message(response.message)
         }
@@ -225,7 +211,6 @@ class SharedViewModel @Inject constructor(
                         } else {
                             database.userDao().insertUser(user = user)
                         }
-                        updateUserStatus(statusModel = StatusModel.ONLINE)
                         loadFactoryData(idFactory = user.idFactory)
                     }
                 }
@@ -264,9 +249,7 @@ class SharedViewModel @Inject constructor(
         }
     }
 
-    fun saveNavControl(navController: NavController) {
-        updateViewState { it.copy(navController = navController) }
-    }
+
 
     fun saveRouteList(list: List<RouteModel>) {
         updateViewState { it.copy(routeList = list) }
@@ -281,4 +264,6 @@ class SharedViewModel @Inject constructor(
     fun updateFactory(factoryModel: FactoryModel) {
         updateViewState { it.copy(factory = factoryModel) }
     }
+
+
 }

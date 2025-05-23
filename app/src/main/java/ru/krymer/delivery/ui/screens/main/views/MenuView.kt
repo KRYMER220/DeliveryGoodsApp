@@ -3,30 +3,22 @@ package ru.krymer.delivery.ui.screens.main.views
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import ru.krymer.delivery.data.model.user.UserModel
-import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.ui.theme.AppTheme
 import ru.krymer.delivery.utills.Constants
 
@@ -37,7 +29,6 @@ fun MenuView(
     onCourierClick: () -> Unit,
     onTripClick: () -> Unit,
     onAnaliticClick: () -> Unit,
-    sharedViewModel: SharedViewModel,
     user: UserModel
 ) {
     val listMenu = listOf(
@@ -67,11 +58,22 @@ fun MenuView(
             LazyColumn(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 itemsIndexed(items = listMenu) { index, nameMenu ->
                     when(nameMenu) {
-                        Constants.MENU.TRIP -> MenuButton(buttonName = nameMenu, routeTo = onTripClick)
-                        Constants.MENU.ROUTE -> if (sharedViewModel.initSysAdmMod()) { MenuButton(buttonName = nameMenu, routeTo = onRouteClick) }
-                        Constants.MENU.COURIER -> if (sharedViewModel.initSysAdm()) { MenuButton(buttonName = nameMenu, routeTo = onCourierClick) }
-                        Constants.MENU.ANALITIC -> if (sharedViewModel.initSysAdm()) { MenuButton(buttonName = nameMenu, routeTo = onAnaliticClick) }
-                        Constants.MENU.PRODUCT -> if (sharedViewModel.initSysAdm()) { MenuButton(buttonName = nameMenu, routeTo = onProductClick) }
+                        Constants.MENU.TRIP -> CustomButton(buttonName = nameMenu, routeTo = onTripClick)
+                        Constants.MENU.ROUTE -> if (user.isSysOrAdmin()) {
+                            CustomButton(buttonName = nameMenu, routeTo = onRouteClick)
+                        }
+
+                        Constants.MENU.COURIER -> if (user.isSysOrAdmin()) {
+                            CustomButton(buttonName = nameMenu, routeTo = onCourierClick)
+                        }
+
+                        Constants.MENU.ANALITIC -> if (user.isSysOrAdmin()) {
+                            CustomButton(buttonName = nameMenu, routeTo = onAnaliticClick)
+                        }
+
+                        Constants.MENU.PRODUCT -> if (user.isSysOrAdmin()) {
+                            CustomButton(buttonName = nameMenu, routeTo = onProductClick)
+                        }
                     }
                 }
             }
@@ -81,13 +83,14 @@ fun MenuView(
 }
 
 @Composable
-fun MenuButton(routeTo: () -> Unit, buttonName: String) {
+fun CustomButton(routeTo: () -> Unit, buttonName: String) {
     Button(
-        onClick = routeTo, shape = RoundedCornerShape(10.dp), modifier = Modifier
-            .fillMaxWidth()
+        onClick = routeTo, shape = RoundedCornerShape(10.dp), modifier = Modifier.fillMaxWidth()
             .height(60.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = AppTheme.colors.secondary
+            containerColor = AppTheme.colors.secondary,
+            disabledContainerColor = AppTheme.colors.secondaryVariant,
+            disabledContentColor = AppTheme.colors.secondaryVariant,
         )
     ) {
         Text(

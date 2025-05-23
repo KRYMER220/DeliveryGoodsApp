@@ -5,7 +5,6 @@ import ru.krymer.delivery.data.model.ClientModel
 import ru.krymer.delivery.data.model.RouteModel
 
 sealed class ClientAction {
-    data object OpenAnalitic : ClientAction()
     data object None : ClientAction()
 }
 

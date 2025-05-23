@@ -20,11 +20,11 @@ data class TripViewState(
     val deleteTrip: TripModel? = null,
     val showDeleteDialog: Boolean = false,
 
-    val showAddSheetDialog: Boolean = false,
+    val stateAddDialog: Boolean = false,
     val showUpdateSheetDialog: Boolean = false,
 
     val dropDownStateCourier: Boolean = false,
-    val dropDownStateTrips: Boolean = false,
+    val dropDownStateRoutes: Boolean = false,
     val dropDownStateDatePicker: Boolean = false,
     var currentRoute: RouteModel? = null,
     var currentCourier: UserModel? = null,
@@ -37,4 +37,6 @@ data class TripViewState(
     val tripAction: TripAction = TripAction.None,
     val isShowFilterDialog: Boolean = false,
     val checkBoxIsFilterCourier: Boolean = false,
+    var hasMore: Boolean = true,
+    var isLoading: Boolean = false
 )

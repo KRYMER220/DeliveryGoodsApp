@@ -5,37 +5,27 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.utilModel.Error
 import ru.krymer.delivery.ui.components.AuthField
 import ru.krymer.delivery.ui.screens.login.models.LoginViewState
-import ru.krymer.delivery.ui.screens.main.views.MenuButton
+import ru.krymer.delivery.ui.screens.main.views.CustomButton
 import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.isValidEmail
-import java.nio.file.WatchEvent
-import kotlin.compareTo
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -55,7 +45,7 @@ fun SignInView(
     var errorEmail by remember { mutableStateOf(Error()) }
     var errorPass by remember { mutableStateOf(Error()) }
 
-    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         AuthField(
             value = email,
             placeholder = stringResource(id = R.string.email_hint),
@@ -95,7 +85,8 @@ fun SignInView(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             visualTransformation = PasswordVisualTransformation(),
         )
-        MenuButton(routeTo = onSignIn, buttonName = stringResource(id = R.string.sign_in))
+        Spacer(modifier = Modifier.height(5.dp))
+        CustomButton(routeTo = onSignIn, buttonName = stringResource(id = R.string.sign_in))
         Spacer(modifier = Modifier.height(20.dp))
     }
 }

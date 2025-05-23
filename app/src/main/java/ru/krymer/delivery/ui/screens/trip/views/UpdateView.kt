@@ -30,7 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ru.krymer.delivery.R
-import ru.krymer.delivery.ui.screens.trip.TripViewModel
 import ru.krymer.delivery.ui.screens.trip.models.TripEvent
 import ru.krymer.delivery.ui.screens.trip.models.TripViewState
 import ru.krymer.delivery.ui.theme.AppTheme
@@ -39,14 +38,14 @@ import ru.krymer.delivery.utills.convertToTextDate
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UpdateTripView(
-    viewState: TripViewState,
-    viewModel: TripViewModel
+    state: TripViewState,
+    event: (TripEvent) -> Unit
 ) {
-    val routes = viewState.listRoute.collectAsState().value
-    val couriers = viewState.listCourier.collectAsState().value
+    val routes = state.listRoute.collectAsState().value
+    val couriers = state.listCourier.collectAsState().value
     if (routes.isNotEmpty() && couriers.isNotEmpty()) {
-        viewState.currentRoute?.let {  r ->
-            viewState.currentCourier?.let { c ->
+        state.currentRoute?.let { r ->
+            state.currentCourier?.let { c ->
                 Column {
                     Box(modifier = Modifier
                         .fillMaxWidth()
@@ -56,42 +55,32 @@ fun UpdateTripView(
                             color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)
                         )
                         .clickable {
-                            viewModel.obtainEvent(TripEvent.ChangeDropDownStateDatePicker(true))
+                            event(TripEvent.OpenHideDatePickerForAddTrip)
                         }) {
                         Text(
-                            text = convertToTextDate(viewState.currentDate),
+                            text = convertToTextDate(state.currentDate),
                             modifier = Modifier
                                 .padding(start = 15.dp)
                                 .align(Alignment.Center),
                             color = AppTheme.colors.onSecondary
                         )
-                        if (viewState.dropDownStateDatePicker) {
+                        if (state.dropDownStateDatePicker) {
                             val datePickerState = rememberDatePickerState()
                             DatePickerDialog(onDismissRequest = {
-                                viewModel.obtainEvent(
-                                    TripEvent.ChangeDropDownStateDatePicker(
-                                        false
-                                    )
-                                )
+
                             }, confirmButton = {
                                 TextButton(onClick = {
-                                    viewModel.obtainEvent(TripEvent.ChangeDate(datePickerState.selectedDateMillis!!))
-                                    viewModel.obtainEvent(
-                                        TripEvent.ChangeDropDownStateDatePicker(
-                                            false
-                                        )
-                                    )
+                                    datePickerState.selectedDateMillis?.let {
+                                        event(TripEvent.ChangeDate(it))
+                                        event(TripEvent.OpenHideDatePickerForAddTrip)
+                                    }
+
                                 }) {
                                     Text(stringResource(id = R.string.ok))
                                 }
-
                             }, dismissButton = {
                                 TextButton(onClick = {
-                                    viewModel.obtainEvent(
-                                        TripEvent.ChangeDropDownStateDatePicker(
-                                            false
-                                        )
-                                    )
+                                    event(TripEvent.OpenHideDatePickerForAddTrip)
                                 }) {
                                     Text(stringResource(id = R.string.close))
                                 }
@@ -113,7 +102,7 @@ fun UpdateTripView(
                                 .fillMaxWidth()
                                 .height(60.dp)
                                 .clickable {
-                                    viewModel.obtainEvent(TripEvent.ChangeDropDownStateTrip(true))
+                                    event(TripEvent.OpenHideDropDownMenuWithRoutes)
                                 }, verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
@@ -127,15 +116,13 @@ fun UpdateTripView(
                                 contentDescription = null,
                                 modifier = Modifier.padding(end = 15.dp)
                             )
-                            DropdownMenu(expanded = viewState.dropDownStateTrips, onDismissRequest = {
-                                viewModel.obtainEvent(TripEvent.ChangeDropDownStateTrip(false))
+                            DropdownMenu(expanded = state.dropDownStateRoutes, onDismissRequest = {
+                                event(TripEvent.OpenHideDropDownMenuWithRoutes)
                             }) {
                                 routes.forEach {
                                     DropdownMenuItem(text = { Text(text = it.name) }, onClick = {
-                                        viewModel.obtainEvent(
-                                            TripEvent.SelectDropDownRoute(it)
-                                        )
-                                        viewModel.obtainEvent(TripEvent.ChangeDropDownStateTrip(false))
+                                        event(TripEvent.SelectRoute(it))
+                                        event(TripEvent.OpenHideDropDownMenuWithRoutes)
                                     })
                                 }
                             }
@@ -154,7 +141,7 @@ fun UpdateTripView(
                                 .fillMaxWidth()
                                 .height(60.dp)
                                 .clickable {
-                                    viewModel.obtainEvent(TripEvent.ChangeDropDownStateCourier(true))
+                                    event(TripEvent.OpenHideDropDownMenuWithCouriers)
                                 }, verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
@@ -168,16 +155,14 @@ fun UpdateTripView(
                                 contentDescription = null,
                                 modifier = Modifier.padding(end = 15.dp)
                             )
-                            DropdownMenu(expanded = viewState.dropDownStateCourier,
+                            DropdownMenu(expanded = state.dropDownStateCourier,
                                 onDismissRequest = {
-                                    viewModel.obtainEvent(TripEvent.ChangeDropDownStateCourier(false))
+                                    event(TripEvent.OpenHideDropDownMenuWithCouriers)
                                 }) {
                                 couriers.forEach {
                                     DropdownMenuItem(text = { Text(text = it.name) }, onClick = {
-                                        viewModel.obtainEvent(
-                                            TripEvent.SelectDropDownCourier(it)
-                                        )
-                                        viewModel.obtainEvent(TripEvent.ChangeDropDownStateCourier(false))
+                                        event(TripEvent.SelectCourier(it))
+                                        event(TripEvent.OpenHideDropDownMenuWithCouriers)
                                     })
                                 }
                             }

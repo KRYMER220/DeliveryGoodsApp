@@ -42,59 +42,61 @@ import ru.krymer.delivery.ui.screens.client.ClientViewModel
 import ru.krymer.delivery.ui.screens.courier.CourierScreen
 import ru.krymer.delivery.ui.screens.courier.CourierViewModel
 import ru.krymer.delivery.ui.screens.login.LoginScreen
-import ru.krymer.delivery.ui.screens.login.LoginViewModel
-import ru.krymer.delivery.ui.screens.main.MainViewModel
 import ru.krymer.delivery.ui.screens.main.MenuScreen
 import ru.krymer.delivery.ui.screens.product.ProductScreen
 import ru.krymer.delivery.ui.screens.product.ProductViewModel
 import ru.krymer.delivery.ui.screens.route.RouteScreen
 import ru.krymer.delivery.ui.screens.route.RouteViewModel
-import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.ui.screens.shared.models.AuthAction
+import ru.krymer.delivery.ui.screens.shared.models.SharedEvents
 import ru.krymer.delivery.ui.screens.shared.models.SharedViewState
 import ru.krymer.delivery.ui.screens.shop.ShopViewModel
 import ru.krymer.delivery.ui.screens.shop.TripShopScreen
 import ru.krymer.delivery.ui.screens.splash.SplashScreen
 import ru.krymer.delivery.ui.screens.trip.TripScreen
-import ru.krymer.delivery.ui.screens.trip.TripViewModel
 import ru.krymer.delivery.ui.theme.AppTheme
 import ru.krymer.delivery.utills.Constants
 
 @ExperimentalMaterial3Api
 @Composable
 fun ApplicationScreen(
-    navController: NavHostController,
-    sharedViewModel: SharedViewModel,
-    sharedViewState: SharedViewState
+    navController: NavHostController, sharedState: SharedViewState, event: (SharedEvents) -> Unit
 ) {
-
-
-    if (sharedViewState.isUserBlocked) {
-        UserBlocked(sharedViewModel = sharedViewModel)
+    val user = sharedState.user.collectAsState().value
+    if (sharedState.isUserBlocked) {
+        UserBlocked(event = event)
     } else {
 
-        LaunchedEffect(sharedViewState.authAction) {
+        LaunchedEffect(sharedState.authAction) {
             val navOptions = NavOptions.Builder()
                 .setLaunchSingleTop(true)
                 .setPopUpTo(NavigationTree.Splash.name, inclusive = true)
                 .build()
 
-            when (sharedViewState.authAction) {
+            when (sharedState.authAction) {
                 AuthAction.Authorized -> {
-                    navigateToTap(navController = navController, NavigationTree.Main.name, navOptions = navOptions)
+                    navigateToTap(
+                        navController = navController,
+                        NavigationTree.Main.name,
+                        navOptions = navOptions
+                    )
                 }
 
                 AuthAction.Unauthorized -> {
-                    navigateToTap(navController = navController, NavigationTree.Login.name, navOptions = navOptions)
+                    navigateToTap(
+                        navController = navController,
+                        NavigationTree.Login.name,
+                        navOptions = navOptions
+                    )
                 }
-
                 AuthAction.None -> {}
             }
         }
 
-        MessageSnackBar(sharedViewState)
+        MessageSnackBar(sharedState)
 
-        NavHost(navController = navController,
+        NavHost(
+            navController = navController,
             startDestination = NavigationTree.Splash.name,
             enterTransition = {
                 slideIntoContainer(
@@ -119,17 +121,17 @@ fun ApplicationScreen(
 
             composable(NavigationTree.Splash.name) { SplashScreen() }
 
-            composable(NavigationTree.Login.name) {
-                val loginViewModel = hiltViewModel<LoginViewModel>()
-                LoginScreen(
-                    viewModel = loginViewModel
-                )
-            }
+            composable(NavigationTree.Login.name) { LoginScreen() }
+
+
             composable(NavigationTree.Main.name) {
-                val mainViewModel = hiltViewModel<MainViewModel>()
                 MenuScreen(
-                    menuViewModel = mainViewModel,
-                    navController = navController
+                    navigateTo = {
+                        navigateToTap(
+                            navController = navController,
+                            route = it
+                        )
+                    }, user = user
                 )
             }
             composable(NavigationTree.Route.name) {
@@ -161,10 +163,15 @@ fun ApplicationScreen(
                 )
             }
             composable(NavigationTree.Trip.name) {
-                val tripViewModel = hiltViewModel<TripViewModel>()
                 TripScreen(
-                    viewModel = tripViewModel,
-                    navController = navController
+                    navigateTo = {
+                        navigateToTap(
+                            navController = navController,
+                            route = it
+                        )
+                    },
+                    navigateToPreviousScreen = { navController.popBackStack() },
+                    user = user
                 )
             }
 
@@ -183,12 +190,14 @@ fun ApplicationScreen(
                     navController = navController
                 )
             }
+
         }
     }
+
 }
 
 @Composable
-fun UserBlocked(sharedViewModel: SharedViewModel) {
+fun UserBlocked(event: (SharedEvents) -> Unit) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             verticalArrangement = Arrangement.Center,
@@ -201,7 +210,7 @@ fun UserBlocked(sharedViewModel: SharedViewModel) {
             )
             Spacer(modifier = Modifier.height(5.dp))
             Button(
-                onClick = { sharedViewModel.clearTokenData() },
+                onClick = { event(SharedEvents.ClearToken) },
                 colors = ButtonColors(
                     containerColor = AppTheme.colors.onSecondary,
                     contentColor = AppTheme.colors.onSecondary,

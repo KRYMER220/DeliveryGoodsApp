@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.krymer.delivery.common.EventHandler
@@ -36,7 +37,7 @@ class CourierViewModel @Inject constructor(
 ) : ViewModel(), EventHandler<CourierEvent> {
 
     private val _viewState = MutableStateFlow(CourierViewState())
-    val viewState: StateFlow<CourierViewState> = _viewState
+    val viewState = _viewState.asStateFlow()
 
     private fun updateViewState(update: (CourierViewState) -> CourierViewState) {
         _viewState.update { update(it) }

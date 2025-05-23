@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -28,7 +28,7 @@ class LoginViewModel @Inject constructor(
 ) : ViewModel(), EventHandler<LoginEvent> {
 
     private val _viewState = MutableStateFlow(LoginViewState())
-    val viewState: StateFlow<LoginViewState> = _viewState
+    val viewState = _viewState.asStateFlow()
 
     private fun updateViewState(update: (LoginViewState) -> LoginViewState) {
         _viewState.update { update(it) }
@@ -46,9 +46,9 @@ class LoginViewModel @Inject constructor(
 
     override fun obtainEvent(event: LoginEvent) {
         when (event) {
-            is LoginEvent.EmailChanged -> emailChanged(event.value)
-            is LoginEvent.PassChanged -> passChanged(event.value)
-            is LoginEvent.LoginClicked -> loginClicked()
+            is LoginEvent.ChangeEmail -> emailChanged(event.value)
+            is LoginEvent.ChangePassword -> passChanged(event.value)
+            is LoginEvent.SignIn -> signIn()
             is LoginEvent.ForgotAction -> TODO("forgotAction()")
             is LoginEvent.ForgotClicked -> TODO("forgotClicked()")
             is LoginEvent.LoginAction -> loginAction()
@@ -60,7 +60,7 @@ class LoginViewModel @Inject constructor(
         updateViewState { it.copy(loginSubState = LoginSubState.SignIn) }
     }
 
-    private fun loginClicked() {
+    private fun signIn() {
         launchCoroutine {
             updateViewState { it.copy(isLoginProgress = true) }
             val email = viewState.value.emailValue

@@ -31,7 +31,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ru.krymer.delivery.R
-import ru.krymer.delivery.ui.screens.trip.TripViewModel
 import ru.krymer.delivery.ui.screens.trip.models.TripEvent
 import ru.krymer.delivery.ui.screens.trip.models.TripViewState
 import ru.krymer.delivery.ui.theme.AppTheme
@@ -40,177 +39,66 @@ import ru.krymer.delivery.utills.convertToTextDate
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTripView(
-    viewState: TripViewState, viewModel: TripViewModel
+    state: TripViewState, event: (TripEvent) -> Unit
 ) {
-    val routes = viewState.listRoute.collectAsState().value
-    val couriers = viewState.listCourier.collectAsState().value
-    Column(modifier = Modifier.padding(5.dp)) {
-        Box(modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 10.dp)
-            .height(60.dp)
-            .background(
-                color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)
-            )
-            .clickable {
-                viewModel.obtainEvent(TripEvent.ChangeDropDownStateDatePicker(true))
-            }) {
-            Text(
-                text = convertToTextDate(viewState.currentDate),
+    val routes = state.listRoute.collectAsState().value
+    val couriers = state.listCourier.collectAsState().value
+    if (routes.isNotEmpty() && couriers.isNotEmpty()) {
+        Column(modifier = Modifier.padding(5.dp)) {
+            Box(
                 modifier = Modifier
-                    .padding(start = 15.dp)
-                    .align(Alignment.Center),
-                color = AppTheme.colors.onSecondary,
-                style = AppTheme.typography.titleMedium
-            )
+                    .fillMaxWidth()
+                    .padding(top = 10.dp)
+                    .height(60.dp)
+                    .background(
+                        color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)
+                    )
+                    .clickable {
+                        event(TripEvent.OpenHideDatePickerForAddTrip)
+                    }) {
+                Text(
+                    text = convertToTextDate(state.currentDate),
+                    modifier = Modifier
+                        .padding(start = 15.dp)
+                        .align(Alignment.Center),
+                    color = AppTheme.colors.onSecondary,
+                    style = AppTheme.typography.titleMedium
+                )
 
-            if (viewState.dropDownStateDatePicker) {
-                val datePickerState = rememberDatePickerState()
-                DatePickerDialog(onDismissRequest = {
-                    viewModel.obtainEvent(
-                        TripEvent.ChangeDropDownStateDatePicker(
-                            false
+                if (state.dropDownStateDatePicker) {
+                    val datePickerState = rememberDatePickerState()
+                    DatePickerDialog(onDismissRequest = {
+                        event(
+                            TripEvent.OpenHideDatePickerForAddTrip
                         )
-                    )
-                }, confirmButton = {
-                    TextButton(onClick = {
-                        if (datePickerState.selectedDateMillis != null) {
-                            viewModel.obtainEvent(TripEvent.ChangeDate(datePickerState.selectedDateMillis!!))
-                            viewModel.obtainEvent(
-                                TripEvent.ChangeDropDownStateDatePicker(
-                                    false
+                    }, confirmButton = {
+                        TextButton(onClick = {
+                            datePickerState.selectedDateMillis?.let {
+                                event(TripEvent.ChangeDate(it))
+                                event(
+                                    TripEvent.OpenHideDatePickerForAddTrip
                                 )
-                            )
-                        }
-                    }) {
-                        Text(stringResource(id = R.string.ok),
-                            style = AppTheme.typography.titleMedium)
-                    }
-                }, dismissButton = {
-                    TextButton(onClick = {
-                        viewModel.obtainEvent(
-                            TripEvent.ChangeDropDownStateDatePicker(
-                                false
-                            )
-                        )
-                    }) {
-                        Text(stringResource(id = R.string.close))
-                    }
-                }) {
-                    DatePicker(state = datePickerState)
-                }
-            }
-        }
-        if (routes.isNotEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 10.dp)
-                    .background(
-                        color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)
-                    )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(60.dp)
-                        .clickable {
-                            viewModel.obtainEvent(TripEvent.ChangeDropDownStateTrip(true))
-                        }, verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = viewState.currentRoute!!.name,
-                        modifier = Modifier.padding(start = 15.dp),
-                        color = AppTheme.colors.onSecondary,
-                        style = AppTheme.typography.titleMedium
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    Icon(
-                        imageVector = Icons.Filled.ArrowDropDown,
-                        contentDescription = null,
-                        modifier = Modifier.padding(end = 15.dp)
-                    )
-                    DropdownMenu(expanded = viewState.dropDownStateTrips, onDismissRequest = {
-                        viewModel.obtainEvent(TripEvent.ChangeDropDownStateTrip(false))
-                    }) {
-                        val list = viewState.listRoute.collectAsState().value
-                        list.forEach {
-                            DropdownMenuItem(text = { Text(text = it.name,
-                                style = AppTheme.typography.titleSmall) }, onClick = {
-                                viewModel.obtainEvent(
-                                    TripEvent.SelectDropDownRoute(it)
-                                )
-                                viewModel.obtainEvent(TripEvent.ChangeDropDownStateTrip(false))
-                            })
-                        }
-                    }
-                }
-            }
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 10.dp)
-                    .background(
-                        color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)
-                    )
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .size(30.dp)
-                        .align(Alignment.Center),
-                    strokeWidth = 2.dp,
-                    color = Color.White
-                )
-            }
-        }
-        if (couriers.isNotEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 10.dp)
-                    .background(
-                        color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)
-                    )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(60.dp)
-                        .clickable {
-                            viewModel.obtainEvent(TripEvent.ChangeDropDownStateCourier(true))
-                        }, verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = viewState.currentCourier!!.name,
-                        modifier = Modifier.padding(start = 15.dp),
-                        color = AppTheme.colors.onSecondary,
-                        style = AppTheme.typography.titleMedium
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    Icon(
-                        imageVector = Icons.Filled.ArrowDropDown,
-                        contentDescription = null,
-                        modifier = Modifier.padding(end = 15.dp)
-                    )
-                    DropdownMenu(expanded = viewState.dropDownStateCourier,
-                        onDismissRequest = {
-                            viewModel.obtainEvent(TripEvent.ChangeDropDownStateCourier(false))
+                            }
                         }) {
-                        val list = viewState.listCourier.collectAsState().value
-                        list.forEach {
-                            DropdownMenuItem(text = { Text(text = it.name,
-                                style = AppTheme.typography.titleSmall) }, onClick = {
-                                viewModel.obtainEvent(
-                                    TripEvent.SelectDropDownCourier(it)
-                                )
-                                viewModel.obtainEvent(TripEvent.ChangeDropDownStateCourier(false))
-                            })
+                            Text(
+                                stringResource(id = R.string.ok),
+                                style = AppTheme.typography.titleMedium
+                            )
                         }
+                    }, dismissButton = {
+                        TextButton(onClick = {
+                            event(
+                                TripEvent.OpenHideDatePickerForAddTrip
+                            )
+                        }) {
+                            Text(stringResource(id = R.string.close))
+                        }
+                    }) {
+                        DatePicker(state = datePickerState)
                     }
                 }
             }
-        } else {
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -219,14 +107,100 @@ fun AddTripView(
                         color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)
                     )
             ) {
-                CircularProgressIndicator(
+                Row(
                     modifier = Modifier
-                        .size(30.dp)
-                        .align(Alignment.Center),
-                    strokeWidth = 2.dp,
-                    color = Color.White
-                )
+                        .fillMaxWidth()
+                        .height(60.dp)
+                        .clickable {
+                            event(TripEvent.OpenHideDropDownMenuWithRoutes)
+                        }, verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = state.currentRoute!!.name,
+                        modifier = Modifier.padding(start = 15.dp),
+                        color = AppTheme.colors.onSecondary,
+                        style = AppTheme.typography.titleMedium
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    Icon(
+                        imageVector = Icons.Filled.ArrowDropDown,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 15.dp)
+                    )
+                    DropdownMenu(expanded = state.dropDownStateRoutes, onDismissRequest = {
+                        event(TripEvent.OpenHideDropDownMenuWithRoutes)
+                    }) {
+                        routes.forEach {
+                            DropdownMenuItem(text = { Text(text = it.name,
+                                style = AppTheme.typography.titleSmall) }, onClick = {
+                                event(TripEvent.SelectRoute(it))
+                                event(TripEvent.OpenHideDropDownMenuWithRoutes)
+                            })
+                        }
+                    }
+                }
             }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp)
+                    .background(
+                        color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)
+                    )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp)
+                        .clickable {
+                            event(TripEvent.OpenHideDropDownMenuWithCouriers)
+                        }, verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = state.currentCourier!!.name,
+                        modifier = Modifier.padding(start = 15.dp),
+                        color = AppTheme.colors.onSecondary,
+                        style = AppTheme.typography.titleMedium
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    Icon(
+                        imageVector = Icons.Filled.ArrowDropDown,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 15.dp)
+                    )
+                    DropdownMenu(expanded = state.dropDownStateCourier,
+                        onDismissRequest = {
+                            event(TripEvent.OpenHideDropDownMenuWithCouriers)
+                        }) {
+                        val list = state.listCourier.collectAsState().value
+                        list.forEach {
+                            DropdownMenuItem(text = { Text(text = it.name,
+                                style = AppTheme.typography.titleSmall) }, onClick = {
+                                event(TripEvent.SelectCourier(it))
+                                event(TripEvent.OpenHideDropDownMenuWithCouriers)
+                            })
+                        }
+                    }
+                }
+            }
+
+        }
+    } else {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 10.dp)
+                .background(
+                    color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)
+                )
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .size(30.dp)
+                    .align(Alignment.Center),
+                strokeWidth = 2.dp,
+                color = Color.White
+            )
         }
     }
 }

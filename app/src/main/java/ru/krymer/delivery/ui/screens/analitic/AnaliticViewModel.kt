@@ -10,6 +10,7 @@ import ir.ehsannarmani.compose_charts.models.Line
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.krymer.delivery.common.EventHandler
@@ -40,7 +41,7 @@ class AnaliticViewModel @Inject constructor(
 ) : ViewModel(), EventHandler<AnaliticEvent> {
 
     private val _viewState = MutableStateFlow(AnaliticViewState())
-    val viewState: StateFlow<AnaliticViewState> = _viewState
+    val viewState = _viewState.asStateFlow()
 
     private fun updateViewState(update: (AnaliticViewState) -> AnaliticViewState) {
         _viewState.update { update(it) }

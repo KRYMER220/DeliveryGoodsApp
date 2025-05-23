@@ -3,13 +3,14 @@ package ru.krymer.delivery.ui.screens.shop
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.krymer.delivery.AppDatabase
@@ -60,7 +61,7 @@ class ShopViewModel @Inject constructor(
 ) : ViewModel(), EventHandler<ShopEvent> {
 
     private val _viewState = MutableStateFlow(ShopViewState())
-    val viewState: StateFlow<ShopViewState> = _viewState
+    val viewState = _viewState.asStateFlow()
 
     private fun updateViewState(update: (ShopViewState) -> ShopViewState) {
         _viewState.update { update(it) }
@@ -226,6 +227,7 @@ class ShopViewModel @Inject constructor(
             val trip = sharedViewModel.viewState.value.currentTrip
             trip?.let { t ->
                 val shopsLocal = room.shopDao().getShops(idTrip = t.id)
+                Log.d("Debag", "$shopsLocal")
                 if (shopsLocal.isEmpty()) {
                     getDataShops()
                 } else {
@@ -439,9 +441,6 @@ class ShopViewModel @Inject constructor(
                             )
                         }
                         databaseInit(shops)
-                    } else {
-                        delay(5000)
-                        getDataShops()
                     }
                 } else {
                     sharedViewModel.message(response.message)
@@ -1105,16 +1104,12 @@ class ShopViewModel @Inject constructor(
                     viewState.value.listDataRequests.value.map { it.copy() }.toMutableList()
                 val index = list.indexOfFirst { it.id == item.id }
                 val request = if (count.isNotEmpty()) {
-                    item.copy(count = count.trim().toInt())
+                    item.copy(count = count.trim().toInt(), status = true)
                 } else {
-                    item.copy(count = 0)
+                    item.copy(count = 0, status = true)
                 }
                 list[index] = request
-                updateRequest(request)
-
-
-
-
+                updateRequest(request, true)
                 shop.listRequest = list
                 val existingIndex = shops.indexOfFirst { it.id == shop.id }
                 if (existingIndex != -1) {
@@ -1172,12 +1167,12 @@ class ShopViewModel @Inject constructor(
                     viewState.value.listDataRequests.value.map { it.copy() }.toMutableList()
                 val index = list.indexOfFirst { it.id == item.id }
                 val request = if (bonus.isNotEmpty()) {
-                    item.copy(bonus = bonus.trim().toInt())
+                    item.copy(bonus = bonus.trim().toInt(), status = true)
                 } else {
-                    item.copy(bonus = 0)
+                    item.copy(bonus = 0, status = true)
                 }
                 list[index] = request
-                updateRequest(request)
+                updateRequest(request, true)
                 shop.listRequest = list
                 val existingIndex = shops.indexOfFirst { it.id == shop.id }
                 if (existingIndex != -1) {
@@ -1329,7 +1324,7 @@ class ShopViewModel @Inject constructor(
         }
     }
 
-    private fun updateRequest(request: RequestModel) {
+    private fun updateRequest(request: RequestModel, bool: Boolean = false) {
         val trip = sharedViewModel.viewState.value.currentTrip
         if (trip != null) {
             sharedViewModel.viewState.value.user.value?.let { user ->
@@ -1343,7 +1338,7 @@ class ShopViewModel @Inject constructor(
                                 idFactory = idFactory,
                                 count = request.count,
                                 bonus = request.bonus,
-                                status = status,
+                                status = bool,
                                 exchange = request.exchange,
                                 price = price,
                                 oldPrice = oldPrice,

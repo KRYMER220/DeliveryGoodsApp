@@ -14,32 +14,4 @@ import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import javax.inject.Inject
 
 @HiltAndroidApp
-class AppBox : Application(), LifecycleObserver {
-    @Inject
-    lateinit var appLifecycleObserver: AppLifecycleObserver
-
-    override fun onCreate() {
-        super.onCreate()
-        ProcessLifecycleOwner.get().lifecycle.addObserver(appLifecycleObserver)
-    }
-}
-
-class AppLifecycleObserver @Inject constructor(
-    private val viewModel: SharedViewModel
-) : DefaultLifecycleObserver {
-
-    override fun onStop(owner: LifecycleOwner) {
-        super.onStop(owner)
-        viewModel.viewModelScope.launch {
-            viewModel.updateUserStatus(StatusModel.OFFLINE)
-        }
-    }
-
-    override fun onStart(owner: LifecycleOwner) {
-        super.onStart(owner)
-        viewModel.viewModelScope.launch {
-            viewModel.updateUserStatus(StatusModel.ONLINE)
-        }
-    }
-
-}
+class AppBox : Application(), LifecycleObserver

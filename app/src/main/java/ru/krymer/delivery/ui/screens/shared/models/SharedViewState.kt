@@ -28,5 +28,5 @@ data class SharedViewState(
     val currentTrip: TripModel? = null, val currentShop: ShopModel? = null,
 
     val listMessage: MutableStateFlow<List<MessageModel>> = MutableStateFlow(listOf()),
-    val currentFont: Int = 0,
+    val currentFont: MutableStateFlow<Int> = MutableStateFlow(0),
 )

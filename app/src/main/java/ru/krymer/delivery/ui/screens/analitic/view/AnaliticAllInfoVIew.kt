@@ -74,8 +74,6 @@ fun AnaliticFactoryView(viewModel: AnaliticViewModel) {
 
             item {
                 BarsView(viewState = viewState)
-                LinesView(viewState = viewState)
-
             }
         }
     } else {
@@ -110,26 +108,6 @@ fun BarsView(viewState: AnaliticViewState) {
                 enabled = true,
                 textStyle = TextStyle(color = AppTheme.colors.onSecondary),
             ),
-            indicatorProperties = HorizontalIndicatorProperties(
-                textStyle = TextStyle(
-                    color = AppTheme.colors.onSecondary, textAlign = TextAlign.Center
-                )
-            )
-        )
-
-    }
-}
-
-@Composable
-fun LinesView(viewState: AnaliticViewState) {
-    val line = viewState.lines.collectAsState().value
-    if (line.isNotEmpty()) {
-        LineChart(
-            data = line,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(400.dp)
-                .heightIn(max = 1000.dp),
             indicatorProperties = HorizontalIndicatorProperties(
                 textStyle = TextStyle(
                     color = AppTheme.colors.onSecondary, textAlign = TextAlign.Center

@@ -250,7 +250,7 @@ fun AlertDialogRequestShop(
                             key = { request -> request.id }
                         ) { request ->
                             ProductRequestItem(
-                                product = request,
+                                request = request,
                                 deleteRequest = {
                                     viewModel.obtainEvent(ShopEvent.DeleteRequest(request))
                                 }, viewModel = viewModel, viewState = viewState, shop = shop
@@ -530,7 +530,7 @@ fun AlertDialogRequestShop(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ProductRequestItem(
-    product: RequestModel,
+    request: RequestModel,
     deleteRequest: (RequestModel) -> Unit,
     viewModel: ShopViewModel,
     viewState: ShopViewState,
@@ -539,15 +539,15 @@ fun ProductRequestItem(
 
 
     var count by remember {
-        mutableStateOf(product.count.toString())
+        mutableStateOf(request.count.toString())
     }
 
     var countBonus by remember {
-        mutableStateOf(product.bonus.toString())
+        mutableStateOf(request.bonus.toString())
     }
 
     var countExchange by remember {
-        mutableStateOf(product.exchange.toString())
+        mutableStateOf(request.exchange.toString())
     }
 
     var stateKeyBoard by remember { mutableStateOf(false) }
@@ -567,10 +567,10 @@ fun ProductRequestItem(
                 count = it.toString()
                 viewModel.obtainEvent(
                     ShopEvent.ChangeCountRequest(
-                        count = it.toString(), item = product
+                        count = it.toString(), item = request
                     )
                 )
-            }, text = "Заявка:\n" + product.name, value = count
+            }, text = "Заявка:\n" + request.name, value = count
             )
         }
         if (editExchange) {
@@ -583,10 +583,10 @@ fun ProductRequestItem(
                 countExchange = it.toString()
                 viewModel.obtainEvent(
                     ShopEvent.ChangeExchangeRequest(
-                        exchange = it.toString(), item = product
+                        exchange = it.toString(), item = request
                     )
                 )
-            }, text = "Возврат:\n" + product.name, value = countExchange
+            }, text = "Возврат:\n" + request.name, value = countExchange
             )
         }
         if (editBonus) {
@@ -599,10 +599,10 @@ fun ProductRequestItem(
                 countBonus = it.toString()
                 viewModel.obtainEvent(
                     ShopEvent.ChangeBonusRequest(
-                        bonus = it.toString(), item = product
+                        bonus = it.toString(), item = request
                     )
                 )
-            }, text = "Бонус:\n" + product.name, value = countBonus
+            }, text = "Бонус:\n" + request.name, value = countBonus
             )
         }
     }
@@ -619,13 +619,13 @@ fun ProductRequestItem(
     ) {
         Text(
             style = AppTheme.typography.titleSmall,
-            text = product.name,
+            text = request.name,
             fontSize = 16.sp,
             modifier = Modifier
                 .weight(0.4f)
                 .padding(end = 5.dp)
-                .combinedClickable(onDoubleClick = { deleteRequest(product) }, onClick = {}),
-            color = AppTheme.colors.onSecondary
+                .combinedClickable(onDoubleClick = { deleteRequest(request) }, onClick = {}),
+            color = if (request.status) AppTheme.colors.error else AppTheme.colors.onSecondary
         )
         if (shop.isBonus) {
                 Box(
