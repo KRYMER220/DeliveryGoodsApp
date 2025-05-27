@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -28,11 +27,10 @@ import ru.krymer.delivery.data.model.RequestModel
 import ru.krymer.delivery.data.model.ShopModel
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
 import ru.krymer.delivery.ui.theme.AppTheme
-import ru.krymer.delivery.utills.convertToTextDate
 
 @Composable
-fun AnaliticView(viewState: ShopViewState) {
-    val shops = viewState.listShop.collectAsState().value
+fun AnaliticView(state: ShopViewState) {
+    val shops = state.listShop.collectAsState().value
     LazyColumn(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         itemsIndexed(shops, key = { _, item -> item.id }) { index, shop ->
             ShopAnaliticItem(shop)
@@ -42,7 +40,9 @@ fun AnaliticView(viewState: ShopViewState) {
 
 @Composable
 fun ShopAnaliticItem(shop: ShopModel) {
-    Column(modifier = Modifier.background(AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)).padding(5.dp)) {
+    Column(modifier = Modifier
+        .background(AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp))
+        .padding(5.dp)) {
         val sumDept = shop.listRequest.sumOf { it.price * it.count - it.price * it.exchange }
         Text(
             style = AppTheme.typography.titleMedium,

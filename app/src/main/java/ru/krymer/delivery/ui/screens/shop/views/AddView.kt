@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -25,7 +24,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -40,12 +38,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.android.play.core.integrity.v
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.MessageModel
 import ru.krymer.delivery.data.model.ProductModel
 import ru.krymer.delivery.ui.components.KeyBoardDialog
-import ru.krymer.delivery.ui.screens.shop.ShopViewModel
 import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
 import ru.krymer.delivery.ui.theme.AppTheme
@@ -54,10 +50,10 @@ import ru.krymer.delivery.utills.convertToTextDate
 
 @Composable
 fun AddShopAndRequestView(
-    viewState: ShopViewState, viewModel: ShopViewModel
+    state: ShopViewState, event: (ShopEvent) -> Unit
 ) {
-    val clients = viewState.listClient.collectAsState().value
-    val products = viewState.listProduct.collectAsState().value
+    val clients = state.listClient.collectAsState().value
+    val products = state.listProduct.collectAsState().value
     if (clients.isNotEmpty() && products.isNotEmpty()) {
         Column {
             Box(
@@ -73,11 +69,11 @@ fun AddShopAndRequestView(
                         .fillMaxWidth()
                         .height(60.dp)
                         .clickable {
-                            viewModel.obtainEvent(ShopEvent.ShowSelectorClientInAddDialog)
+                            event(ShopEvent.ShowSelectorClientInAddDialog)
                         }, verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = viewState.currentClient?.name ?: Constants.EMPTY.EMPTY_DATA,
+                        text = state.currentClient?.name ?: Constants.EMPTY.EMPTY_DATA,
                         modifier = Modifier.padding(start = 15.dp),
                         color = AppTheme.colors.onSecondary,
                         style = AppTheme.typography.titleMedium
@@ -90,17 +86,17 @@ fun AddShopAndRequestView(
                         tint = AppTheme.colors.onSecondary
                     )
                     DropdownMenu(
-                        expanded = viewState.isShowSelectorClientInAddDialog,
+                        expanded = state.isShowSelectorClientInAddDialog,
                         onDismissRequest = {
-                            viewModel.obtainEvent(ShopEvent.DismissSelectorClientInAddDialog)
+                            event(ShopEvent.DismissSelectorClientInAddDialog)
                         }) {
-                        val list = viewState.listClient.collectAsState().value
+                        val list = state.listClient.collectAsState().value
                         list.forEach {
                             DropdownMenuItem(text = { Text(text = it.name, style = AppTheme.typography.titleSmall) }, onClick = {
-                                viewModel.obtainEvent(
+                                event(
                                     ShopEvent.DropDownSelectClient(it)
                                 )
-                                viewModel.obtainEvent(
+                                event(
                                     ShopEvent.DismissSelectorClientInAddDialog
                                 )
                             })
@@ -119,7 +115,7 @@ fun AddShopAndRequestView(
                 Box(
                     modifier = Modifier
                         .clickable(onClick = {
-                            viewModel.obtainEvent(ShopEvent.SwitchBonusState)
+                            event(ShopEvent.SwitchBonusState)
                         })
                         .weight(0.2f)
                 ) {
@@ -145,32 +141,41 @@ fun AddShopAndRequestView(
             }
             Spacer(modifier = Modifier.height(2.dp))
             LazyColumn {
-                items(viewState.listProductRequest.value) { product ->
+                items(state.listProductRequest.value) { product ->
                     ProductAddShopWithOrderItem(product = product, onVCCount = {
-                        viewModel.obtainEvent(
+                        event(
                             ShopEvent.ChangeCountProduct(
                                 product = product, count = it
                             )
                         )
                     }, onVCCountBonus = {
-                        viewModel.obtainEvent(
+                        event(
                             ShopEvent.ChangeCountBonusProduct(
                                 product = product, bonus = it
                             )
                         )
                     },
-                        onChangeStatus = { viewModel.obtainEvent(ShopEvent.ChangeAddStatusProduct(it)) },
-                        stateBonus = viewState.isBonusState)
+                        onChangeStatus = { event(ShopEvent.ChangeAddStatusProduct(it)) },
+                        stateBonus = state.isBonusState
+                    )
                     Spacer(modifier = Modifier.height(10.dp))
                 }
 
                 item {
                     Column(Modifier.fillMaxWidth()) {
-                        MessagesView(viewState = viewState, deleteMessage = {
-                            viewModel.obtainEvent(ShopEvent.DeleteMessage(it))
+                        MessagesView(viewState = state, deleteMessage = {
+                            event(ShopEvent.DeleteMessage(it))
                         })
-                        Spacer(modifier = Modifier.fillMaxWidth().height(1.dp).background(AppTheme.colors.onSecondary))
-                        InfoShopContent(viewState = viewState, modifier = Modifier.fillMaxWidth().height(500.dp))
+                        Spacer(modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(AppTheme.colors.onSecondary))
+                        InfoShopContent(
+                            state = state,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(500.dp)
+                        )
                     }
                 }
             }
@@ -193,7 +198,9 @@ fun AddShopAndRequestView(
 fun MessagesView(viewState: ShopViewState, deleteMessage: (MessageModel) -> Unit) {
     val messages = viewState.messages.collectAsState().value
     if (messages.isNotEmpty()) {
-        LazyColumn(modifier = Modifier.fillMaxWidth().height(300.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        LazyColumn(modifier = Modifier
+            .fillMaxWidth()
+            .height(300.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             items(messages) { message ->
                 MessageItem(messageModel = message, deleteMessage = deleteMessage)
             }
@@ -203,7 +210,9 @@ fun MessagesView(viewState: ShopViewState, deleteMessage: (MessageModel) -> Unit
 
 @Composable
 fun MessageItem(messageModel: MessageModel, deleteMessage: (MessageModel) -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth().background(AppTheme.colors.secondary, shape = RoundedCornerShape(5.dp))) {
+    Column(modifier = Modifier
+        .fillMaxWidth()
+        .background(AppTheme.colors.secondary, shape = RoundedCornerShape(5.dp))) {
         Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Text(text = convertToTextDate(messageModel.date), color = AppTheme.colors.error, textAlign = TextAlign.Center)
             Image(
@@ -220,9 +229,9 @@ fun MessageItem(messageModel: MessageModel, deleteMessage: (MessageModel) -> Uni
 
 @Composable
 fun AddRequestView(
-    viewState: ShopViewState, viewModel: ShopViewModel
+    state: ShopViewState, event: (ShopEvent) -> Unit
 ) {
-    val products = viewState.listProduct.collectAsState().value
+    val products = state.listProduct.collectAsState().value
     if (products.isNotEmpty()) {
         Column {
             Row(
@@ -257,21 +266,21 @@ fun AddRequestView(
             }
             Spacer(modifier = Modifier.height(5.dp))
             LazyColumn {
-                items(viewState.listProductRequest.value) { product ->
+                items(state.listProductRequest.value) { product ->
                     ProductAddShopWithOrderItem(product = product, onVCCount = {
-                        viewModel.obtainEvent(
+                        event(
                             ShopEvent.ChangeCountProduct(
                                 product = product, count = it
                             )
                         )
                     }, onVCCountBonus = {
-                        viewModel.obtainEvent(
+                        event(
                             ShopEvent.ChangeCountBonusProduct(
                                 product = product, bonus = it
                             )
                         )
                     },
-                        onChangeStatus = { viewModel.obtainEvent(ShopEvent.ChangeAddStatusProduct(it)) } )
+                        onChangeStatus = { event(ShopEvent.ChangeAddStatusProduct(it)) })
                     Spacer(modifier = Modifier.height(10.dp))
                 }
             }

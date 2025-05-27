@@ -1,6 +1,7 @@
 package ru.krymer.delivery.di
 
 import android.content.Context
+import androidx.hilt.work.HiltWorkerFactory
 import com.google.gson.Gson
 import dagger.Module
 import dagger.Provides
@@ -48,4 +49,6 @@ object AppModule {
             appDatabase, requestApi, shopApi, gson
         )
     }
+
 }
+

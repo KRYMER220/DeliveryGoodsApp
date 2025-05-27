@@ -19,22 +19,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.data.model.LoggerModel
-import ru.krymer.delivery.ui.screens.analitic.AnaliticViewModel
+import ru.krymer.delivery.ui.screens.analitic.models.AnaliticViewState
 import ru.krymer.delivery.ui.theme.AppTheme
 import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.convertToTextDate
 
 @Composable
-fun LogView(viewModel: AnaliticViewModel) {
-    val viewState = viewModel.viewState.collectAsState()
-    if (viewState.value.isLoadLogs) {
+fun LogView(state: AnaliticViewState) {
+    val logs = state.logs.collectAsState().value
+    if (logs.isNotEmpty()) {
         Column(
             modifier = Modifier
                 .padding(10.dp)
                 .fillMaxSize()
         ) {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(viewState.value.logs.value) { log ->
+                items(items = logs) { log ->
                     ItemLog(log)
                     Spacer(modifier = Modifier.height(5.dp))
                 }

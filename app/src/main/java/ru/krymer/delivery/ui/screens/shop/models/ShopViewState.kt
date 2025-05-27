@@ -11,7 +11,6 @@ import ru.krymer.delivery.data.model.utilModel.TypePayModel
 
 
 sealed class ShopAction {
-    data object OpenRequest : ShopAction()
     data object None : ShopAction()
 }
 
@@ -38,6 +37,7 @@ data class ShopViewState(
 
     val isShowMillageDialog: Boolean = false,
     val millage: MutableStateFlow<Double> = MutableStateFlow(0.0),
+    val salaryFix: MutableStateFlow<Double> = MutableStateFlow(0.0),
     val salary: MutableStateFlow<Double> = MutableStateFlow(0.0),
     val cash: MutableStateFlow<Double> = MutableStateFlow(0.0),
     val noCash: MutableStateFlow<Double> = MutableStateFlow(0.0),
@@ -45,7 +45,7 @@ data class ShopViewState(
     val remains: MutableStateFlow<Double> = MutableStateFlow(0.0),
     val isDataShopForCourierLoad: Boolean = false,
 
-    val currentTrip: TripModel? = null,
+    val currentTrip: MutableStateFlow<TripModel?> = MutableStateFlow(null),
 
     val currentShop: ShopModel? = null,
     val showRequestDialog: Boolean = false,
@@ -85,4 +85,4 @@ data class ShopViewState(
 
     val isShowAnaliticTrip: Boolean = false,
 
-)
+    )

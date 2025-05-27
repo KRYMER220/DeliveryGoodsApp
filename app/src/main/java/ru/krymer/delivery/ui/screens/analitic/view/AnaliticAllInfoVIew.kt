@@ -31,28 +31,27 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ir.ehsannarmani.compose_charts.ColumnChart
-import ir.ehsannarmani.compose_charts.LineChart
 import ir.ehsannarmani.compose_charts.models.BarProperties
 import ir.ehsannarmani.compose_charts.models.HorizontalIndicatorProperties
 import ir.ehsannarmani.compose_charts.models.LabelProperties
 import ru.krymer.delivery.data.response.AggregatedRequest
-import ru.krymer.delivery.ui.screens.analitic.AnaliticViewModel
+
 import ru.krymer.delivery.ui.screens.analitic.models.AnaliticViewState
 import ru.krymer.delivery.ui.theme.AppTheme
 
 @Composable
-fun AnaliticFactoryView(viewModel: AnaliticViewModel) {
-    val viewState = viewModel.viewState.collectAsState().value
-    val requests = viewState.requests.collectAsState().value
+fun AnaliticFactoryView(state: AnaliticViewState) {
 
-    if (viewState.isLoadDataFactoryInRangeDate) {
+    val requests = state.requests.collectAsState().value
+
+    if (state.isLoadDataFactoryInRangeDate) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(5.dp)
         ) {
             item {
-                TextFactoryInformation(viewState = viewState)
+                TextFactoryInformation(viewState = state)
             }
 
             item {
@@ -73,7 +72,7 @@ fun AnaliticFactoryView(viewModel: AnaliticViewModel) {
             }
 
             item {
-                BarsView(viewState = viewState)
+                BarsView(viewState = state)
             }
         }
     } else {

@@ -28,16 +28,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import ru.krymer.delivery.data.model.TripModel
-import ru.krymer.delivery.ui.screens.analitic.AnaliticViewModel
 import ru.krymer.delivery.ui.screens.analitic.models.AnaliticEvent
 import ru.krymer.delivery.ui.screens.analitic.models.AnaliticViewState
 import ru.krymer.delivery.ui.theme.AppTheme
 import ru.krymer.delivery.utills.convertToTextDate
 
 @Composable
-fun AnaliticTripView(viewModel: AnaliticViewModel) {
-    val viewState = viewModel.viewState.collectAsState().value
-    val requests = viewState.requests.collectAsState().value
+fun AnaliticTripView(state: AnaliticViewState, event: (AnaliticEvent) -> Unit) {
+    val requests = state.requests.collectAsState().value
 
     LazyColumn(
         modifier = Modifier
@@ -45,19 +43,19 @@ fun AnaliticTripView(viewModel: AnaliticViewModel) {
             .padding(5.dp)
     ) {
         item {
-            CustomDropDownMenuTrip(viewState = viewState, changerState = { state ->
-                viewModel.obtainEvent(
+            CustomDropDownMenuTrip(viewState = state, changerState = { state ->
+                event(
                     AnaliticEvent.ChangeStateDropDownMenuClients(isShow = state)
                 )
             }, setCurrentRoute = { trip ->
-                viewModel.obtainEvent(
+                event(
                     AnaliticEvent.SetCurrentTrip(trip = trip)
                 )
             })
         }
-        if (viewState.isLoadTripData) {
+        if (state.isLoadTripData) {
             item {
-                TextTripInformation(viewState = viewState)
+                TextTripInformation(viewState = state)
             }
 
             item {
@@ -78,7 +76,7 @@ fun AnaliticTripView(viewModel: AnaliticViewModel) {
             }
 
             item {
-                BarsView(viewState = viewState)
+                BarsView(viewState = state)
             }
         } else {
             item {
@@ -123,38 +121,40 @@ fun CustomDropDownMenuTrip(
 ) {
     val list = viewState.trips.collectAsState().value
     if (list.isNotEmpty()) {
-        val trip = viewState.currentTrip!!.collectAsState().value
-        Spacer(modifier = Modifier.height(10.dp))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp)
-                .background(
-                    color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)
+        val trip = viewState.currentTrip?.collectAsState()?.value
+        trip?.let {
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .background(
+                        color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)
+                    )
+                    .clickable {
+                        changerState(true)
+                    }, verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = trip.nameRoute,
+                    modifier = Modifier.padding(start = 15.dp),
+                    color = AppTheme.colors.onSecondary
                 )
-                .clickable {
-                    changerState(true)
-                }, verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = trip.nameRoute,
-                modifier = Modifier.padding(start = 15.dp),
-                color = AppTheme.colors.onSecondary
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Icon(
-                imageVector = Icons.Filled.ArrowDropDown,
-                contentDescription = null,
-                modifier = Modifier.padding(end = 15.dp)
-            )
-            DropdownMenu(expanded = viewState.stateDropDownMenuClients, onDismissRequest = {
-                changerState(false)
-            }) {
-                list.forEach { trip ->
-                    DropdownMenuItem(text = { Text(text = trip.nameRoute) }, onClick = {
-                        setCurrentRoute(trip)
-                        changerState(false)
-                    })
+                Spacer(modifier = Modifier.weight(1f))
+                Icon(
+                    imageVector = Icons.Filled.ArrowDropDown,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 15.dp)
+                )
+                DropdownMenu(expanded = viewState.stateDropDownMenuClients, onDismissRequest = {
+                    changerState(false)
+                }) {
+                    list.forEach { trip ->
+                        DropdownMenuItem(text = { Text(text = trip.nameRoute) }, onClick = {
+                            setCurrentRoute(trip)
+                            changerState(false)
+                        })
+                    }
                 }
             }
         }

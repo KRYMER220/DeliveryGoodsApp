@@ -20,5 +20,6 @@ data class UserModel(
     val salary: Double
 ) {
     fun isSysOrAdmin(): Boolean = role == RoleModel.ADMIN || role == RoleModel.SYSTEM
-    fun isModeratorOrAdmin(): Boolean = role == RoleModel.MODERATOR || role == RoleModel.ADMIN || role == RoleModel.SYSTEM
+    fun isModOrAdminOrSys(): Boolean =
+        role == RoleModel.MODERATOR || role == RoleModel.ADMIN || role == RoleModel.SYSTEM
 }

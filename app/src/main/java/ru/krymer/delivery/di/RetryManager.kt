@@ -23,7 +23,6 @@ class RetryManager @Inject constructor(
     suspend fun retryFailedRequests() {
         val failedRequests = appDatabase.failedDao().getAllFailedRequests().sortedBy { it.timestamp }
         failedRequests.forEach { failedRequest ->
-            Log.d("Debag", "$failedRequest")
             try {
                 if (failedRequest.retryCount >= 3) {
                     appDatabase.failedDao().deleteById(failedRequest.id)
@@ -42,12 +41,10 @@ class RetryManager @Inject constructor(
                 if (response.success) {
                     appDatabase.failedDao().deleteById(failedRequest.id)
                 } else {
-                    println("Retry failed for ${failedRequest.url}: ${response.message}")
                     appDatabase.failedDao().update(failedRequest.copy(retryCount = failedRequest.retryCount + 1))
                 }
             } catch (e: Exception) {
                 appDatabase.failedDao().update(failedRequest.copy(retryCount = failedRequest.retryCount + 1))
-                println("Retry failed for ${failedRequest.url}: ${e.message}")
             }
         }
     }

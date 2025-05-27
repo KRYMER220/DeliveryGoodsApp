@@ -16,8 +16,8 @@ android {
         applicationId = "ru.krymer.delivery"
         minSdk = 26
         targetSdk = 35
-        versionCode = 8
-        versionName = "1.1.6"
+        versionCode = 10
+        versionName = "1.1.8"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -84,6 +84,8 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.auth)
+    implementation(libs.androidx.hilt.common)
+    implementation(libs.androidx.hilt.work)
     testImplementation(libs.junit)
     implementation(libs.material)
     implementation(libs.androidx.appcompat)
@@ -111,4 +113,10 @@ dependencies {
     implementation(libs.google.firebase.auth)
     implementation(platform(libs.firebase.bom))
     implementation(libs.kotlin.reflect)
+    implementation(libs.androidx.hilt.work)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.animation)
+    implementation(libs.androidx.foundation)
+
+    implementation(libs.reorderable)
 }

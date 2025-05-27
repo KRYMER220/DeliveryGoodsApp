@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.krymer.delivery.AppDatabase
 import ru.krymer.delivery.common.EventHandler
-import ru.krymer.delivery.di.AppPreferencesManager
 import ru.krymer.delivery.data.api.RouteApi
 import ru.krymer.delivery.data.api.TripApi
 import ru.krymer.delivery.data.api.UserApi
@@ -19,6 +18,7 @@ import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.data.request.CreateTripRequest
 import ru.krymer.delivery.data.request.UpdateTripRequest
+import ru.krymer.delivery.di.AppPreferencesManager
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.ui.screens.trip.models.TripAction
 import ru.krymer.delivery.ui.screens.trip.models.TripEvent
@@ -82,7 +82,13 @@ class TripViewModel @Inject constructor(
                     loadPaginatedTrips(loadMore = true)
                 }
             }
+
+            is TripEvent.ChangeSalaryTrip -> changeSalaryTrip(event.salary)
         }
+    }
+
+    private fun changeSalaryTrip(salaryTrip: String) {
+        updateViewState { it.copy(salary = salaryTrip) }
     }
 
     init {
@@ -208,7 +214,7 @@ class TripViewModel @Inject constructor(
             val route = viewState.value.currentRoute
             val courier = viewState.value.currentCourier
             val date = viewState.value.currentDate
-
+            val salary = viewState.value.salary
             if (route != null && courier != null && trip != null) {
                 val tripRequest = UpdateTripRequest(
                     id = trip.id,
@@ -216,7 +222,7 @@ class TripViewModel @Inject constructor(
                     date = date,
                     courierId = courier.id,
                     routeId = route.id,
-                    salary = courier.salary,
+                    salary = if (salary.isEmpty() || salary == "") courier.salary else salary.toDouble(),
                     percentCourier = courier.percentSalary,
                     priceMillage = trip.priceMillage,
                     millage = trip.millage,
@@ -249,11 +255,15 @@ class TripViewModel @Inject constructor(
         val routes = viewState.value.listRoute
         val couriers = viewState.value.listCourier
         updateViewState {
-            it.copy(showUpdateSheetDialog = true,
+            it.copy(
+                salary = "${trip.salary}",
                 currentTrip = trip,
                 currentDate = trip.date,
                 currentCourier = couriers.value.first { c -> c.id == trip.idCourier },
-                currentRoute = routes.value.first { r -> r.id == trip.idRoute })
+                currentRoute = routes.value.first { r -> r.id == trip.idRoute },
+                showUpdateSheetDialog = true
+            )
+
         }
     }
 
@@ -275,10 +285,11 @@ class TripViewModel @Inject constructor(
 
     private fun saveTrip() {
         launchCoroutine {
+            val factory = sharedViewModel.viewState.value.factory
             val curRoute = viewState.value.currentRoute
             val curCourier = viewState.value.currentCourier
             val date = viewState.value.currentDate
-            if (curRoute != null && curCourier != null) {
+            if (curRoute != null && curCourier != null && factory != null) {
                 val tripRequest = CreateTripRequest(
                     factoryId = curRoute.idFactory,
                     date = date,
@@ -286,7 +297,7 @@ class TripViewModel @Inject constructor(
                     routeId = curRoute.id,
                     salary = curCourier.salary,
                     percentCourier = curCourier.percentSalary,
-                    priceMillage = curCourier.salary,
+                    priceMillage = factory.priceMillage,
                     nameRoute = curRoute.name,
                     nameCourier = curCourier.name
                 )
@@ -436,15 +447,16 @@ class TripViewModel @Inject constructor(
     }
 
     private fun shopsItemClicked(trip: TripModel) {
+        sharedViewModel.updateViewState { it.copy(currentTrip = trip) }
         launchCoroutine {
-            sharedViewModel.updateViewState { it.copy(currentTrip = trip) }
-            updateViewState { it.copy(tripAction = TripAction.OpenShops) }
             val localTrip = database.tripDao().getTripById(trip.id)
             if (localTrip != null) {
                 database.tripDao().updateTrip(trip)
             } else {
                 database.tripDao().insertTrip(trip)
             }
+
+            updateViewState { it.copy(tripAction = TripAction.OpenShops) }
         }
     }
 }

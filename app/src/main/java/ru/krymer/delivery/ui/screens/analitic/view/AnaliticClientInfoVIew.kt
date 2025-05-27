@@ -28,16 +28,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import ru.krymer.delivery.data.model.ClientModel
-import ru.krymer.delivery.ui.screens.analitic.AnaliticViewModel
 import ru.krymer.delivery.ui.screens.analitic.models.AnaliticEvent
 import ru.krymer.delivery.ui.screens.analitic.models.AnaliticViewState
 import ru.krymer.delivery.ui.theme.AppTheme
 import ru.krymer.delivery.utills.convertToTextDate
 
 @Composable
-fun AnaliticClientView(viewModel: AnaliticViewModel) {
-    val viewState = viewModel.viewState.collectAsState().value
-    val requests = viewState.requests.collectAsState().value
+fun AnaliticClientView(state: AnaliticViewState, event: (AnaliticEvent) -> Unit) {
+
+    val requests = state.requests.collectAsState().value
 
 
     LazyColumn(
@@ -46,19 +45,19 @@ fun AnaliticClientView(viewModel: AnaliticViewModel) {
             .padding(5.dp)
     ) {
         item {
-            CustomDropDownMenuClient(viewState = viewState, changerState = { state ->
-                viewModel.obtainEvent(
+            CustomDropDownMenuClient(viewState = state, changerState = { state ->
+                event(
                     AnaliticEvent.ChangeStateDropDownMenuClients(isShow = state)
                 )
             }, setCurrentClient = { client ->
-                viewModel.obtainEvent(
+                event(
                     AnaliticEvent.SetCurrentClient(client = client)
                 )
             })
         }
-        if (viewState.isLoadClientData) {
+        if (state.isLoadClientData) {
             item {
-                TextClientInformation(viewState = viewState)
+                TextClientInformation(viewState = state)
             }
 
             item {
@@ -79,7 +78,7 @@ fun AnaliticClientView(viewModel: AnaliticViewModel) {
             }
 
             item {
-                BarsView(viewState = viewState)
+                BarsView(viewState = state)
             }
         } else {
             item {

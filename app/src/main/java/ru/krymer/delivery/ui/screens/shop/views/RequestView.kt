@@ -47,7 +47,6 @@ import ru.krymer.delivery.data.model.utilModel.Error
 import ru.krymer.delivery.data.model.utilModel.TypePayModel
 import ru.krymer.delivery.ui.components.CommonTextField
 import ru.krymer.delivery.ui.components.KeyBoardDialog
-import ru.krymer.delivery.ui.screens.shop.ShopViewModel
 import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
 import ru.krymer.delivery.ui.theme.AppTheme
@@ -56,20 +55,20 @@ import ru.krymer.delivery.utills.Constants
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AlertDialogRequestShop(
-    viewState: ShopViewState, viewModel: ShopViewModel
+    state: ShopViewState, event: (ShopEvent) -> Unit
 ) {
-    viewState.currentShop?.let { shop ->
+    state.currentShop?.let { shop ->
 
         val listMenu = listOf("Долг", "Доп.сумму", "Тип оплаты", "Старая цена", "Добавить бонус", "Удалить магазин" ,"Отправить сообщение", "Добавить заявку")
         var isExpandedMenu by remember { mutableStateOf(false) }
-        val requests = viewState.listDataRequests.collectAsState().value
-        val orderMoney = viewState.orderMoney.collectAsState().value.toInt().toString()
-        val stateCash = viewState.getCash.collectAsState().value
-        val stateNoCash = viewState.getNoCash.collectAsState().value
+        val requests = state.listDataRequests.collectAsState().value
+        val orderMoney = state.orderMoney.collectAsState().value.toInt().toString()
+        val stateCash = state.getCash.collectAsState().value
+        val stateNoCash = state.getNoCash.collectAsState().value
         var cash by remember { mutableStateOf("") }
         var noCash by remember { mutableStateOf("") }
-        val typePayState = viewState.typePay.collectAsState().value
-        val switchOldPrice = viewState.stateSwitchPrice.collectAsState().value
+        val typePayState = state.typePay.collectAsState().value
+        val switchOldPrice = state.stateSwitchPrice.collectAsState().value
         var errorCash by remember { mutableStateOf(Error()) }
         var errorNoCash by remember { mutableStateOf(Error()) }
 
@@ -94,7 +93,9 @@ fun AlertDialogRequestShop(
                     fontSize = 18.sp,
                     textAlign = TextAlign.Center,
                     color = AppTheme.colors.onSecondary,
-                    modifier = Modifier.weight(0.7f).padding(5.dp)
+                    modifier = Modifier
+                        .weight(0.7f)
+                        .padding(5.dp)
                 )
                 Row(modifier = Modifier.weight(0.3f), horizontalArrangement = Arrangement.End) {
                     Row(
@@ -115,35 +116,35 @@ fun AlertDialogRequestShop(
                                 isExpandedMenu = false
                                 when (item) {
                                     "Долг" -> {
-                                        viewModel.obtainEvent(ShopEvent.ShowDialogChangeArrears)
+                                        event(ShopEvent.ShowDialogChangeArrears)
                                     }
 
                                     "Доп.сумму" -> {
-                                        viewModel.obtainEvent(ShopEvent.OpenAddSumDialog)
+                                        event(ShopEvent.OpenAddSumDialog)
                                     }
 
                                     "Тип оплаты" -> {
-                                        viewModel.obtainEvent(ShopEvent.ShowChangeTypePayDialog)
+                                        event(ShopEvent.ShowChangeTypePayDialog)
                                     }
 
                                     "Старая цена" -> {
-                                        viewModel.obtainEvent(ShopEvent.SwitchPrice)
+                                        event(ShopEvent.SwitchPrice)
                                     }
 
                                     "Добавить бонус" -> {
-                                        viewModel.obtainEvent(ShopEvent.SwitchBonus)
+                                        event(ShopEvent.SwitchBonus)
                                     }
 
                                     "Отправить сообщение" -> {
-                                        viewModel.obtainEvent(ShopEvent.ShowMessageAddDialog)
+                                        event(ShopEvent.ShowMessageAddDialog)
                                     }
 
                                     "Добавить заявку" -> {
-                                        viewModel.obtainEvent(ShopEvent.ShowDialogAddRequest)
+                                        event(ShopEvent.ShowDialogAddRequest)
                                     }
 
                                     "Удалить магазин" -> {
-                                        viewModel.obtainEvent(ShopEvent.ShowDeleteDialog)
+                                        event(ShopEvent.ShowDeleteDialog)
                                     }
                                 }
                             }, text = {
@@ -252,8 +253,8 @@ fun AlertDialogRequestShop(
                             ProductRequestItem(
                                 request = request,
                                 deleteRequest = {
-                                    viewModel.obtainEvent(ShopEvent.DeleteRequest(request))
-                                }, viewModel = viewModel, viewState = viewState, shop = shop
+                                    event(ShopEvent.DeleteRequest(request))
+                                }, event = event, shop = shop
                             )
                         }
                         item {
@@ -267,13 +268,13 @@ fun AlertDialogRequestShop(
                                     modifier = Modifier
                                         .weight(0.333f)
                                         .combinedClickable(onClick = {
-                                            viewModel.obtainEvent(
+                                            event(
                                                 ShopEvent.SetArrearsInField
                                             )
                                         }, onLongClick = {
-                                            viewModel.obtainEvent(ShopEvent.SetArrearsAndAddInField)
+                                            event(ShopEvent.SetArrearsAndAddInField)
                                         }, onDoubleClick = {
-                                            viewModel.obtainEvent(ShopEvent.SetOrderAndArrearsSumInField)
+                                            event(ShopEvent.SetOrderAndArrearsSumInField)
                                         })
                                 ) {
                                     Text(
@@ -289,16 +290,16 @@ fun AlertDialogRequestShop(
                                         color = AppTheme.colors.onSecondary
                                     )
                                 }
-                                if (viewState.isShowAddSumView) {
+                                if (state.isShowAddSumView) {
                                     Column(
                                         verticalArrangement = Arrangement.SpaceAround,
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         modifier = Modifier
                                             .weight(0.333f)
                                             .combinedClickable(onLongClick = {
-                                                viewModel.obtainEvent(ShopEvent.SetOrderAndArrearsAndAddSumInField)
+                                                event(ShopEvent.SetOrderAndArrearsAndAddSumInField)
                                             }, onClick = {
-                                                viewModel.obtainEvent(ShopEvent.SetAddInField)
+                                                event(ShopEvent.SetAddInField)
                                             })
                                     ) {
                                         Text(
@@ -321,11 +322,11 @@ fun AlertDialogRequestShop(
                                     modifier = Modifier
                                         .weight(0.333f)
                                         .combinedClickable(onClick = {
-                                            viewModel.obtainEvent(ShopEvent.SetOrderInField)
+                                            event(ShopEvent.SetOrderInField)
                                         }, onLongClick = {
-                                            viewModel.obtainEvent(ShopEvent.SetOrderAndAddInField)
+                                            event(ShopEvent.SetOrderAndAddInField)
                                         }, onDoubleClick = {
-                                            viewModel.obtainEvent(ShopEvent.SetOrderAndArrearsSumInField)
+                                            event(ShopEvent.SetOrderAndArrearsSumInField)
                                         })
                                 ) {
                                     Text(
@@ -358,7 +359,7 @@ fun AlertDialogRequestShop(
                                                     errorCash = when {
                                                         newValue == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
                                                         else -> {
-                                                            viewModel.obtainEvent(ShopEvent.ValueChangeCash(newValue))
+                                                            event(ShopEvent.ValueChangeCash(newValue))
                                                             Error()
                                                         }
                                                     }
@@ -379,7 +380,11 @@ fun AlertDialogRequestShop(
                                                     errorNoCash = when {
                                                         newValue == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
                                                         else -> {
-                                                            viewModel.obtainEvent(ShopEvent.ValueChangeNoCashMoney(newValue))
+                                                            event(
+                                                                ShopEvent.ValueChangeNoCashMoney(
+                                                                    newValue
+                                                                )
+                                                            )
                                                             Error()
                                                         }
                                                     }
@@ -402,12 +407,27 @@ fun AlertDialogRequestShop(
                                                     .clickable {
                                                         when {
                                                             (cash.isEmpty() && noCash.isEmpty()) -> {
-                                                                errorCash = Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
-                                                                errorNoCash = Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
+                                                                errorCash = Error(
+                                                                    visible = true,
+                                                                    error = Constants.EMPTY.EMPTY_FIELD
+                                                                )
+                                                                errorNoCash = Error(
+                                                                    visible = true,
+                                                                    error = Constants.EMPTY.EMPTY_FIELD
+                                                                )
                                                             }
-                                                            noCash.isEmpty() ->  errorNoCash = Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
-                                                            cash.isEmpty() -> errorCash = Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
-                                                            else -> viewModel.obtainEvent(ShopEvent.InitSaveRequestDialog)
+
+                                                            noCash.isEmpty() -> errorNoCash = Error(
+                                                                visible = true,
+                                                                error = Constants.EMPTY.EMPTY_FIELD
+                                                            )
+
+                                                            cash.isEmpty() -> errorCash = Error(
+                                                                visible = true,
+                                                                error = Constants.EMPTY.EMPTY_FIELD
+                                                            )
+
+                                                            else -> event(ShopEvent.InitSaveRequestDialog)
                                                         }
                                                     }
                                             )
@@ -427,12 +447,13 @@ fun AlertDialogRequestShop(
                                                 errorCash = when {
                                                     newValue == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
                                                     else -> {
-                                                        viewModel.obtainEvent(ShopEvent.ValueChangeCash(newValue))
+                                                        event(ShopEvent.ValueChangeCash(newValue))
                                                         Error()
                                                     }
                                                 }
                                             },
-                                            modifier = Modifier.weight(1f)
+                                            modifier = Modifier
+                                                .weight(1f)
                                                 .fillMaxWidth()
                                                 .padding(5.dp),
                                             keyboardOptions = KeyboardOptions(
@@ -450,9 +471,12 @@ fun AlertDialogRequestShop(
                                                 .size(60.dp)
                                                 .clickable {
                                                     if (cash.isEmpty()) {
-                                                        errorCash = Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
+                                                        errorCash = Error(
+                                                            visible = true,
+                                                            error = Constants.EMPTY.EMPTY_FIELD
+                                                        )
                                                     } else {
-                                                        viewModel.obtainEvent(ShopEvent.InitSaveRequestDialog)
+                                                        event(ShopEvent.InitSaveRequestDialog)
                                                     }
                                                 }
                                         )
@@ -471,12 +495,17 @@ fun AlertDialogRequestShop(
                                                 errorNoCash = when {
                                                     newValue == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
                                                     else -> {
-                                                        viewModel.obtainEvent(ShopEvent.ValueChangeNoCashMoney(newValue))
+                                                        event(
+                                                            ShopEvent.ValueChangeNoCashMoney(
+                                                                newValue
+                                                            )
+                                                        )
                                                         Error()
                                                     }
                                                 }
                                             },
-                                            modifier = Modifier.weight(1f)
+                                            modifier = Modifier
+                                                .weight(1f)
                                                 .fillMaxWidth()
                                                 .padding(5.dp),
                                             keyboardOptions = KeyboardOptions(
@@ -489,13 +518,17 @@ fun AlertDialogRequestShop(
                                         Image(
                                             contentDescription = "submit",
                                             painter = painterResource(id = R.drawable.submit),
-                                            modifier = Modifier.weight(1f)
+                                            modifier = Modifier
+                                                .weight(1f)
                                                 .size(60.dp)
                                                 .clickable {
                                                     if (noCash.isEmpty()) {
-                                                        errorNoCash = Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
+                                                        errorNoCash = Error(
+                                                            visible = true,
+                                                            error = Constants.EMPTY.EMPTY_FIELD
+                                                        )
                                                     } else {
-                                                        viewModel.obtainEvent(ShopEvent.InitSaveRequestDialog)
+                                                        event(ShopEvent.InitSaveRequestDialog)
                                                     }
                                                 }
                                         )
@@ -532,8 +565,7 @@ fun AlertDialogRequestShop(
 fun ProductRequestItem(
     request: RequestModel,
     deleteRequest: (RequestModel) -> Unit,
-    viewModel: ShopViewModel,
-    viewState: ShopViewState,
+    event: (ShopEvent) -> Unit,
     shop: ShopModel
 ) {
 
@@ -565,7 +597,7 @@ fun ProductRequestItem(
                 stateKeyBoard = false
                 editCount = false
                 count = it.toString()
-                viewModel.obtainEvent(
+                    event(
                     ShopEvent.ChangeCountRequest(
                         count = it.toString(), item = request
                     )
@@ -581,7 +613,7 @@ fun ProductRequestItem(
                 stateKeyBoard = false
                 editExchange = false
                 countExchange = it.toString()
-                viewModel.obtainEvent(
+                event(
                     ShopEvent.ChangeExchangeRequest(
                         exchange = it.toString(), item = request
                     )
@@ -597,7 +629,7 @@ fun ProductRequestItem(
                 stateKeyBoard = false
                 editBonus = false
                 countBonus = it.toString()
-                viewModel.obtainEvent(
+                event(
                     ShopEvent.ChangeBonusRequest(
                         bonus = it.toString(), item = request
                     )

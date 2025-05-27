@@ -8,7 +8,7 @@ sealed class ClientEvent {
     data class ShowDeleteDialog(val client: ClientModel) : ClientEvent()
     data object ClientAddAction : ClientEvent()
     data object ShowAddDialog : ClientEvent()
-    data class ShowUpdateDialog(val route: RouteModel?, val client: ClientModel) : ClientEvent()
+    data class ShowUpdateDialog(val client: ClientModel) : ClientEvent()
     data object ClientUpdateAction : ClientEvent()
     data class ChangeNameClient(val name: String) : ClientEvent()
     data class ChangeArrearsClient(val arrears: String) : ClientEvent()
@@ -21,4 +21,6 @@ sealed class ClientEvent {
     data object DismissUpdateDialog : ClientEvent()
     data class DownItemIndex(val index: Int) : ClientEvent()
     data class UpItemIndex(val index: Int) : ClientEvent()
+    data object DeleteClient : ClientEvent()
+    data class ReorderClients(val fromIndex: Int, val toIndex: Int) : ClientEvent()
 }

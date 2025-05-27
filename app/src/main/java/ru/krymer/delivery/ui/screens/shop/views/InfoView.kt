@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -38,11 +37,11 @@ import ru.krymer.delivery.ui.theme.AppTheme
 import ru.krymer.delivery.utills.convertToTextDate
 
 @Composable
-fun InfoContent(viewState: ShopViewState, onUpdate: () -> Unit) {
-    if (viewState.isLoadDataRequestsInfoDialog) {
-        val count = viewState.allCountRequestsInfo.collectAsState().value
-        val exchange = viewState.allExchangeRequestsInfo.collectAsState().value
-        val requests = viewState.listInfoRequests.collectAsState().value
+fun InfoContent(state: ShopViewState, onUpdate: () -> Unit) {
+    if (state.isLoadDataRequestsInfoDialog) {
+        val count = state.allCountRequestsInfo.collectAsState().value
+        val exchange = state.allExchangeRequestsInfo.collectAsState().value
+        val requests = state.listInfoRequests.collectAsState().value
         Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Image(
@@ -408,8 +407,8 @@ fun RequestInfoItem(requestModel: RequestModel) {
 
 
 @Composable
-fun InfoShopContent(viewState: ShopViewState, modifier: Modifier = Modifier.fillMaxWidth()) {
-    val listShop = viewState.listInfoShop.collectAsState().value
+fun InfoShopContent(state: ShopViewState, modifier: Modifier = Modifier.fillMaxWidth()) {
+    val listShop = state.listInfoShop.collectAsState().value
     if (listShop.isNotEmpty()) {
         LazyColumn(
             modifier =

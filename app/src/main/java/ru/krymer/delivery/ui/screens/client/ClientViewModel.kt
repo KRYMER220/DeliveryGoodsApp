@@ -1,12 +1,12 @@
 package ru.krymer.delivery.ui.screens.client
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -17,7 +17,7 @@ import ru.krymer.delivery.data.model.RouteModel
 import ru.krymer.delivery.data.request.ClientRequest
 import ru.krymer.delivery.ui.screens.client.models.ClientAction
 import ru.krymer.delivery.ui.screens.client.models.ClientEvent
-import ru.krymer.delivery.ui.screens.client.models.ClientShopViewState
+import ru.krymer.delivery.ui.screens.client.models.ClientViewState
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.utills.Constants
 import javax.inject.Inject
@@ -28,10 +28,10 @@ class ClientViewModel @Inject constructor(
     private val clientApi: ClientApi
 ) : ViewModel(), EventHandler<ClientEvent> {
 
-    private val _viewState = MutableStateFlow(ClientShopViewState())
+    private val _viewState = MutableStateFlow(ClientViewState())
     val viewState = _viewState.asStateFlow()
 
-    private fun updateViewState(update: (ClientShopViewState) -> ClientShopViewState) {
+    private fun updateViewState(update: (ClientViewState) -> ClientViewState) {
         _viewState.update { update(it) }
     }
 
@@ -53,7 +53,7 @@ class ClientViewModel @Inject constructor(
             is ClientEvent.ShowDeleteDialog -> showDeleteDialog(
                 client = event.client
             )
-            is ClientEvent.ShowUpdateDialog -> showUpdateDialog(event.route, event.client)
+            is ClientEvent.ShowUpdateDialog -> showUpdateDialog(event.client)
             is ClientEvent.ClientUpdateAction -> updateClient()
             is ClientEvent.ChangeArrearsClient -> changesAddArrears(event.arrears)
             is ClientEvent.ChangeCordClient -> changesAddCords(event.cords)
@@ -70,12 +70,40 @@ class ClientViewModel @Inject constructor(
             is ClientEvent.UpItemIndex -> if (sharedViewModel.initSysAdmMod()) changePosClientInListOnUp(
                 event.index
             )
+            is ClientEvent.DeleteClient -> deleteItemConfirmed()
+            is ClientEvent.ReorderClients -> {
+                reorderClients(toIndex = event.toIndex, fromIndex = event.fromIndex)
+            }
+        }
+    }
+
+    private fun reorderClients(toIndex: Int, fromIndex: Int) {
+
+        launchCoroutine {
+            var list = viewState.value.listClient.value
+            list = list.toMutableList().apply {
+                add(toIndex, removeAt(fromIndex))
+            }
+            updateViewState { it.copy(listClient = MutableStateFlow(list)) }
+            val itemFrom = list[fromIndex].copy()
+            val indexFrom = itemFrom.counter
+            val itemTo = list[toIndex].copy()
+            val indexTo = itemTo.counter
+            val newItemFrom = itemTo.toRequestUpdateIndex(indexFrom)
+            val newItemTo = itemFrom.toRequestUpdateIndex(indexTo)
+            val responseFrom = clientApi.update(client = newItemFrom)
+            val responseTo = clientApi.update(client = newItemTo)
+            if (!(responseTo.success && responseFrom.success)) {
+                sharedViewModel.message(Constants.ERROR.SERVER_ERROR_RESPONSE)
+            }
         }
     }
 
     init {
         getDataClients()
     }
+
+
 
     private fun getDataClients() {
         launchCoroutine {
@@ -297,18 +325,21 @@ class ClientViewModel @Inject constructor(
         }
     }
 
-    private fun showUpdateDialog(route: RouteModel?, client: ClientModel) {
-        updateViewState {
-            it.copy(
-                listRoute = MutableStateFlow(sharedViewModel.getListRoute()),
-            isDialogUpdate = true,
-            selectedRoute = route,
-            clientUpdate = client,
-            name = client.name,
-            arrears = "${client.arrears}",
-            phone = client.phone,
-                cords = client.cord
-            )
+    private fun showUpdateDialog(client: ClientModel) {
+        val route = sharedViewModel.viewState.value.currentRoute
+        route?.let {
+            updateViewState {
+                it.copy(
+                    listRoute = MutableStateFlow(sharedViewModel.getListRoute()),
+                    isDialogUpdate = true,
+                    selectedRoute = route,
+                    clientUpdate = client,
+                    name = client.name,
+                    arrears = "${client.arrears}",
+                    phone = client.phone,
+                    cords = client.cord
+                )
+            }
         }
     }
 

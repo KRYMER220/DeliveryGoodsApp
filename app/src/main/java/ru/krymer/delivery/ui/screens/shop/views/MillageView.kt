@@ -1,15 +1,10 @@
 package ru.krymer.delivery.ui.screens.shop.views
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -17,7 +12,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -30,16 +24,16 @@ import ru.krymer.delivery.ui.theme.AppTheme
 
 @Composable
 fun MillageAndInfoView(
-    viewState: ShopViewState, onMillageTFC: (String) -> Unit
+    state: ShopViewState, onMillageTFC: (String) -> Unit
 ) {
-    if (viewState.isDataShopForCourierLoad) {
-        val millage = viewState.millage.collectAsState().value.toInt()
+    val millage = state.millage.collectAsState().value.toInt()
         var millageInput by remember { mutableStateOf(if (millage == 0) "" else "$millage") }
-        val cash = viewState.cash.collectAsState().value.toInt()
-        val noCash = viewState.noCash.collectAsState().value.toInt()
-        val remains = viewState.remains.collectAsState().value.toInt()
-        val allMoney = viewState.allMoney.collectAsState().value.toInt()
-        val salary = viewState.salary.collectAsState().value.toInt()
+    val cash = state.cash.collectAsState().value.toInt()
+    val noCash = state.noCash.collectAsState().value.toInt()
+    val remains = state.remains.collectAsState().value.toInt()
+    val allMoney = state.allMoney.collectAsState().value.toInt()
+    val salary = state.salary.collectAsState().value.toInt()
+    val salaryFix = state.salaryFix.collectAsState().value.toInt()
 
         Column {
             CommonTextField(
@@ -99,22 +93,11 @@ fun MillageAndInfoView(
             Spacer(modifier = Modifier.height(10.dp))
             Text(
                 style = AppTheme.typography.titleMedium,
-                text = "Зарплата(фикс): ${viewState.currentTrip?.salary?.toInt()}",
+                text = "Зарплата(фикс): $salaryFix",
                 fontSize = 20.sp,
                 color = AppTheme.colors.onSecondary
             )
         }
-    } else {
-        Box(modifier = Modifier.fillMaxSize()) {
-            CircularProgressIndicator(
-                modifier = Modifier
-                    .size(30.dp)
-                    .align(Alignment.Center),
-                strokeWidth = 2.dp,
-                color = AppTheme.colors.onSecondary
-            )
-        }
-    }
 }
 
 

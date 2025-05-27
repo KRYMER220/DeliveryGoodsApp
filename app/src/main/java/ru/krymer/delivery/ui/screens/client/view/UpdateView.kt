@@ -27,12 +27,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import ru.krymer.delivery.R
+import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.data.model.utilModel.Error
 import ru.krymer.delivery.ui.components.CommonTextField
-import ru.krymer.delivery.ui.screens.client.ClientViewModel
 import ru.krymer.delivery.ui.screens.client.models.ClientEvent
-import ru.krymer.delivery.ui.screens.client.models.ClientShopViewState
-import ru.krymer.delivery.ui.screens.shared.SharedViewModel
+import ru.krymer.delivery.ui.screens.client.models.ClientViewState
 import ru.krymer.delivery.ui.theme.AppTheme
 import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.SignedNumberWithComma
@@ -42,13 +41,9 @@ import ru.krymer.delivery.utills.startsWithDigit
 
 @Composable
 fun UpdateClientView(
-    viewState: ClientShopViewState,
-    changeName: (String) -> Unit,
-    changeArrears: (String) -> Unit,
-    changePhone: (String) -> Unit,
-    changeCords: (String) -> Unit,
-    viewModelClient: ClientViewModel,
-    sharedViewModel: SharedViewModel
+    viewState: ClientViewState,
+    user: UserModel,
+    event: (ClientEvent) -> Unit
 ) {
     var name by remember { mutableStateOf(viewState.name) }
     var arrears by remember { mutableStateOf(viewState.arrears) }
@@ -70,7 +65,7 @@ fun UpdateClientView(
                 errorName = when {
                     str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
                     else -> {
-                        changeName(str)
+                        event(ClientEvent.ChangeNameClient(str))
                         Error()
                     }
                 }
@@ -93,7 +88,7 @@ fun UpdateClientView(
                 errorArrears = when {
                     !startsWithDigit(str) -> Error(visible = true, error = Constants.ERROR.ERROR_NUMBER_INPUT)
                     else -> {
-                        changeArrears(str)
+                        event(ClientEvent.ChangeArrearsClient(str))
                         Error()
                     }
                 }
@@ -116,7 +111,7 @@ fun UpdateClientView(
                 errorPhone = when {
                     !isValidPhone(str) -> Error(visible = true, error = Constants.ERROR.PHONE)
                     else -> {
-                        changePhone(str)
+                        event(ClientEvent.ChangePhoneClient(str))
                         Error()
                     }
                 }
@@ -139,7 +134,7 @@ fun UpdateClientView(
                 errorCords = when {
                     !isValidCords(str) -> Error(visible = true, error = Constants.ERROR.CORD)
                     else -> {
-                        changePhone(str)
+                        event(ClientEvent.ChangeCordClient(str))
                         Error()
                     }
                 }
@@ -154,7 +149,7 @@ fun UpdateClientView(
         )
         Spacer(modifier = Modifier.height(10.dp))
 
-        if (sharedViewModel.initSysAdm()) {
+        if (user.isModOrAdminOrSys()) {
             Box(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -163,7 +158,7 @@ fun UpdateClientView(
                         .fillMaxWidth()
                         .height(60.dp)
                         .clickable {
-                            viewModelClient.obtainEvent(ClientEvent.DropDownMenuState(true))
+                            event(ClientEvent.DropDownMenuState(true))
                         }, verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -178,17 +173,17 @@ fun UpdateClientView(
                         modifier = Modifier.padding(end = 15.dp)
                     )
                     DropdownMenu(expanded = viewState.dropDownState, onDismissRequest = {
-                        viewModelClient.obtainEvent(ClientEvent.DropDownMenuState(false))
+                        event(ClientEvent.DropDownMenuState(false))
                     }) {
                         val list = viewState.listRoute.collectAsState().value
                         list.forEach {
                             DropdownMenuItem(text = { Text(text = it.name) }, onClick = {
-                                viewModelClient.obtainEvent(
+                                event(
                                     ClientEvent.SelectedItemMenu(
                                         it
                                     )
                                 )
-                                viewModelClient.obtainEvent(
+                                event(
                                     ClientEvent.DropDownMenuState(
                                         false
                                     )

@@ -1,42 +1,33 @@
 package ru.krymer.delivery.ui.screens.shared
 
+import android.os.Bundle
 import android.util.Log
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.NavController
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedInject
+import androidx.navigation.NavBackStackEntry
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ru.krymer.delivery.AppDatabase
 import ru.krymer.delivery.common.EventHandler
-import ru.krymer.delivery.di.TokenManager
 import ru.krymer.delivery.data.api.FactoryApi
 import ru.krymer.delivery.data.api.UserApi
-import ru.krymer.delivery.data.dao.FailedDao
 import ru.krymer.delivery.data.model.FactoryModel
 import ru.krymer.delivery.data.model.RouteModel
-import ru.krymer.delivery.data.model.user.StatusModel
 import ru.krymer.delivery.data.model.user.getStringByRole
-import ru.krymer.delivery.data.model.user.getStringByStatus
 import ru.krymer.delivery.data.model.utilModel.MessageModel
 import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
-import ru.krymer.delivery.data.request.UpdateUserRequest
 import ru.krymer.delivery.di.AppPreferencesManager
 import ru.krymer.delivery.di.RetryManager
+import ru.krymer.delivery.di.TokenManager
 import ru.krymer.delivery.ui.screens.shared.models.AuthAction
 import ru.krymer.delivery.ui.screens.shared.models.SharedEvents
 import ru.krymer.delivery.ui.screens.shared.models.SharedViewState
 import ru.krymer.delivery.utills.Constants
-import java.security.PrivateKey
 import javax.inject.Inject
 
 @HiltViewModel
@@ -46,7 +37,6 @@ class SharedViewModel @Inject constructor(
     private val factoryApi: FactoryApi,
     private val database: AppDatabase,
     private val manager: AppPreferencesManager,
-    private val retryManager: RetryManager
 ) : ViewModel(), EventHandler<SharedEvents> {
 
     override fun obtainEvent(event: SharedEvents) {
@@ -75,14 +65,9 @@ class SharedViewModel @Inject constructor(
         val keyFont = manager.getIntData(Constants.KEYS.FONT) ?: 0
         updateViewState { it.copy(currentFont = MutableStateFlow(keyFont)) }
         initAuth()
-        retryFailedRequests()
+
     }
 
-    fun retryFailedRequests() {
-        viewModelScope.launch(Dispatchers.IO) {
-            retryManager.retryFailedRequests()
-        }
-    }
 
     fun initCurrentRoute(route: RouteModel) {
         updateViewState { it.copy(currentRoute = route) }
@@ -117,17 +102,11 @@ class SharedViewModel @Inject constructor(
 
     private fun initAuth() {
         launchCoroutine {
-            val user = database.userDao().getUser()
-            val factory = database.factoryDao().getFactory()
             val token = tokenManager.getAccessToken()
-            if (user != null && factory != null && token != null) {
-                updateViewState { it.copy(user = MutableStateFlow(user), factory = factory) }
-                authorized()
-            }
             if (token != null) {
                 checkValidityToken(token)
             } else {
-                unauthorized()
+                clearTokenData()
             }
         }
     }
@@ -148,19 +127,10 @@ class SharedViewModel @Inject constructor(
         }
     }
 
-    private fun unauthorized() {
-        updateViewState { it.copy(authAction = AuthAction.Unauthorized) }
-    }
-
     fun authorized() {
         launchCoroutine {
             updateViewState { it.copy(authAction = AuthAction.Authorized) }
-            val token = tokenManager.getAccessToken()
-            if (token != null) {
-                loadUserData()
-            } else {
-                unauthorized()
-            }
+            loadUserData()
         }
     }
 

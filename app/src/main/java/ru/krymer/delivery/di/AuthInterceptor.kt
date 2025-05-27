@@ -4,10 +4,10 @@ import android.util.Log
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.withLock
 import okhttp3.Interceptor
 import okhttp3.Interceptor.Chain
 import okhttp3.MediaType.Companion.toMediaType
@@ -17,15 +17,12 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
-import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import ru.krymer.delivery.AppDatabase
 import ru.krymer.delivery.data.api.UserApi
-import ru.krymer.delivery.data.dao.FailedDao
 import ru.krymer.delivery.data.model.FailedRequest
-import ru.krymer.delivery.ui.screens.shared.SharedViewModel
-import java.io.IOException
+import java.net.SocketTimeoutException
 import javax.inject.Inject
 
 class AuthInterceptor @Inject constructor(
@@ -34,64 +31,56 @@ class AuthInterceptor @Inject constructor(
     private val gson: Gson
 ) : Interceptor {
     private val refreshMutex = Mutex()
-    private val refreshScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun intercept(chain: Chain): Response {
         val originalRequest = chain.request()
         val requestWithToken = originalRequest.withAuthToken(tokenManager.getAccessToken())
 
-        val response = try {
+        val initialResponse = try {
             chain.proceed(requestWithToken)
-        } catch (e: java.net.SocketTimeoutException) {
-            Log.e("AuthInterceptor", "Request timed out for ${originalRequest.url}: ${e.message}", e)
-            refreshScope.launch {
-                saveFailedRequest(originalRequest, e.message ?: "Timeout")
-            }
+        } catch (e: SocketTimeoutException) {
+            Log.e("AuthInterceptor", "Timeout: ${e.message}", e)
+            saveFailedRequestAsync(originalRequest, "Timeout")
             return createTimeoutResponse(originalRequest)
         } catch (e: Exception) {
-            Log.e("AuthInterceptor", "Request failed for ${originalRequest.url}: ${e.message}", e)
-            refreshScope.launch {
-                saveFailedRequest(originalRequest, e.message ?: "Unknown error")
-            }
+            Log.e("AuthInterceptor", "Request failed: ${e.message}", e)
+            saveFailedRequestAsync(originalRequest, e.message ?: "Unknown error")
             throw e
         }
 
-        return if (response.code == 401) {
-            refreshScope.launch {
-                handleUnauthorizedError(chain, originalRequest)
+        if (initialResponse.code == 401) {
+            initialResponse.close()
+
+            return runBlocking(Dispatchers.IO) {
+                refreshMutex.withLock {
+                    val newToken = tokenManager.getAccessToken()
+                    if (newToken != requestWithToken.header("Authorization")
+                            ?.removePrefix("Bearer ")
+                    ) {
+                        chain.proceed(originalRequest.withAuthToken(newToken))
+                    } else {
+                        val refreshResult = refreshAccessToken()
+                        if (refreshResult.isSuccess) {
+                            val freshToken = refreshResult.getOrThrow()
+                            tokenManager.saveAccessToken(freshToken)
+                            chain.proceed(originalRequest.withAuthToken(freshToken))
+                        } else {
+                            tokenManager.deleteToken()
+                            createUnauthorizedResponse(originalRequest)
+                        }
+                    }
+                }
             }
-            response
-        } else {
-            response
+        }
+        return initialResponse
+    }
+
+    private fun saveFailedRequestAsync(request: Request, error: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            saveFailedRequest(request, error)
         }
     }
 
-    private suspend fun handleUnauthorizedError(chain: Chain, request: Request): Response {
-        if (!refreshMutex.tryLock()) {
-            return chain.proceed(request)
-        }
-        return try {
-            val result = refreshAccessToken()
-            if (result.isSuccess) {
-                val newToken = result.getOrThrow()
-                tokenManager.saveAccessToken(newToken)
-                chain.proceedWithNewToken(request, newToken)
-            } else {
-                tokenManager.deleteToken()
-                createUnauthorizedResponse(request)
-            }
-        } catch (e: java.net.SocketTimeoutException) {
-            Log.e("AuthInterceptor", "Token refresh timed out for ${request.url}: ${e.message}", e)
-            tokenManager.deleteToken()
-            createTimeoutResponse(request)
-        } catch (e: Exception) {
-            Log.e("AuthInterceptor", "Token refresh error for ${request.url}: ${e.message}", e)
-            tokenManager.deleteToken()
-            createUnauthorizedResponse(request)
-        } finally {
-            refreshMutex.unlock()
-        }
-    }
 
     private suspend fun refreshAccessToken(): Result<String> {
         val accessToken = tokenManager.getAccessToken() ?: return Result.failure(Exception("No access token available").also {
@@ -116,12 +105,11 @@ class AuthInterceptor @Inject constructor(
                     Log.e("AuthInterceptor", "No access token in response")
                 })
             } else {
-                tokenManager.deleteToken()
                 Result.failure(Exception("Token refresh failed").also {
                     Log.e("AuthInterceptor", "Token refresh failed")
                 })
             }
-        } catch (e: java.net.SocketTimeoutException) {
+        } catch (e: SocketTimeoutException) {
             Log.e("AuthInterceptor", "Token refresh timed out: ${e.message}", e)
             Result.failure(e)
         } catch (e: Exception) {
@@ -195,18 +183,6 @@ class AuthInterceptor @Inject constructor(
             this.newBuilder().header("Authorization", "Bearer $token").build()
         } else {
             this
-        }
-    }
-
-    private fun Chain.proceedWithNewToken(request: Request, token: String): Response {
-        return try {
-            proceed(request.newBuilder().header("Authorization", "Bearer $token").build())
-        } catch (e: java.net.SocketTimeoutException) {
-            Log.e("AuthInterceptor", "Retried request timed out for ${request.url}: ${e.message}", e)
-            createTimeoutResponse(request)
-        } catch (e: Exception) {
-            Log.e("AuthInterceptor", "Retried request failed for ${request.url}: ${e.message}", e)
-            throw e
         }
     }
 }

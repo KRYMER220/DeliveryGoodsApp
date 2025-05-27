@@ -1,5 +1,7 @@
 package ru.krymer.delivery.ui.screens.analitic
 
+import android.util.Log
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
@@ -83,7 +85,6 @@ class AnaliticViewModel @Inject constructor(
                 convertDataTripToBars()
             }
         }
-
     }
 
 
@@ -208,7 +209,15 @@ class AnaliticViewModel @Inject constructor(
                 dateRangeForSearch = Pair(startOfDay, endOfDay)
             )
         }
-        launchCoroutine { loadDataFactoryOfDateRange() }
+        launchCoroutine {
+            when(viewState.value.analiticAction) {
+                AnaliticAction.None -> {}
+                AnaliticAction.OpenAll -> loadDataFactoryOfDateRange()
+                AnaliticAction.OpenClient -> loadDataClientOfDateRange()
+                AnaliticAction.OpenLog -> {}
+                AnaliticAction.OpenTrip -> loadDatTripOfDateRange()
+            }
+        }
     }
 
     private fun dismissDatePicker() {
@@ -283,7 +292,56 @@ class AnaliticViewModel @Inject constructor(
                     )
                 }
                 convertDataFactoryToBars()
-                convertDataToLine()
+            }
+        }
+    }
+
+    private suspend fun loadDatTripOfDateRange() {
+        val date = viewState.value.dateRangeForSearch
+        val trip = viewState.value.currentTrip
+        trip?.let {
+            val response = analiticApi.getDataTripOfRange(
+                dateRange = DateRequest(
+                    dateStart = date.first, dateEnd = date.second, id = trip.value.idRoute
+                )
+            )
+            if (response.success) {
+                val data = response.obj
+                data?.let {
+                    updateViewState {
+                        it.copy(
+                            data = MutableStateFlow(data),
+                            isLoadTripData = true,
+                            requests = MutableStateFlow(data.requests),
+                        )
+                    }
+                    convertDataFactoryToBars()
+                }
+            }
+        }
+    }
+
+    private suspend fun loadDataClientOfDateRange() {
+        val date = viewState.value.dateRangeForSearch
+        val client = viewState.value.currentClient
+        client?.let {
+            val response = analiticApi.getDataClientOfRange(
+                dateRange = DateRequest(
+                    dateStart = date.first, dateEnd = date.second, id = client.value.id
+                )
+            )
+            if (response.success) {
+                val data = response.obj
+                data?.let {
+                    updateViewState {
+                        it.copy(
+                            data = MutableStateFlow(data),
+                            isLoadClientData = true,
+                            requests = MutableStateFlow(data.requests),
+                        )
+                    }
+                    convertDataFactoryToBars()
+                }
             }
         }
     }
@@ -350,23 +408,6 @@ class AnaliticViewModel @Inject constructor(
                 bars = MutableStateFlow(bars)
             )
         }
-    }
-
-    private fun convertDataToLine() {
-        val data = viewState.value.data.value.bars
-        val values = mutableListOf<Double>()
-
-        data.forEach { item ->
-            values.add(item.value)
-        }
-        val line = Line(
-            label = "Выручка", values = values, color = Brush.verticalGradient(
-                listOf(
-                    Color.Red, Color.Red
-                )
-            )
-        )
-        updateViewState { it.copy(lines = MutableStateFlow(listOf(line))) }
     }
 
     private fun actionInvoked() {

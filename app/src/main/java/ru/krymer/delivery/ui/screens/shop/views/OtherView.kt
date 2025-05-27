@@ -130,13 +130,15 @@ fun MessageTextView(
 
 @Composable
 fun ChangeTypePayView(
-    viewState: ShopViewState,
+    state: ShopViewState,
     changeTypePay: (TypePayModel) -> Unit,
     changeStateChangerTypePay: (Boolean) -> Unit
 ) {
-    val type = viewState.typePay.collectAsState().value.getRuStringByTypePay()
+    val type = state.typePay.collectAsState().value.getRuStringByTypePay()
     Box(
-        modifier = Modifier.fillMaxWidth().padding(5.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(5.dp)
     ) {
         Row(
             modifier = Modifier
@@ -158,7 +160,7 @@ fun ChangeTypePayView(
                 modifier = Modifier.padding(end = 15.dp),
                 tint = AppTheme.colors.onSecondary
             )
-            DropdownMenu(expanded = viewState.isShowDropDownTypePay, onDismissRequest = {
+            DropdownMenu(expanded = state.isShowDropDownTypePay, onDismissRequest = {
                 changeStateChangerTypePay(false)
             }, modifier = Modifier.background(AppTheme.colors.onPrimary)) {
                 val list = TypePayModel.entries.toTypedArray()

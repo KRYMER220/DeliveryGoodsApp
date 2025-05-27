@@ -25,4 +25,5 @@ sealed class TripEvent {
     data class ChangerCheckBoxFilterCourier(val boolean: Boolean): TripEvent()
     data object SubmitFilter: TripEvent()
     data object LoadMoreTrips : TripEvent()
+    data class ChangeSalaryTrip(val salary: String) : TripEvent()
 }

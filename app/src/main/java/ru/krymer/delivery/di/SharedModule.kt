@@ -22,7 +22,6 @@ object SharedModule {
         tokenManager: TokenManager,
         factoryApi: FactoryApi,
         database: AppDatabase,
-        retryManager: RetryManager,
         sharedPreferencesManager: AppPreferencesManager
     ): SharedViewModel {
         return SharedViewModel(
@@ -30,7 +29,6 @@ object SharedModule {
             tokenManager = tokenManager,
             factoryApi = factoryApi,
             database = database,
-            retryManager = retryManager,
             manager = sharedPreferencesManager
         )
     }

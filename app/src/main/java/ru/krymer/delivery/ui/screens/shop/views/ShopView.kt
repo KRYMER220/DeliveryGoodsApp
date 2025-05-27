@@ -1,5 +1,6 @@
 package ru.krymer.delivery.ui.screens.shop.views
 
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -8,24 +9,355 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.ShopModel
-import ru.krymer.delivery.ui.screens.shared.SharedViewModel
+import ru.krymer.delivery.data.model.user.UserModel
+import ru.krymer.delivery.ui.components.CommonAlertAddDialog
+import ru.krymer.delivery.ui.components.CommonDeleteDialog
+import ru.krymer.delivery.ui.components.CommonInfoAlertDialog
+import ru.krymer.delivery.ui.components.CommonUpdateDialog
+import ru.krymer.delivery.ui.components.ConfirmView
+import ru.krymer.delivery.ui.components.InfoDialog
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
+import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
 import ru.krymer.delivery.ui.theme.AppTheme
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun ShopView(
+    state: ShopViewState, event: (ShopEvent) -> Unit, popBackStack: () -> Unit, user: UserModel
+) {
+
+    val context = LocalContext.current
+    val shops = state.listShop.collectAsState().value
+    var isFirstLoad by remember { mutableStateOf(true) }
+
+    val lazyListState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(key1 = shops) {
+        if (shops.isNotEmpty() && isFirstLoad) {
+            isFirstLoad = false
+            coroutineScope.launch {
+                delay(300)
+                lazyListState.animateScrollToItem(1)
+            }
+        }
+    }
+
+    LazyColumn(
+        state = lazyListState,
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(7.dp)
+    ) {
+
+        item {
+            Spacer(
+                modifier = Modifier
+                    .fillParentMaxHeight(0.7f)
+                    .fillMaxWidth()
+            )
+        }
+
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.back_stack),
+                    contentDescription = "exit",
+                    modifier = Modifier
+                        .clickable(onClick = {
+                            event(ShopEvent.ShopActionInvoked)
+                            popBackStack()
+                        })
+                        .size(50.dp)
+                )
+                Image(
+                    painter = painterResource(id = R.drawable.car_info),
+                    contentDescription = "courier millage",
+                    modifier = Modifier
+                        .clickable(onClick = {
+                            event(ShopEvent.OpenMillageDialog)
+                        })
+                        .size(50.dp)
+                )
+                Image(
+                    painter = painterResource(id = R.drawable.count),
+                    contentDescription = "product quantity",
+                    modifier = Modifier
+                        .padding(start = 10.dp, end = 10.dp)
+                        .combinedClickable(onClick = {
+                            event(ShopEvent.ShowRequestsInfoDialog)
+                        }, onLongClick = {
+                            event(ShopEvent.ShowHideDialogAnalitic)
+                        })
+                        .size(50.dp)
+                )
+                if (user.isModOrAdminOrSys()) {
+                    Image(
+                        painter = painterResource(id = R.drawable.add),
+                        contentDescription = "add shop",
+                        modifier = Modifier
+                            .combinedClickable(onClick = {
+                                event(ShopEvent.ShowAddDialogShopCurrentRoute)
+                            }, onLongClick = {
+                                event(ShopEvent.ShowAddDialogShopAllRoutes)
+                            })
+                            .size(50.dp)
+                    )
+                }
+            }
+        }
+
+        if (shops.isEmpty()) {
+            item {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .size(30.dp)
+                            .align(Alignment.Center),
+                        strokeWidth = 2.dp,
+                        color = Color.White
+                    )
+                }
+            }
+        } else {
+            itemsIndexed(shops, key = { _, item -> item.id }) { index, shop ->
+                ShopsItem(
+                    shop = shop,
+                    openShop = {
+                        event(ShopEvent.OpenRequest(shop = it))
+                    },
+                    openLocate = {
+                        event(
+                            ShopEvent.OpenGeoPoint(
+                                context = context,
+                                cord = it.cord
+                            )
+                        )
+                    },
+                    openInfoCurrentShop = {
+                        event(ShopEvent.OpenInfoShopDialog(shop = it))
+                    },
+                    modifier = Modifier.animateItem(
+                        fadeInSpec = null,
+                        fadeOutSpec = null,
+                        placementSpec = tween(durationMillis = 400)
+                    ),
+                    index = index + 1
+                )
+                Spacer(modifier = Modifier.height(3.dp))
+            }
+        }
+    }
+
+    DisposableEffect(key1 = Unit) {
+        onDispose {
+            event(ShopEvent.ShopActionInvoked)
+        }
+    }
+
+    if (state.isShowMillageDialog) {
+        CommonUpdateDialog(isVisible = true, dismiss = {
+            event(ShopEvent.DismissMillageDialog)
+        }, confirm = {
+            event(ShopEvent.MillageSaveAction)
+        }, content = {
+            MillageAndInfoView(state = state, onMillageTFC = {
+                event(ShopEvent.ValueChangeMillage(millage = it))
+            })
+        })
+    }
+
+    if (state.isShowAnaliticTrip) {
+        CommonInfoAlertDialog(
+            content = {
+                AnaliticView(state = state)
+            },
+            onDismissRequest = {
+                event(ShopEvent.ShowHideDialogAnalitic)
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+
+    if (state.stateAddDialog) {
+        CommonAlertAddDialog(onDismiss = {
+            event(ShopEvent.DismissAddDialog)
+        }, confirm = {
+            event(ShopEvent.ShopAddAction)
+        }, content = {
+            AddShopAndRequestView(
+                state = state, event = event
+            )
+        })
+    }
+
+    if (state.showDialogAddRequest) {
+        CommonAlertAddDialog(onDismiss = {
+            event(ShopEvent.DismissDialogAddRequest)
+        }, confirm = {
+            event(ShopEvent.RequestAddAction)
+        }, content = {
+            AddRequestView(
+                state = state, event = event
+            )
+        })
+    }
+
+    if (state.showRequestDialog) {
+        Dialog(onDismissRequest = { event(ShopEvent.DismissRequestDialog) }) {
+            Card(
+                modifier = Modifier.fillMaxWidth(), colors = CardColors(
+                    containerColor = AppTheme.colors.onPrimary,
+                    contentColor = AppTheme.colors.onPrimary,
+                    disabledContentColor = AppTheme.colors.onPrimary,
+                    disabledContainerColor = AppTheme.colors.onPrimary
+                )
+            ) {
+                AlertDialogRequestShop(
+                    event = event, state = state
+                )
+            }
+        }
+    }
+
+    if (state.stateInfoDialog) {
+        InfoDialog(
+            isVisible = true,
+            onDismiss = { event(ShopEvent.DismissRequestInfoDialog) },
+            content = {
+                InfoContent(
+                    state = state,
+                    onUpdate = { event(ShopEvent.CopyInfoData(context = context)) })
+            })
+    }
+
+    if (state.stateInfoShopDialog) {
+        CommonInfoAlertDialog(
+            onDismissRequest = { event(ShopEvent.DismissInfoShopDialog) },
+            content = { InfoShopContent(state = state) })
+    }
+
+    if (state.isShowAddSumDialog) {
+        CommonAlertAddDialog(
+            onDismiss = { event(ShopEvent.DismissAddSumDialog) },
+            confirm = { event(ShopEvent.SaveAddSum) },
+            content = {
+                ChangeAddSumView(changeAddSum = {
+                    event(ShopEvent.ChangeAddSum(it))
+                })
+            })
+    }
+
+    if (state.isShowMessageDialog) {
+        CommonUpdateDialog(
+            dismiss = {
+                event(ShopEvent.DismissMessageAddDialog)
+            },
+            confirm = {
+                event(ShopEvent.SendMessage)
+            },
+            content = {
+                MessageTextView(changeTextMessage = {
+                    event(ShopEvent.ChangeMessage(it))
+                })
+            }, isVisible = true
+        )
+    }
+
+    if (state.isShowTypePayChangeDialog) {
+        CommonInfoAlertDialog(
+            onDismissRequest = { event(ShopEvent.DismissChangeTypePayDialog) },
+            content = {
+                ChangeTypePayView(
+                    state = state,
+                    changeTypePay = { event(ShopEvent.ChangeTypePay(it)) },
+                    changeStateChangerTypePay = {
+                        event(
+                            ShopEvent.ChangeDropDownStateTypePayChanger(
+                                it
+                            )
+                        )
+                    }
+                )
+            }
+        )
+    }
+
+    if (state.isShowDialogArrears) {
+        CommonAlertAddDialog(
+            onDismiss = { event(ShopEvent.DismissDialogChangeArrears) },
+            confirm = { event(ShopEvent.SaveArrears) },
+            content = {
+                ChangeArrearsView(changeArrears = {
+                    event(ShopEvent.ChangeArrears(it))
+                })
+            },
+            otherFun = {})
+    }
+
+    if (state.showDeleteDialog) {
+        state.currentShop?.let {
+            CommonDeleteDialog(
+                itemName = it.nameShop,
+                isVisible = true,
+                onDismiss = { event(ShopEvent.DismissDeleteDialog) },
+                onConfirm = { event(ShopEvent.DeleteShop) })
+        }
+    }
+
+    if (state.stateConfirmRequestDialog) {
+        CommonInfoAlertDialog(
+            onDismissRequest = { event(ShopEvent.DismissConfirmRequestDialog) },
+            content = {
+                ConfirmView(
+                    onSubmit = { event(ShopEvent.RequestSaveAction) },
+                    onDismiss = { event(ShopEvent.DismissConfirmRequestDialog) }
+                )
+            }
+        )
+    }
+}
+
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -33,14 +365,14 @@ fun ShopsItem(
     shop: ShopModel,
     openShop: (ShopModel) -> Unit,
     openLocate: (ShopModel) -> Unit,
-    openCurrentShopInfo: (ShopModel) -> Unit,
+    openInfoCurrentShop: (ShopModel) -> Unit,
     modifier: Modifier,
     index: Int
 ) {
     Box(modifier = modifier
         .combinedClickable(
             onLongClick = { openLocate(shop) },
-            onClick = { openShop(shop) }, onDoubleClick = { openCurrentShopInfo(shop) })
+            onClick = { openShop(shop) }, onDoubleClick = { openInfoCurrentShop(shop) })
         .background(
             color = AppTheme.colors.secondary,
             shape = RoundedCornerShape(10.dp)

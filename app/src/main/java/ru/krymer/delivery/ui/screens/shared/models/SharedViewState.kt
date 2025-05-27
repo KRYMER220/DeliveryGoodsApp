@@ -1,5 +1,7 @@
 package ru.krymer.delivery.ui.screens.shared.models
 
+import android.os.Bundle
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import kotlinx.coroutines.flow.MutableStateFlow
 import ru.krymer.delivery.data.model.FactoryModel
@@ -29,4 +31,5 @@ data class SharedViewState(
 
     val listMessage: MutableStateFlow<List<MessageModel>> = MutableStateFlow(listOf()),
     val currentFont: MutableStateFlow<Int> = MutableStateFlow(0),
+    val stack: Bundle? = null,
 )

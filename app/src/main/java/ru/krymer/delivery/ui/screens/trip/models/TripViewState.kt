@@ -28,6 +28,7 @@ data class TripViewState(
     val dropDownStateDatePicker: Boolean = false,
     var currentRoute: RouteModel? = null,
     var currentCourier: UserModel? = null,
+    var salary: String = "",
     val listRoute: MutableStateFlow<List<RouteModel>> = MutableStateFlow(listOf()),
     val listCourier: MutableStateFlow<List<UserModel>> = MutableStateFlow(listOf()),
     var currentDate: Long = getStartOfNextDay(),

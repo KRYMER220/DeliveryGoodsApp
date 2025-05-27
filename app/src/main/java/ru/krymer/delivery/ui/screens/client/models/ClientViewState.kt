@@ -9,10 +9,11 @@ sealed class ClientAction {
 }
 
 
-data class ClientShopViewState(
+data class ClientViewState(
     val clientAction: ClientAction = ClientAction.None,
     val isError: Boolean = false,
     val listClient: MutableStateFlow<List<ClientModel>> = MutableStateFlow(listOf()),
+    val listNewClient: MutableStateFlow<List<ClientModel>> = MutableStateFlow(listOf()),
     val listRoute: MutableStateFlow<List<RouteModel>> = MutableStateFlow(listOf()),
 
     val idRoute: String = "",

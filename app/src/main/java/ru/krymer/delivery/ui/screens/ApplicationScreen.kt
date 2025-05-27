@@ -19,6 +19,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.NavHost
@@ -38,20 +42,15 @@ import ru.krymer.delivery.ui.navigation.NavigationTree
 import ru.krymer.delivery.ui.screens.analitic.AnaliticScreen
 import ru.krymer.delivery.ui.screens.analitic.AnaliticViewModel
 import ru.krymer.delivery.ui.screens.client.ClientShopScreen
-import ru.krymer.delivery.ui.screens.client.ClientViewModel
 import ru.krymer.delivery.ui.screens.courier.CourierScreen
-import ru.krymer.delivery.ui.screens.courier.CourierViewModel
 import ru.krymer.delivery.ui.screens.login.LoginScreen
 import ru.krymer.delivery.ui.screens.main.MenuScreen
 import ru.krymer.delivery.ui.screens.product.ProductScreen
-import ru.krymer.delivery.ui.screens.product.ProductViewModel
 import ru.krymer.delivery.ui.screens.route.RouteScreen
-import ru.krymer.delivery.ui.screens.route.RouteViewModel
 import ru.krymer.delivery.ui.screens.shared.models.AuthAction
 import ru.krymer.delivery.ui.screens.shared.models.SharedEvents
 import ru.krymer.delivery.ui.screens.shared.models.SharedViewState
-import ru.krymer.delivery.ui.screens.shop.ShopViewModel
-import ru.krymer.delivery.ui.screens.shop.TripShopScreen
+import ru.krymer.delivery.ui.screens.shop.ShopScreen
 import ru.krymer.delivery.ui.screens.splash.SplashScreen
 import ru.krymer.delivery.ui.screens.trip.TripScreen
 import ru.krymer.delivery.ui.theme.AppTheme
@@ -62,31 +61,28 @@ import ru.krymer.delivery.utills.Constants
 fun ApplicationScreen(
     navController: NavHostController, sharedState: SharedViewState, event: (SharedEvents) -> Unit
 ) {
-    val user = sharedState.user.collectAsState().value
-    if (sharedState.isUserBlocked) {
+
+    val isUserBlocked by remember(sharedState.isUserBlocked) {
+        derivedStateOf { sharedState.isUserBlocked }
+    }
+    if (isUserBlocked) {
         UserBlocked(event = event)
     } else {
 
         LaunchedEffect(sharedState.authAction) {
-            val navOptions = NavOptions.Builder()
-                .setLaunchSingleTop(true)
-                .setPopUpTo(NavigationTree.Splash.name, inclusive = true)
-                .build()
 
             when (sharedState.authAction) {
                 AuthAction.Authorized -> {
                     navigateToTap(
                         navController = navController,
-                        NavigationTree.Main.name,
-                        navOptions = navOptions
+                        NavigationTree.Main.name
                     )
                 }
 
                 AuthAction.Unauthorized -> {
                     navigateToTap(
                         navController = navController,
-                        NavigationTree.Login.name,
-                        navOptions = navOptions
+                        NavigationTree.Login.name
                     )
                 }
                 AuthAction.None -> {}
@@ -97,8 +93,7 @@ fun ApplicationScreen(
 
         NavHost(
             navController = navController,
-            startDestination = NavigationTree.Splash.name,
-            enterTransition = {
+            startDestination = NavigationTree.Splash.name, enterTransition = {
                 slideIntoContainer(
                     AnimatedContentTransitionScope.SlideDirection.Start, tween(0)
                 )
@@ -117,7 +112,8 @@ fun ApplicationScreen(
                 slideOutOfContainer(
                     AnimatedContentTransitionScope.SlideDirection.End, tween(0)
                 )
-            }) {
+            }
+            ) {
 
             composable(NavigationTree.Splash.name) { SplashScreen() }
 
@@ -125,6 +121,7 @@ fun ApplicationScreen(
 
 
             composable(NavigationTree.Main.name) {
+                val user = sharedState.user.collectAsState().value
                 MenuScreen(
                     navigateTo = {
                         navigateToTap(
@@ -135,34 +132,42 @@ fun ApplicationScreen(
                 )
             }
             composable(NavigationTree.Route.name) {
-                val routeViewModel = hiltViewModel<RouteViewModel>()
+                val user = sharedState.user.collectAsState().value
                 RouteScreen(
-                    viewModel = routeViewModel,
-                    navController = navController
+                    user = user,
+                    navigateTo = {
+                        navigateToTap(navController = navController, route = it)
+                    },
+                    popBackStack = {
+                        navController.popBackStack()
+                    }
                 )
             }
             composable(NavigationTree.Clients.name) {
-                val clientViewModel = hiltViewModel<ClientViewModel>()
+                val user = sharedState.user.collectAsState().value
                 ClientShopScreen(
-                    viewModel = clientViewModel,
-                    navController = navController
+                    user = user,
+                    popBackStack = {
+                        navController.popBackStack()
+                    }
                 )
             }
             composable(NavigationTree.Product.name) {
-                val productViewModel = hiltViewModel<ProductViewModel>()
                 ProductScreen(
-                    viewModel = productViewModel,
-                    navController = navController
+                    popBackStack = {
+                        navController.popBackStack()
+                    }
                 )
             }
             composable(NavigationTree.Courier.name) {
-                val courierViewModel = hiltViewModel<CourierViewModel>()
                 CourierScreen(
-                    navController = navController,
-                    viewModel = courierViewModel
+                    popBackStack = {
+                        navController.popBackStack()
+                    }
                 )
             }
             composable(NavigationTree.Trip.name) {
+                val user = sharedState.user.collectAsState().value
                 TripScreen(
                     navigateTo = {
                         navigateToTap(
@@ -170,30 +175,26 @@ fun ApplicationScreen(
                             route = it
                         )
                     },
-                    navigateToPreviousScreen = { navController.popBackStack() },
+                    popBackStack = { navController.popBackStack() },
                     user = user
                 )
             }
 
             composable(NavigationTree.Shop.name) {
-                val shopViewModel = hiltViewModel<ShopViewModel>()
-                TripShopScreen(
-                    viewModel = shopViewModel,
-                    navController = navController
+                val user = sharedState.user.collectAsState().value
+                ShopScreen(
+                    popBackStack = { navController.popBackStack() },
+                    user = user
                 )
             }
 
             composable(NavigationTree.Analitic.name) {
-                val analiticViewModel = hiltViewModel<AnaliticViewModel>()
                 AnaliticScreen(
-                    viewModel = analiticViewModel,
-                    navController = navController
+                    popBackStack = { navController.popBackStack() }
                 )
             }
-
         }
     }
-
 }
 
 @Composable
@@ -271,26 +272,22 @@ fun MessageSnackBar(sharedViewState: SharedViewState) {
                             color = AppTheme.colors.onSecondary,
                         )
                     }
-
                 }
             }
         }
-
     }
 }
 
-fun navigateToTap(navController: NavController, route: String, navOptions: NavOptions? = null) {
-    if (navOptions != null) {
-        navController.navigate(route, navOptions)
-    } else {
-        navController.navigate(route) {
-            navController.graph.startDestinationRoute?.let { homeScreen ->
-                popUpTo(homeScreen) {
-                    saveState = true
-                }
-            }
-            restoreState = true
-            launchSingleTop = true
+fun navigateToTap(navController: NavController, route: String) {
+    val startDestination = navController.graph.findStartDestination()
+    val isStartDestinationSplash = startDestination.route == NavigationTree.Splash.name
+
+    navController.navigate(route) {
+        popUpTo(startDestination.id) {
+            saveState = true
+            inclusive = isStartDestinationSplash
         }
+        restoreState = true
+        launchSingleTop = true
     }
 }

@@ -8,7 +8,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -169,6 +168,11 @@ class ShopViewModel @Inject constructor(
         }
     }
 
+    init {
+        getLocalData()
+        getDataProduct()
+    }
+
     private fun showHideDialogAnalitic() {
         updateViewState { it.copy(isShowAnaliticTrip = !it.isShowAnaliticTrip) }
     }
@@ -217,15 +221,14 @@ class ShopViewModel @Inject constructor(
         }
     }
 
-    init {
-        getLocalData()
-        getDataProduct()
-    }
-
     private fun getLocalData() {
         launchCoroutine {
             val trip = sharedViewModel.viewState.value.currentTrip
-            trip?.let { t ->
+            if (trip == null) {
+                sharedViewModel.message("Ошибка: рейс не выбран")
+                return@launchCoroutine
+            }
+            trip.let { t ->
                 val shopsLocal = room.shopDao().getShops(idTrip = t.id)
                 Log.d("Debag", "$shopsLocal")
                 if (shopsLocal.isEmpty()) {
@@ -411,7 +414,7 @@ class ShopViewModel @Inject constructor(
             if (user != null) {
                 val response = productApi.getProducts(idFactory = user.idFactory)
                 if (response.success) {
-                    val products = response.obj?.sortedBy { it.price }
+                    val products = response.obj
                     if (!products.isNullOrEmpty()) {
                         updateViewState {
                             it.copy(
@@ -437,7 +440,7 @@ class ShopViewModel @Inject constructor(
                         updateViewState {
                             it.copy(
                                 listShop = MutableStateFlow(shops),
-                                currentTrip = trip,
+                                currentTrip = MutableStateFlow(trip),
                             )
                         }
                         databaseInit(shops)
@@ -772,7 +775,7 @@ class ShopViewModel @Inject constructor(
 
     private fun getDataForCourier() {
         launchCoroutine {
-            val trip = viewState.value.currentTrip
+            val trip = viewState.value.currentTrip.value
             if (trip != null) {
                 val response =
                     tripApi.getDataAboutTrip(idTrip = trip.id, idFactory = trip.idFactory)
@@ -786,13 +789,16 @@ class ShopViewModel @Inject constructor(
                                 salary = if (trip.millage > 0.0) MutableStateFlow(getData.salary) else MutableStateFlow(
                                     0.0
                                 ),
-                                isDataShopForCourierLoad = true,
                                 cash = MutableStateFlow(getData.cash),
                                 allMoney = MutableStateFlow(getData.allMoney),
                                 remains = if (trip.millage > 0.0) MutableStateFlow(getData.remainCash) else MutableStateFlow(
                                     0.0
                                 ),
-                            )
+                                salaryFix = MutableStateFlow(trip.salary),
+                                isDataShopForCourierLoad = true,
+
+
+                                )
                         }
                     }
                 } else {
@@ -810,7 +816,7 @@ class ShopViewModel @Inject constructor(
     private fun saveMillage() {
         launchCoroutine {
             val millage = viewState.value.millage.value
-            val trip = viewState.value.currentTrip
+            val trip = viewState.value.currentTrip.value
             val user = sharedViewModel.viewState.value.user.value
             if (trip != null && user != null) {
                 if (user.id == trip.idCourier || sharedViewModel.initSysAdm()) {
@@ -831,9 +837,8 @@ class ShopViewModel @Inject constructor(
                     val newTrip = trip.copy(millage = millage)
                     if (response.success) {
                         sharedViewModel.updateViewState { it.copy(currentTrip = newTrip) }
-                        updateViewState { it.copy(currentTrip = newTrip) }
+                        updateViewState { it.copy(currentTrip = MutableStateFlow(newTrip)) }
                         getDataForCourier()
-
                     } else {
                         sharedViewModel.message(response.message)
                     }

@@ -1,6 +1,5 @@
 package ru.krymer.delivery.ui.screens.trip.views
 
-import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -54,7 +53,7 @@ import ru.krymer.delivery.utills.convertToTextDate
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TripView(
-    navigateToPreviousScreen: () -> Unit = {},
+    popBackStack: () -> Unit = {},
     event: (TripEvent) -> Unit = {},
     state: TripViewState,
     user: UserModel,
@@ -122,7 +121,8 @@ fun TripView(
                     contentDescription = "exit",
                     modifier = Modifier
                         .clickable(onClick = {
-                            navigateToPreviousScreen
+                            event(TripEvent.TripActionDefault)
+                            popBackStack()
                         })
                         .size(50.dp)
                 )
@@ -151,7 +151,7 @@ fun TripView(
         }
 
         if (trips.isNotEmpty()) {
-            items(items = trips, key = { it.id }) { trip ->
+            items(items = trips) { trip ->
                 TripItem(
                     trip = trip, updateTrip = {
                     event(TripEvent.ShowUpdateDialog(it))
