@@ -3,6 +3,7 @@ package ru.krymer.delivery.ui.screens.shop.views
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.RequestModel
 import ru.krymer.delivery.data.model.ShopModel
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
 import ru.krymer.delivery.ui.theme.AppTheme
 import ru.krymer.delivery.utills.convertToTextDate
@@ -188,9 +190,10 @@ fun InfoContentProductItem(product: RequestModel) {
 
 
 @Composable
-fun ItemInfoShop(shop: ShopModel) {
+fun ItemInfoShop(shop: ShopModel, copyInfoData: (ShopModel) -> Unit = {}) {
     Column(
-        modifier = Modifier
+        modifier = Modifier.
+            combinedClickable(onClick = {}, onLongClick = { copyInfoData(shop) })
             .background(colorResource(id = R.color.tint), shape = RoundedCornerShape(15.dp))
             .fillMaxWidth()
             .padding(10.dp),

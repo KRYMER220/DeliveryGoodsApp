@@ -22,14 +22,12 @@ import ru.krymer.delivery.ui.theme.AppTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CommonUpdateDialog(
-    isVisible: Boolean,
+fun CommonSaveDialog(
     dismiss: () -> Unit,
     content: @Composable () -> Unit,
     confirm: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()
-    if (isVisible) {
         ModalBottomSheet(
             onDismissRequest = dismiss,
             sheetState = sheetState,
@@ -52,6 +50,5 @@ fun CommonUpdateDialog(
                 Spacer(modifier = Modifier.height(10.dp))
                 content()
             }
-        }
     }
 }

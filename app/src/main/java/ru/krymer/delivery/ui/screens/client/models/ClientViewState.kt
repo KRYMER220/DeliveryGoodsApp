@@ -3,6 +3,7 @@ package ru.krymer.delivery.ui.screens.client.models
 import kotlinx.coroutines.flow.MutableStateFlow
 import ru.krymer.delivery.data.model.ClientModel
 import ru.krymer.delivery.data.model.RouteModel
+import ru.krymer.delivery.ui.screens.analitic.models.AnaliticEvent
 
 sealed class ClientAction {
     data object None : ClientAction()
@@ -13,6 +14,7 @@ data class ClientViewState(
     val clientAction: ClientAction = ClientAction.None,
     val isError: Boolean = false,
     val listClient: MutableStateFlow<List<ClientModel>> = MutableStateFlow(listOf()),
+    val currentRoute: MutableStateFlow<RouteModel?> = MutableStateFlow(null),
     val listNewClient: MutableStateFlow<List<ClientModel>> = MutableStateFlow(listOf()),
     val listRoute: MutableStateFlow<List<RouteModel>> = MutableStateFlow(listOf()),
 
@@ -31,5 +33,5 @@ data class ClientViewState(
     val cords: String = "",
 
     val dropDownState: Boolean = false,
-    val selectedRoute: RouteModel? = null,
+    val selectedRoute: MutableStateFlow<RouteModel?> = MutableStateFlow(null),
 )

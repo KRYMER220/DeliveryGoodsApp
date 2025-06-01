@@ -447,16 +447,6 @@ class TripViewModel @Inject constructor(
     }
 
     private fun shopsItemClicked(trip: TripModel) {
-        sharedViewModel.updateViewState { it.copy(currentTrip = trip) }
-        launchCoroutine {
-            val localTrip = database.tripDao().getTripById(trip.id)
-            if (localTrip != null) {
-                database.tripDao().updateTrip(trip)
-            } else {
-                database.tripDao().insertTrip(trip)
-            }
 
-            updateViewState { it.copy(tripAction = TripAction.OpenShops) }
-        }
     }
 }

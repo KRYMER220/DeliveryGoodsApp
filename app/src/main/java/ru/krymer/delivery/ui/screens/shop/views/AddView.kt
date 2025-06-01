@@ -30,6 +30,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,130 +54,136 @@ fun AddShopAndRequestView(
     state: ShopViewState, event: (ShopEvent) -> Unit
 ) {
     val clients = state.listClient.collectAsState().value
+    val listShop = state.listInfoShop.collectAsState().value
     val products = state.listProduct.collectAsState().value
     if (clients.isNotEmpty() && products.isNotEmpty()) {
-        Column {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 10.dp)
-                    .background(
-                        color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)
-                    )
-            ) {
-                Row(
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+
+            item {
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(60.dp)
-                        .clickable {
-                            event(ShopEvent.ShowSelectorClientInAddDialog)
-                        }, verticalAlignment = Alignment.CenterVertically
+                        .padding(top = 10.dp)
+                        .background(
+                            color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)
+                        )
                 ) {
-                    Text(
-                        text = state.currentClient?.name ?: Constants.EMPTY.EMPTY_DATA,
-                        modifier = Modifier.padding(start = 15.dp),
-                        color = AppTheme.colors.onSecondary,
-                        style = AppTheme.typography.titleMedium
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    Icon(
-                        imageVector = Icons.Filled.ArrowDropDown,
-                        contentDescription = null,
-                        modifier = Modifier.padding(end = 15.dp),
-                        tint = AppTheme.colors.onSecondary
-                    )
-                    DropdownMenu(
-                        expanded = state.isShowSelectorClientInAddDialog,
-                        onDismissRequest = {
-                            event(ShopEvent.DismissSelectorClientInAddDialog)
-                        }) {
-                        val list = state.listClient.collectAsState().value
-                        list.forEach {
-                            DropdownMenuItem(text = { Text(text = it.name, style = AppTheme.typography.titleSmall) }, onClick = {
-                                event(
-                                    ShopEvent.DropDownSelectClient(it)
-                                )
-                                event(
-                                    ShopEvent.DismissSelectorClientInAddDialog
-                                )
-                            })
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(60.dp)
+                            .clickable {
+                                event(ShopEvent.ShowSelectorClientInAddDialog)
+                            }, verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = state.currentClient?.name ?: Constants.EMPTY.EMPTY_DATA,
+                            modifier = Modifier.padding(start = 15.dp),
+                            color = AppTheme.colors.onSecondary,
+                            style = AppTheme.typography.titleMedium
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        Icon(
+                            imageVector = Icons.Filled.ArrowDropDown,
+                            contentDescription = null,
+                            modifier = Modifier.padding(end = 15.dp),
+                            tint = AppTheme.colors.onSecondary
+                        )
+                        DropdownMenu(
+                            expanded = state.isShowSelectorClientInAddDialog,
+                            onDismissRequest = {
+                                event(ShopEvent.DismissSelectorClientInAddDialog)
+                            }) {
+                            val list = state.listClient.collectAsState().value
+                            list.forEach {
+                                DropdownMenuItem(text = {
+                                    Text(
+                                        text = it.name,
+                                        style = AppTheme.typography.titleSmall
+                                    )
+                                }, onClick = {
+                                    event(
+                                        ShopEvent.DropDownSelectClient(it)
+                                    )
+                                    event(
+                                        ShopEvent.DismissSelectorClientInAddDialog
+                                    )
+                                })
+                            }
                         }
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(2.dp))
-            Row(
-                horizontalArrangement = Arrangement.End,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(5.dp)
-            ) {
-                Box(modifier = Modifier.weight(0.4f))
-                Box(
-                    modifier = Modifier
-                        .clickable(onClick = {
-                            event(ShopEvent.SwitchBonusState)
-                        })
-                        .weight(0.2f)
-                ) {
-                    Text(
-                        style = AppTheme.typography.titleSmall,
-                        text = "Бонусы",
-                        fontSize = 12.sp,
-                        modifier = Modifier.align(Alignment.Center),
-                        color = AppTheme.colors.onSecondary
-                    )
-                }
-                Box(
-                    modifier = Modifier.weight(0.2f)
-                ) {
-                    Text(
-                        style = AppTheme.typography.titleSmall,
-                        text = "Заявка",
-                        fontSize = 12.sp,
-                        modifier = Modifier.align(Alignment.Center),
-                        color = AppTheme.colors.onSecondary
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(2.dp))
-            LazyColumn {
-                items(state.listProductRequest.value) { product ->
-                    ProductAddShopWithOrderItem(product = product, onVCCount = {
-                        event(
-                            ShopEvent.ChangeCountProduct(
-                                product = product, count = it
-                            )
-                        )
-                    }, onVCCountBonus = {
-                        event(
-                            ShopEvent.ChangeCountBonusProduct(
-                                product = product, bonus = it
-                            )
-                        )
-                    },
-                        onChangeStatus = { event(ShopEvent.ChangeAddStatusProduct(it)) },
-                        stateBonus = state.isBonusState
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                }
 
-                item {
-                    Column(Modifier.fillMaxWidth()) {
-                        MessagesView(viewState = state, deleteMessage = {
-                            event(ShopEvent.DeleteMessage(it))
-                        })
-                        Spacer(modifier = Modifier
-                            .fillMaxWidth()
-                            .height(1.dp)
-                            .background(AppTheme.colors.onSecondary))
-                        InfoShopContent(
-                            state = state,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(500.dp)
+            item {
+                Row(
+                    horizontalArrangement = Arrangement.End,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(5.dp)
+                ) {
+                    Box(modifier = Modifier.weight(0.4f))
+                    Box(
+                        modifier = Modifier
+                            .clickable(onClick = {
+                                event(ShopEvent.SwitchBonusState)
+                            })
+                            .weight(0.2f)
+                    ) {
+                        Text(
+                            style = AppTheme.typography.titleSmall,
+                            text = "Бонусы",
+                            fontSize = 12.sp,
+                            modifier = Modifier.align(Alignment.Center),
+                            color = AppTheme.colors.onSecondary
                         )
                     }
+                    Box(
+                        modifier = Modifier.weight(0.2f)
+                    ) {
+                        Text(
+                            style = AppTheme.typography.titleSmall,
+                            text = "Заявка",
+                            fontSize = 12.sp,
+                            modifier = Modifier.align(Alignment.Center),
+                            color = AppTheme.colors.onSecondary
+                        )
+                    }
+                }
+            }
+
+            items(state.listProductRequest.value) { product ->
+                ProductAddShopWithOrderItem(product = product, onVCCount = {
+                    event(
+                        ShopEvent.ChangeCountProduct(
+                            product = product, count = it
+                        )
+                    )
+                }, onVCCountBonus = {
+                    event(
+                        ShopEvent.ChangeCountBonusProduct(
+                            product = product, bonus = it
+                        )
+                    )
+                },
+                    onChangeStatus = { event(ShopEvent.ChangeAddStatusProduct(it)) },
+                    stateBonus = state.isBonusState
+                )
+            }
+
+            item {
+                MessagesView(viewState = state, deleteMessage = {
+                    event(ShopEvent.DeleteMessage(it))
+                })
+            }
+
+            if (listShop.isNotEmpty()) {
+                items(listShop) { shop ->
+                    ItemInfoShop(shop, copyInfoData = { event(ShopEvent.CopyAndSaveShop(it)) })
+                    Spacer(modifier = Modifier.height(10.dp))
                 }
             }
         }
@@ -265,7 +272,7 @@ fun AddRequestView(
                 }
             }
             Spacer(modifier = Modifier.height(5.dp))
-            LazyColumn {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 items(state.listProductRequest.value) { product ->
                     ProductAddShopWithOrderItem(product = product, onVCCount = {
                         event(
@@ -281,7 +288,6 @@ fun AddRequestView(
                         )
                     },
                         onChangeStatus = { event(ShopEvent.ChangeAddStatusProduct(it)) })
-                    Spacer(modifier = Modifier.height(10.dp))
                 }
             }
         }
@@ -307,11 +313,11 @@ fun ProductAddShopWithOrderItem(
     stateBonus: Boolean = false
 ) {
 
-    var count by remember {
+    var count by rememberSaveable {
         mutableStateOf("")
     }
 
-    var countBonus by remember {
+    var countBonus by rememberSaveable {
         mutableStateOf("")
     }
 

@@ -57,7 +57,7 @@ fun TripView(
     event: (TripEvent) -> Unit = {},
     state: TripViewState,
     user: UserModel,
-    navigateTo: (String) -> Unit = {}
+    openTrip: (TripModel) -> Unit = {}
 ) {
 
     val lazyListState = rememberLazyListState()
@@ -77,12 +77,6 @@ fun TripView(
     LaunchedEffect(shouldLoadMore) {
         if (shouldLoadMore) {
             event(TripEvent.LoadMoreTrips)
-        }
-    }
-
-    DisposableEffect(key1 = Unit) {
-        onDispose {
-            event(TripEvent.TripActionDefault)
         }
     }
 
@@ -124,7 +118,7 @@ fun TripView(
                             event(TripEvent.TripActionDefault)
                             popBackStack()
                         })
-                        .size(50.dp)
+                        .size(60.dp)
                 )
                 Image(
                     painter = painterResource(id = R.drawable.filter),
@@ -133,7 +127,7 @@ fun TripView(
                         .clickable(onClick = {
                             event(TripEvent.OpenFilterTrip)
                         })
-                        .size(50.dp)
+                        .size(60.dp)
                 )
                 if (user.isSysOrAdmin()) {
                     Image(
@@ -143,11 +137,10 @@ fun TripView(
                             .clickable(onClick = {
                                 event(TripEvent.ShowHideAddDialog)
                             })
-                            .size(50.dp)
+                            .size(60.dp)
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(20.dp))
         }
 
         if (trips.isNotEmpty()) {
@@ -158,7 +151,7 @@ fun TripView(
                 }, deleteTrip = {
                     event(TripEvent.ShowDeleteDialog(trip = it))
                 }, openTrip = {
-                    event(TripEvent.OpenTrip(it))
+                    openTrip(it)
                 }, user = user
                 )
                 Spacer(modifier = Modifier.height(3.dp))
@@ -218,15 +211,6 @@ fun TripView(
                 state = state, event = event
             )
         })
-    }
-
-    LaunchedEffect(key1 = state.tripAction) {
-        when (state.tripAction) {
-            TripAction.None -> {}
-            is TripAction.OpenShops -> {
-                navigateTo(NavigationTree.Shop.name)
-            }
-        }
     }
 }
 

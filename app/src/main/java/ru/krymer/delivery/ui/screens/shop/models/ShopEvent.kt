@@ -84,4 +84,5 @@ sealed class ShopEvent {
     data class DeleteMessage(val message: MessageModel): ShopEvent()
     data object SwitchBonusState: ShopEvent()
     data object ShowHideDialogAnalitic: ShopEvent()
+    data class CopyAndSaveShop(val shop: ShopModel): ShopEvent()
 }

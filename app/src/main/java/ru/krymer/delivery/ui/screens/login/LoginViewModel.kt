@@ -73,8 +73,8 @@ class LoginViewModel @Inject constructor(
                 val tokens = tokenResponse.obj
                 if (tokens != null) {
                     tokenManager.saveAccessToken(tokens.accessToken)
-                    sharedViewModel.authorized()
                     updateViewState { it.copy(isLoginProgress = false) }
+                    sharedViewModel.initAuth()
                 } else {
                     updateViewState { it.copy(isLoginProgress = false) }
                     sharedViewModel.message(Constants.ERROR.AGAIN)

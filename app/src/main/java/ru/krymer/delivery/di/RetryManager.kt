@@ -24,7 +24,7 @@ class RetryManager @Inject constructor(
         val failedRequests = appDatabase.failedDao().getAllFailedRequests().sortedBy { it.timestamp }
         failedRequests.forEach { failedRequest ->
             try {
-                if (failedRequest.retryCount >= 3) {
+                if (failedRequest.retryCount >= 5) {
                     appDatabase.failedDao().deleteById(failedRequest.id)
                     return@forEach
                 }

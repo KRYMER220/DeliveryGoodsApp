@@ -8,7 +8,7 @@ import ru.krymer.delivery.ui.screens.login.views.LoginView
 @Composable
 fun LoginScreen() {
     val viewModel = hiltViewModel<LoginViewModel>()
-    LoginView(state = viewModel.viewState.collectAsState().value, onEvent = viewModel::obtainEvent)
+    LoginView(state = viewModel.viewState.collectAsState().value, onEvent = viewModel::obtainEvent, )
 }
 
 

@@ -4,7 +4,6 @@ import ru.krymer.delivery.data.model.ClientModel
 import ru.krymer.delivery.data.model.RouteModel
 
 sealed class ClientEvent {
-    data object ClientActionInvoked : ClientEvent()
     data class ShowDeleteDialog(val client: ClientModel) : ClientEvent()
     data object ClientAddAction : ClientEvent()
     data object ShowAddDialog : ClientEvent()
@@ -19,8 +18,6 @@ sealed class ClientEvent {
     data object DismissDeleteDialog : ClientEvent()
     data object DismissAddDialog : ClientEvent()
     data object DismissUpdateDialog : ClientEvent()
-    data class DownItemIndex(val index: Int) : ClientEvent()
-    data class UpItemIndex(val index: Int) : ClientEvent()
     data object DeleteClient : ClientEvent()
     data class ReorderClients(val fromIndex: Int, val toIndex: Int) : ClientEvent()
 }

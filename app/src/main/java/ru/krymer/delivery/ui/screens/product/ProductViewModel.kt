@@ -59,9 +59,8 @@ class ProductViewModel @Inject constructor(
             is ProductEvent.DismissDeleteDialog -> dismissDeleteDialog()
             is ProductEvent.DismissUpdateDialog -> dismissUpdateDialog()
             is ProductEvent.ChangeIsActiveProduct -> changeStatusProduct()
-            is ProductEvent.DownItemIndex -> changePosProductInListOnDown(fromIndex = event.index)
-            is ProductEvent.UpItemIndex -> changePosProductInListOnUp(fromIndex = event.index)
             is ProductEvent.DeleteProduct -> deleteProduct()
+            is ProductEvent.ReorderProducts -> reorderProducts(toIndex = event.toIndex, fromIndex = event.fromIndex)
         }
     }
 
@@ -69,30 +68,25 @@ class ProductViewModel @Inject constructor(
         getDataProducts()
     }
 
-    private fun changePosProductInListOnDown(fromIndex: Int) {
+    private fun reorderProducts(toIndex: Int, fromIndex: Int) {
         launchCoroutine {
-            val list = _viewState.value.listProduct.value.map { it.copy() }
-            if (fromIndex in 0..list.size - 2) {
-                val itemFrom = list[fromIndex].copy()
-                val itemTo = list[fromIndex + 1].copy()
-                val indexFrom = itemFrom.counter
-                val indexTo = itemTo.counter
-                val newItemFrom = itemTo.toRequestUpdateIndex(indexFrom)
-                val newItemTo = itemFrom.toRequestUpdateIndex(indexTo)
-                val responseFrom = productApi.update(product = newItemFrom)
-                val responseTo = productApi.update(product = newItemTo)
-                if (responseTo.success && responseFrom.success) {
-                    val updatedList = list.map { it.copy() }.toMutableList()
-                    updatedList[fromIndex] = itemTo.copy(counter = indexFrom)
-                    updatedList[fromIndex + 1] = itemFrom.copy(counter = indexTo)
-                    updateViewState { it.copy(listProduct = MutableStateFlow(updatedList)) }
-                } else {
-                    sharedViewModel.message(
-                        Constants.ERROR.SERVER_ERROR_RESPONSE
-                    )
-                }
-            } else {
-                sharedViewModel.message(Constants.ERROR.GENERAL_ERROR)
+            var list = viewState.value.listProduct.value
+            list = list.toMutableList().apply {
+                add(toIndex, removeAt(fromIndex))
+            }
+            updateViewState { it.copy(listProduct = MutableStateFlow(list)) }
+            val itemFrom = list[fromIndex].copy()
+            val indexFrom = itemFrom.counter
+            val itemTo = list[toIndex].copy()
+            val indexTo = itemTo.counter
+            val newItemFrom = itemTo.toRequestUpdateIndex(indexFrom)
+            val newItemTo = itemFrom.toRequestUpdateIndex(indexTo)
+            val responseFrom = productApi.update(product = newItemFrom)
+            val responseTo = productApi.update(product = newItemTo)
+            if (!(responseTo.success && responseFrom.success)) {
+                sharedViewModel.message(
+                    Constants.ERROR.SERVER_ERROR_RESPONSE
+                )
             }
         }
     }

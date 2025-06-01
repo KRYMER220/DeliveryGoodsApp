@@ -1,7 +1,9 @@
 package ru.krymer.delivery.ui.screens
 
-import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,36 +20,32 @@ import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavHostController
-import androidx.navigation.NavOptions
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.entry
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberSavedStateNavEntryDecorator
+import androidx.navigation3.ui.NavDisplay
+import androidx.navigation3.ui.rememberSceneSetupNavEntryDecorator
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import ru.krymer.delivery.Screens
 import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
-import ru.krymer.delivery.ui.navigation.NavigationTree
 import ru.krymer.delivery.ui.screens.analitic.AnaliticScreen
-import ru.krymer.delivery.ui.screens.analitic.AnaliticViewModel
-import ru.krymer.delivery.ui.screens.client.ClientShopScreen
+import ru.krymer.delivery.ui.screens.client.ClientScreen
 import ru.krymer.delivery.ui.screens.courier.CourierScreen
 import ru.krymer.delivery.ui.screens.login.LoginScreen
 import ru.krymer.delivery.ui.screens.main.MenuScreen
 import ru.krymer.delivery.ui.screens.product.ProductScreen
 import ru.krymer.delivery.ui.screens.route.RouteScreen
-import ru.krymer.delivery.ui.screens.shared.models.AuthAction
 import ru.krymer.delivery.ui.screens.shared.models.SharedEvents
 import ru.krymer.delivery.ui.screens.shared.models.SharedViewState
 import ru.krymer.delivery.ui.screens.shop.ShopScreen
@@ -59,146 +57,130 @@ import ru.krymer.delivery.utills.Constants
 @ExperimentalMaterial3Api
 @Composable
 fun ApplicationScreen(
-    navController: NavHostController, sharedState: SharedViewState, event: (SharedEvents) -> Unit
+    sharedState: State<SharedViewState>,
+    event: (SharedEvents) -> Unit,
+    backStack: SnapshotStateList<Screens>,
+    modifier: Modifier,
 ) {
 
-    val isUserBlocked by remember(sharedState.isUserBlocked) {
-        derivedStateOf { sharedState.isUserBlocked }
-    }
-    if (isUserBlocked) {
-        UserBlocked(event = event)
-    } else {
+    val user = sharedState.value.user.collectAsState().value
+    NavDisplay(
+        modifier = modifier,
+        backStack = backStack, onBack = { backStack.removeLastOrNull() }, transitionSpec = {
+            ContentTransform(
+                targetContentEnter = fadeIn(animationSpec = tween(durationMillis = 0)),
+                initialContentExit = fadeOut(animationSpec = tween(durationMillis = 0)),
+            )
+        }, popTransitionSpec = {
+            ContentTransform(
+                targetContentEnter = fadeIn(animationSpec = tween(durationMillis = 0)),
+                initialContentExit = fadeOut(animationSpec = tween(durationMillis = 0)),
+            )
+        }, entryDecorators = listOf(
+            rememberSceneSetupNavEntryDecorator(),
+            rememberSavedStateNavEntryDecorator(),
+            rememberViewModelStoreNavEntryDecorator(),
+        ), entryProvider = entryProvider {
 
-        LaunchedEffect(sharedState.authAction) {
-
-            when (sharedState.authAction) {
-                AuthAction.Authorized -> {
-                    navigateToTap(
-                        navController = navController,
-                        NavigationTree.Main.name
-                    )
-                }
-
-                AuthAction.Unauthorized -> {
-                    navigateToTap(
-                        navController = navController,
-                        NavigationTree.Login.name
-                    )
-                }
-                AuthAction.None -> {}
+            entry<Screens.Splash> {
+                SplashScreen()
             }
-        }
 
-        MessageSnackBar(sharedState)
-
-        NavHost(
-            navController = navController,
-            startDestination = NavigationTree.Splash.name, enterTransition = {
-                slideIntoContainer(
-                    AnimatedContentTransitionScope.SlideDirection.Start, tween(0)
-                )
-            },
-            exitTransition = {
-                slideOutOfContainer(
-                    AnimatedContentTransitionScope.SlideDirection.Start, tween(0)
-                )
-            },
-            popEnterTransition = {
-                slideIntoContainer(
-                    AnimatedContentTransitionScope.SlideDirection.End, tween(0)
-                )
-            },
-            popExitTransition = {
-                slideOutOfContainer(
-                    AnimatedContentTransitionScope.SlideDirection.End, tween(0)
-                )
-            }
-            ) {
-
-            composable(NavigationTree.Splash.name) { SplashScreen() }
-
-            composable(NavigationTree.Login.name) { LoginScreen() }
-
-
-            composable(NavigationTree.Main.name) {
-                val user = sharedState.user.collectAsState().value
+            entry<Screens.Menu> {
                 MenuScreen(
                     navigateTo = {
-                        navigateToTap(
-                            navController = navController,
-                            route = it
-                        )
+                        when (it) {
+                            Screens.Analitic -> backStack.add(Screens.Analitic)
+                            Screens.Auth -> {
+                                backStack.removeLastOrNull()
+                                backStack.add(Screens.Auth)
+                                event(SharedEvents.LogOut)
+                            }
+
+                            Screens.Courier -> backStack.add(Screens.Courier)
+                            Screens.Product -> backStack.add(Screens.Product)
+                            Screens.Route -> backStack.add(Screens.Route)
+                            Screens.Trip -> backStack.add(Screens.Trip)
+                            else -> {}
+                        }
                     }, user = user
                 )
             }
-            composable(NavigationTree.Route.name) {
-                val user = sharedState.user.collectAsState().value
+
+            entry<Screens.Route> {
                 RouteScreen(
-                    user = user,
-                    navigateTo = {
-                        navigateToTap(navController = navController, route = it)
+                    user = user, openRoute = { route, routes ->
+                        backStack.add(Screens.Client(route = route, routes = routes))
                     },
                     popBackStack = {
-                        navController.popBackStack()
-                    }
+                        backStack.removeLastOrNull()
+                    })
+            }
+
+            entry<Screens.Auth> {
+                LoginScreen()
+            }
+
+            entry<Screens.Analitic> {
+                AnaliticScreen(
+                    popBackStack = { backStack.removeLastOrNull() }
                 )
             }
-            composable(NavigationTree.Clients.name) {
-                val user = sharedState.user.collectAsState().value
-                ClientShopScreen(
+
+            entry<Screens.Shop> { key ->
+                ShopScreen(
+                    popBackStack = { backStack.removeLastOrNull() }, user = user, trip = key.trip
+                )
+            }
+
+            entry<Screens.Trip> {
+                TripScreen(
+                    openTrip = {
+                        backStack.add(Screens.Shop(trip = it))
+                    }, popBackStack = { backStack.removeLastOrNull() }, user = user
+                )
+            }
+
+            entry<Screens.Client> { key ->
+                ClientScreen(
+                    route = key.route,
                     user = user,
                     popBackStack = {
-                        navController.popBackStack()
-                    }
+                        backStack.removeLastOrNull()
+                    },
+                    routes = key.routes
                 )
             }
-            composable(NavigationTree.Product.name) {
+
+            entry<Screens.Product> {
                 ProductScreen(
                     popBackStack = {
-                        navController.popBackStack()
+                        backStack.removeLastOrNull()
                     }
                 )
             }
-            composable(NavigationTree.Courier.name) {
+
+            entry<Screens.Courier> {
                 CourierScreen(
                     popBackStack = {
-                        navController.popBackStack()
+                        backStack.removeLastOrNull()
                     }
                 )
             }
-            composable(NavigationTree.Trip.name) {
-                val user = sharedState.user.collectAsState().value
-                TripScreen(
-                    navigateTo = {
-                        navigateToTap(
-                            navController = navController,
-                            route = it
-                        )
-                    },
-                    popBackStack = { navController.popBackStack() },
-                    user = user
-                )
-            }
 
-            composable(NavigationTree.Shop.name) {
-                val user = sharedState.user.collectAsState().value
-                ShopScreen(
-                    popBackStack = { navController.popBackStack() },
-                    user = user
-                )
+            entry<Screens.Ban> {
+                UserBlocked(logout = {
+                    backStack.removeLastOrNull()
+                    backStack.add(Screens.Auth)
+                    event(SharedEvents.LogOut)
+                })
             }
-
-            composable(NavigationTree.Analitic.name) {
-                AnaliticScreen(
-                    popBackStack = { navController.popBackStack() }
-                )
-            }
-        }
-    }
+        })
+    MessageSnackBar(sharedState.value, modifier = modifier)
 }
 
 @Composable
-fun UserBlocked(event: (SharedEvents) -> Unit) {
+fun UserBlocked(logout: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             verticalArrangement = Arrangement.Center,
@@ -211,7 +193,7 @@ fun UserBlocked(event: (SharedEvents) -> Unit) {
             )
             Spacer(modifier = Modifier.height(5.dp))
             Button(
-                onClick = { event(SharedEvents.ClearToken) },
+                onClick = logout,
                 colors = ButtonColors(
                     containerColor = AppTheme.colors.onSecondary,
                     contentColor = AppTheme.colors.onSecondary,
@@ -230,7 +212,7 @@ fun UserBlocked(event: (SharedEvents) -> Unit) {
 }
 
 @Composable
-fun MessageSnackBar(sharedViewState: SharedViewState) {
+fun MessageSnackBar(sharedViewState: SharedViewState, modifier: Modifier) {
     val messages = sharedViewState.listMessage.collectAsState().value
     val scope = rememberCoroutineScope()
 
@@ -244,12 +226,11 @@ fun MessageSnackBar(sharedViewState: SharedViewState) {
     }
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
-            .padding(10.dp)
             .zIndex(1f), contentAlignment = Alignment.BottomCenter
     ) {
-        LazyColumn(modifier = Modifier.height(150.dp), verticalArrangement = Arrangement.Bottom) {
+        LazyColumn(modifier = Modifier.height(150.dp), verticalArrangement = Arrangement.spacedBy(space = 5.dp, alignment = Alignment.Bottom)) {
             items(messages) { message ->
                 Snackbar(
                     modifier = Modifier.padding(vertical = 4.dp),
@@ -275,19 +256,5 @@ fun MessageSnackBar(sharedViewState: SharedViewState) {
                 }
             }
         }
-    }
-}
-
-fun navigateToTap(navController: NavController, route: String) {
-    val startDestination = navController.graph.findStartDestination()
-    val isStartDestinationSplash = startDestination.route == NavigationTree.Splash.name
-
-    navController.navigate(route) {
-        popUpTo(startDestination.id) {
-            saveState = true
-            inclusive = isStartDestinationSplash
-        }
-        restoreState = true
-        launchSingleTop = true
     }
 }

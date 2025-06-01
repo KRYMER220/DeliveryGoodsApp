@@ -46,10 +46,8 @@ class RouteViewModel @Inject constructor(
 
     override fun obtainEvent(event: RouteEvent) {
         when (event) {
-            is RouteEvent.RouteActionInvoked -> routeActionInvoked()
             is RouteEvent.RouteSaveAction -> saveRoute()
             is RouteEvent.NameRouteChangedAdd -> changeNameRoute(event.name)
-            is RouteEvent.RouteItemClickedToShop -> openClientsByRoute(event.route)
             is RouteEvent.ShowDeleteDialog -> showDeleteDialog(route = event.route)
             is RouteEvent.ShowAddDialog -> showAddDialog()
             is RouteEvent.ShowUpdateDialog -> showUpdateDialog(event.route)
@@ -79,9 +77,6 @@ class RouteViewModel @Inject constructor(
                                 listRoute = MutableStateFlow(routes)
                             )
                         }
-                    } else {
-                        delay(5000)
-                        getDataRoutes()
                     }
                 } else {
                     sharedViewModel.message(response.message)
@@ -218,19 +213,7 @@ class RouteViewModel @Inject constructor(
         }
     }
 
-    private fun openClientsByRoute(route: RouteModel) {
-        val routes = viewState.value.listRoute.value
-        sharedViewModel.saveRouteList(routes)
-        updateViewState { it.copy(routeAction = RouteAction.OpenClients) }
-        sharedViewModel.initCurrentRoute(route)
-    }
-
-
     private fun changeNameRoute(name: String) {
         updateViewState { it.copy(nameRouteAdd = name) }
-    }
-
-    private fun routeActionInvoked() {
-        updateViewState { it.copy(routeAction = RouteAction.None) }
     }
 }

@@ -140,22 +140,25 @@ fun UpdateCourierView(
                         }, verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = state.userRole!!.name,
+                        text = user.role.name,
                         modifier = Modifier.padding(start = 15.dp),
-                        color = AppTheme.colors.onSecondary
+                        color = AppTheme.colors.onSecondary,
+                        style = AppTheme.typography.titleMedium
                     )
                     Spacer(modifier = Modifier.weight(1f))
                     Icon(
                         imageVector = Icons.Filled.ArrowDropDown,
                         contentDescription = null,
-                        modifier = Modifier.padding(end = 15.dp)
+                        modifier = Modifier.padding(end = 15.dp),
+                        tint = AppTheme.colors.onSecondary
                     )
                     DropdownMenu(expanded = state.stateDropMenu, onDismissRequest = {
                         event(CourierEvent.DropDownMenuState(false))
                     }) {
 
                         roles.forEach { role ->
-                            DropdownMenuItem(text = { Text(text = role.name) }, onClick = {
+                            DropdownMenuItem(text = { Text(text = role.name,
+                                style = AppTheme.typography.titleSmall) }, onClick = {
                                 event(
                                     CourierEvent.SelectedItemMenu(
                                         role

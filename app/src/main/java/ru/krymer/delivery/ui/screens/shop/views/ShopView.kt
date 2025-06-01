@@ -24,7 +24,6 @@ import androidx.compose.material3.CardColors
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -48,7 +47,7 @@ import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.ui.components.CommonAlertAddDialog
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
 import ru.krymer.delivery.ui.components.CommonInfoAlertDialog
-import ru.krymer.delivery.ui.components.CommonUpdateDialog
+import ru.krymer.delivery.ui.components.CommonSaveDialog
 import ru.krymer.delivery.ui.components.ConfirmView
 import ru.krymer.delivery.ui.components.InfoDialog
 import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
@@ -68,7 +67,7 @@ fun ShopView(
     val lazyListState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(key1 = shops) {
+    LaunchedEffect(shops) {
         if (shops.isNotEmpty() && isFirstLoad) {
             isFirstLoad = false
             coroutineScope.launch {
@@ -108,7 +107,7 @@ fun ShopView(
                             event(ShopEvent.ShopActionInvoked)
                             popBackStack()
                         })
-                        .size(50.dp)
+                        .size(60.dp)
                 )
                 Image(
                     painter = painterResource(id = R.drawable.car_info),
@@ -117,7 +116,7 @@ fun ShopView(
                         .clickable(onClick = {
                             event(ShopEvent.OpenMillageDialog)
                         })
-                        .size(50.dp)
+                        .size(60.dp)
                 )
                 Image(
                     painter = painterResource(id = R.drawable.count),
@@ -129,7 +128,7 @@ fun ShopView(
                         }, onLongClick = {
                             event(ShopEvent.ShowHideDialogAnalitic)
                         })
-                        .size(50.dp)
+                        .size(60.dp)
                 )
                 if (user.isModOrAdminOrSys()) {
                     Image(
@@ -141,7 +140,7 @@ fun ShopView(
                             }, onLongClick = {
                                 event(ShopEvent.ShowAddDialogShopAllRoutes)
                             })
-                            .size(50.dp)
+                            .size(60.dp)
                     )
                 }
             }
@@ -189,14 +188,8 @@ fun ShopView(
         }
     }
 
-    DisposableEffect(key1 = Unit) {
-        onDispose {
-            event(ShopEvent.ShopActionInvoked)
-        }
-    }
-
     if (state.isShowMillageDialog) {
-        CommonUpdateDialog(isVisible = true, dismiss = {
+        CommonSaveDialog(dismiss = {
             event(ShopEvent.DismissMillageDialog)
         }, confirm = {
             event(ShopEvent.MillageSaveAction)
@@ -289,7 +282,7 @@ fun ShopView(
     }
 
     if (state.isShowMessageDialog) {
-        CommonUpdateDialog(
+        CommonSaveDialog(
             dismiss = {
                 event(ShopEvent.DismissMessageAddDialog)
             },
@@ -300,7 +293,7 @@ fun ShopView(
                 MessageTextView(changeTextMessage = {
                     event(ShopEvent.ChangeMessage(it))
                 })
-            }, isVisible = true
+            }
         )
     }
 

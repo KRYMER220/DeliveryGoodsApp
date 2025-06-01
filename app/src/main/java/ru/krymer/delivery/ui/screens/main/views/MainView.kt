@@ -9,26 +9,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import ru.krymer.delivery.R
+import ru.krymer.delivery.Screens
 import ru.krymer.delivery.data.model.user.UserModel
-import ru.krymer.delivery.ui.navigation.NavigationTree
-import ru.krymer.delivery.ui.screens.main.models.MenuAction
-import ru.krymer.delivery.ui.screens.main.models.MenuEvent
-import ru.krymer.delivery.ui.screens.main.models.MenuViewState
-import ru.krymer.delivery.ui.screens.shared.models.SharedViewState
 
 @Composable
-fun MainView(state: MenuViewState, user: UserModel, navigateTo: (String) -> Unit, event: (MenuEvent) -> Unit) {
+fun MainView(user: UserModel, navigateTo: (Screens) -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -41,7 +32,7 @@ fun MainView(state: MenuViewState, user: UserModel, navigateTo: (String) -> Unit
                     contentDescription = "sign_out",
                     modifier = Modifier
                         .clickable {
-                            event(MenuEvent.SignOutUser)
+                            navigateTo(Screens.Auth)
                         }
                         .align(Alignment.TopEnd)
                         .size(40.dp))
@@ -49,46 +40,17 @@ fun MainView(state: MenuViewState, user: UserModel, navigateTo: (String) -> Unit
             Spacer(modifier = Modifier.padding(20.dp))
             MenuView(
                 onRouteClick = {
-                    event(MenuEvent.RouteClickedToOpen)
+                    navigateTo(Screens.Route)
                 }, onProductClick = {
-                    event(MenuEvent.ProductClickedToOpen)
+                    navigateTo(Screens.Product)
                 }, onCourierClick = {
-                    event(MenuEvent.CourierClickedToOpen)
+                    navigateTo(Screens.Courier)
                 }, onTripClick = {
-                    event(MenuEvent.TripClickedToOpen)
+                    navigateTo(Screens.Trip)
                 }, onAnaliticClick = {
-                    event(MenuEvent.AnaliticClickedToOpen)
+                    navigateTo(Screens.Analitic)
                 }, user = user)
         }
 
-        when (state.menuAction) {
-            is MenuAction.OpenRoute -> {
-                navigateTo(NavigationTree.Route.name)
-            }
-
-            is MenuAction.OpenProduct -> {
-                navigateTo(NavigationTree.Product.name)
-            }
-
-            is MenuAction.OpenCouriers -> {
-                navigateTo(NavigationTree.Courier.name)
-            }
-
-            is MenuAction.OpenTrips -> {
-                navigateTo(NavigationTree.Trip.name)
-            }
-
-            is MenuAction.None -> {}
-
-            is MenuAction.OpenAnalitic -> {
-                navigateTo(NavigationTree.Analitic.name)
-            }
-        }
-
-        DisposableEffect(key1 = Unit) {
-            onDispose {
-                event(MenuEvent.MenuActionInvoked)
-            }
-        }
     }
 }

@@ -22,8 +22,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,9 +33,7 @@ import ru.krymer.delivery.data.model.RouteModel
 import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.ui.components.CommonAddDialog
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
-import ru.krymer.delivery.ui.components.CommonUpdateDialog
-import ru.krymer.delivery.ui.navigation.NavigationTree
-import ru.krymer.delivery.ui.screens.route.models.RouteAction
+import ru.krymer.delivery.ui.components.CommonSaveDialog
 import ru.krymer.delivery.ui.screens.route.models.RouteEvent
 import ru.krymer.delivery.ui.screens.route.models.RouteViewState
 import ru.krymer.delivery.ui.theme.AppTheme
@@ -46,7 +42,7 @@ import ru.krymer.delivery.ui.theme.AppTheme
 fun RouteView(
     event: (RouteEvent) -> Unit,
     state: RouteViewState,
-    navigateTo: (String) -> Unit,
+    openRoute: (RouteModel, List<RouteModel>) -> Unit,
     popBackStack: () -> Unit,
     user: UserModel
 ) {
@@ -64,10 +60,9 @@ fun RouteView(
                 contentDescription = "exit",
                 modifier = Modifier
                     .clickable(onClick = {
-                        event(RouteEvent.RouteActionInvoked)
                         popBackStack()
                     })
-                    .size(40.dp)
+                    .size(60.dp)
             )
             if (user.isSysOrAdmin()) {
                 Image(
@@ -77,7 +72,7 @@ fun RouteView(
                         .clickable(onClick = {
                             event(RouteEvent.ShowAddDialog)
                         })
-                        .size(40.dp)
+                        .size(60.dp)
                 )
             }
         }
@@ -88,7 +83,7 @@ fun RouteView(
                     RouteItem(
                         route = route,
                         openRoute = {
-                            event(RouteEvent.RouteItemClickedToShop(route = it))
+                            openRoute(it, routes)
                         },
                         deleteRoute = {
                             event(
@@ -130,9 +125,9 @@ fun RouteView(
     }
 
     if (state.showDialogAdd) {
-        CommonAddDialog(isVisible = true, onDismiss = {
+        CommonSaveDialog(dismiss = {
             event(RouteEvent.DismissAddDialog)
-        }, onConfirm = {
+        }, confirm = {
             event(RouteEvent.RouteSaveAction)
         }, content = {
             AddRouteView(viewState = state, changeName = {
@@ -142,7 +137,7 @@ fun RouteView(
     }
 
     if (state.isDialogUpdate) {
-        CommonUpdateDialog(isVisible = true, dismiss = {
+        CommonSaveDialog(dismiss = {
             event(RouteEvent.DismissUpdateDialog)
         }, confirm = {
             event(RouteEvent.RouteUpdateAction)
@@ -152,24 +147,6 @@ fun RouteView(
             })
         })
     }
-
-    DisposableEffect(key1 = Unit) {
-        onDispose {
-            event(RouteEvent.RouteActionInvoked)
-        }
-    }
-
-    LaunchedEffect(key1 = state.routeAction) {
-        when (state.routeAction) {
-            is RouteAction.OpenClients -> {
-                navigateTo(NavigationTree.Clients.name)
-            }
-
-            is RouteAction.None -> {}
-        }
-    }
-
-
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -195,7 +172,7 @@ fun RouteItem(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                style = MaterialTheme.typography.bodyLarge,
+                style = AppTheme.typography.titleMedium,
                 text = route.name,
                 fontSize = 20.sp,
                 modifier = Modifier

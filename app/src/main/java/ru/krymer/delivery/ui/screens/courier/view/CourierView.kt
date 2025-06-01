@@ -33,7 +33,7 @@ import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.ui.components.BanDialog
 import ru.krymer.delivery.ui.components.CommonAddDialog
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
-import ru.krymer.delivery.ui.components.CommonUpdateDialog
+import ru.krymer.delivery.ui.components.CommonSaveDialog
 import ru.krymer.delivery.ui.screens.courier.models.CourierEvent
 import ru.krymer.delivery.ui.screens.courier.models.CourierViewState
 import ru.krymer.delivery.ui.theme.AppTheme
@@ -59,7 +59,7 @@ fun CourierView(
                     .clickable(onClick = {
                         popBackStack()
                     })
-                    .size(40.dp)
+                    .size(60.dp)
             )
             Row {
                 Image(
@@ -69,8 +69,9 @@ fun CourierView(
                         .clickable(onClick = {
                             event(CourierEvent.ShowUpdateSettingsDialog)
                         })
-                        .size(40.dp)
+                        .size(60.dp)
                 )
+                Spacer(modifier = Modifier.width(5.dp))
                 Image(
                     painter = painterResource(id = R.drawable.add),
                     contentDescription = "add user",
@@ -78,7 +79,7 @@ fun CourierView(
                         .clickable(onClick = {
                             event(CourierEvent.ShowAddDialog)
                         })
-                        .size(40.dp)
+                        .size(60.dp)
                 )
             }
 
@@ -88,7 +89,7 @@ fun CourierView(
             Box(modifier = Modifier.fillMaxSize()) {
                 CircularProgressIndicator(
                     modifier = Modifier
-                        .size(30.dp)
+                        .size(60.dp)
                         .align(Alignment.Center),
                     strokeWidth = 2.dp,
                     color = MaterialTheme.colorScheme.primary
@@ -135,9 +136,9 @@ fun CourierView(
     }
 
     if (state.showAddSheetDialog) {
-        CommonAddDialog(isVisible = true, onDismiss = {
+        CommonSaveDialog(dismiss = {
             event(CourierEvent.DismissAddDialog)
-        }, onConfirm = {
+        }, confirm = {
             event(CourierEvent.UserSaveAction)
         }, content = {
             BottomSheetDialogAddUser(viewState = state, changeName = {
@@ -151,7 +152,7 @@ fun CourierView(
     }
 
     if (state.showUpdateSheetDialog) {
-        CommonUpdateDialog(isVisible = true, dismiss = {
+        CommonSaveDialog(dismiss = {
             event(CourierEvent.DismissUpdateUserDataDialog)
         }, confirm = {
             event(CourierEvent.UserUpdateAction)
@@ -164,7 +165,7 @@ fun CourierView(
     }
 
     if (state.showUpdateSettingsSheetDialog) {
-        CommonUpdateDialog(isVisible = true, dismiss = {
+        CommonSaveDialog(dismiss = {
             event(CourierEvent.DismissUpdateSettingsDataDialog)
         }, confirm = {
             event(CourierEvent.SettingsUpdateAction)
@@ -201,7 +202,7 @@ fun CourierItem(
         ) {
             Spacer(modifier = Modifier.width(5.dp))
             Text(
-                style = MaterialTheme.typography.bodyLarge,
+                style = AppTheme.typography.titleMedium,
                 text = courier.name,
                 fontSize = 20.sp,
                 modifier = Modifier
@@ -212,7 +213,7 @@ fun CourierItem(
             )
             Spacer(modifier = Modifier.width(5.dp))
             Image(
-                contentDescription = "ban courier",
+                contentDescription = "del courier",
                 painter = painterResource(R.drawable.delete),
                 modifier = Modifier
                     .size(40.dp)

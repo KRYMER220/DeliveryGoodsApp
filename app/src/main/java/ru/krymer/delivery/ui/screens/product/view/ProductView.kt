@@ -14,32 +14,38 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.ProductModel
 import ru.krymer.delivery.ui.components.CommonAddDialog
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
-import ru.krymer.delivery.ui.components.CommonUpdateDialog
+import ru.krymer.delivery.ui.components.CommonSaveDialog
 import ru.krymer.delivery.ui.screens.product.models.ProductEvent
 import ru.krymer.delivery.ui.screens.product.models.ProductViewState
 import ru.krymer.delivery.ui.theme.AppTheme
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Composable
 fun ProductView(
@@ -47,7 +53,30 @@ fun ProductView(
     popBackStack: () -> Unit,
     event: (ProductEvent) -> Unit
 ) {
-    val products = state.listProduct.collectAsState().value
+    var isFirstLoad by remember { mutableStateOf(true) }
+    val list = state.listProduct.collectAsState().value
+    var products = remember { mutableStateListOf<ProductModel>() }
+    val lazyListState = rememberLazyListState()
+    val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
+        products = products.apply {
+            add(to.index, removeAt(from.index))
+        }
+        event(ProductEvent.ReorderProducts(fromIndex = from.index, toIndex = to.index))
+    }
+
+    LaunchedEffect(list) {
+        if (list.isNotEmpty() && isFirstLoad) {
+            isFirstLoad = false
+            products.clear()
+            products.addAll(list)
+        }
+    }
+
+    LaunchedEffect(list.size) {
+        products.clear()
+        products.addAll(list)
+    }
+
     Column(modifier = Modifier.padding(15.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -61,7 +90,7 @@ fun ProductView(
                     .clickable(onClick = {
                         popBackStack()
                     })
-                    .size(40.dp)
+                    .size(60.dp)
             )
             Image(
                 painter = painterResource(id = R.drawable.add),
@@ -70,39 +99,37 @@ fun ProductView(
                     .clickable(onClick = {
                         event(ProductEvent.ShowAddDialog)
                     })
-                    .size(40.dp)
+                    .size(60.dp)
             )
         }
-        Spacer(modifier = Modifier.height(15.dp))
+        Spacer(modifier = Modifier.height(5.dp))
         if (products.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize()) {
                 CircularProgressIndicator(
                     modifier = Modifier
-                        .size(30.dp)
+                        .size(60.dp)
                         .align(Alignment.Center),
                     strokeWidth = 2.dp,
                     color = Color.White
                 )
             }
         } else {
-            LazyColumn {
-                itemsIndexed(products) { index, product ->
-                    ProductItem(
-                        product = product,
-                        event = event,
-                        index = index,
-                        sizeList = products.size
-                    )
-                    Spacer(modifier = Modifier.padding(bottom = 10.dp))
+            LazyColumn(state = lazyListState, verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                items(products, key = { product -> product.id }) { product ->
+                    ReorderableItem(reorderableLazyListState, key = product.id) { isDragging ->
+                        ProductItem(
+                            modifier = Modifier.draggableHandle(), product = product, event = event
+                        )
+                    }
                 }
             }
         }
     }
 
     if (state.showAddSheetDialog) {
-        CommonAddDialog(isVisible = true, onDismiss = {
+        CommonSaveDialog(dismiss = {
             event(ProductEvent.DismissAddDialog)
-        }, onConfirm = {
+        }, confirm = {
             event(ProductEvent.ProductSaveAction)
         }, content = {
             AddProductView(changeName = {
@@ -114,7 +141,7 @@ fun ProductView(
     }
 
     if (state.showUpdateSheetDialog) {
-        CommonUpdateDialog(isVisible = true, dismiss = {
+        CommonSaveDialog(dismiss = {
             event(ProductEvent.DismissUpdateDialog)
         }, confirm = {
             event(ProductEvent.ProductUpdateAction)
@@ -144,8 +171,7 @@ fun ProductView(
 fun ProductItem(
     product: ProductModel,
     event: (ProductEvent) -> Unit,
-    index: Int,
-    sizeList: Int,
+    modifier: Modifier
 ) {
     Box(
         modifier = Modifier
@@ -157,21 +183,22 @@ fun ProductItem(
             .padding(15.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(), Arrangement.SpaceBetween
+            modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically
         ) {
+            Image(contentDescription = "drop", painter = painterResource(id = R.drawable.list_item), modifier = modifier.size(40.dp))
             Text(
-                style = MaterialTheme.typography.bodyLarge,
+                style = AppTheme.typography.titleMedium,
                 text = product.name,
                 fontSize = 20.sp,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(end = 5.dp)
-                    .align(Alignment.CenterVertically),
+                    .padding(end = 5.dp),
+                textAlign = TextAlign.Center,
                 color = AppTheme.colors.textColor
             )
             Text(
-                style = MaterialTheme.typography.bodyLarge,
-                text = "${product.price}",
+                style = AppTheme.typography.titleMedium,
+                text = "${product.price.toInt()}",
                 fontSize = 20.sp,
                 modifier = Modifier
                     .padding(end = 5.dp)
@@ -185,31 +212,6 @@ fun ProductItem(
                     .size(40.dp)
                     .clickable(onClick = { event(ProductEvent.ShowDeleteDialog(product = product)) })
             )
-            Column(Modifier.padding(start = 10.dp)) {
-                if (index != 0) {
-                    Icon(
-                        imageVector = Icons.Filled.KeyboardArrowUp,
-                        contentDescription = null,
-                        tint = AppTheme.colors.onSecondary,
-                        modifier = Modifier.clickable(onClick = {
-                            event(
-                                ProductEvent.UpItemIndex(
-                                    index = index
-                                )
-                            )
-                        })
-                    )
-                }
-                if (index != sizeList - 1) {
-                    Icon(
-                        imageVector = Icons.Filled.KeyboardArrowDown,
-                        contentDescription = null,
-                        modifier = Modifier.clickable(onClick = {
-                            event(ProductEvent.DownItemIndex(index = index))
-                        }), tint = AppTheme.colors.onSecondary
-                    )
-                }
-            }
         }
     }
 }

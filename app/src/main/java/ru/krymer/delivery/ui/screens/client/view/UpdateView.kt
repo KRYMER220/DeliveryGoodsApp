@@ -53,145 +53,148 @@ fun UpdateClientView(
     var errorArrears by remember { mutableStateOf(Error()) }
     var errorPhone by remember { mutableStateOf(Error()) }
     var errorCords by remember { mutableStateOf(Error()) }
-
-    Column {
-        CommonTextField(
-            value = name,
-            placeholder = stringResource(
-                id = R.string.name
-            ),
-            changerText = { str ->
-                name = str
-                errorName = when {
-                    str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
-                    else -> {
-                        event(ClientEvent.ChangeNameClient(str))
-                        Error()
-                    }
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-            isError = errorName.visible,
-            errorValue = errorName.error
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        CommonTextField(
-            value = arrears,
-            placeholder = stringResource(
-                id = R.string.arrears
-            ),
-            changerText = { str ->
-                arrears = str
-                errorArrears = when {
-                    !startsWithDigit(str) -> Error(visible = true, error = Constants.ERROR.ERROR_NUMBER_INPUT)
-                    else -> {
-                        event(ClientEvent.ChangeArrearsClient(str))
-                        Error()
-                    }
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            isError = errorArrears.visible,
-            errorValue = errorArrears.error
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        CommonTextField(
-            value = phone,
-            placeholder = stringResource(
-                id = R.string.phone
-            ),
-            changerText = { str ->
-                phone = str
-                errorPhone = when {
-                    !isValidPhone(str) -> Error(visible = true, error = Constants.ERROR.PHONE)
-                    else -> {
-                        event(ClientEvent.ChangePhoneClient(str))
-                        Error()
-                    }
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-            isError = errorPhone.visible,
-            errorValue = errorPhone.error
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        CommonTextField(
-            value = cords,
-            placeholder = stringResource(
-                id = R.string.cords
-            ),
-            changerText = { str ->
-                cords = str
-                errorCords = when {
-                    !isValidCords(str) -> Error(visible = true, error = Constants.ERROR.CORD)
-                    else -> {
-                        event(ClientEvent.ChangeCordClient(str))
-                        Error()
-                    }
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            visualTransformation = SignedNumberWithComma(),
-            isError = errorCords.visible,
-            errorValue = errorCords.error
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-
-        if (user.isModOrAdminOrSys()) {
-            Box(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(60.dp)
-                        .clickable {
-                            event(ClientEvent.DropDownMenuState(true))
-                        }, verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = viewState.selectedRoute!!.name,
-                        modifier = Modifier.padding(start = 15.dp),
-                        color = AppTheme.colors.onSecondary
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    Icon(
-                        imageVector = Icons.Filled.ArrowDropDown,
-                        contentDescription = null,
-                        modifier = Modifier.padding(end = 15.dp)
-                    )
-                    DropdownMenu(expanded = viewState.dropDownState, onDismissRequest = {
-                        event(ClientEvent.DropDownMenuState(false))
-                    }) {
-                        val list = viewState.listRoute.collectAsState().value
-                        list.forEach {
-                            DropdownMenuItem(text = { Text(text = it.name) }, onClick = {
-                                event(
-                                    ClientEvent.SelectedItemMenu(
-                                        it
-                                    )
-                                )
-                                event(
-                                    ClientEvent.DropDownMenuState(
-                                        false
-                                    )
-                                )
-                            })
+    val route = viewState.selectedRoute.collectAsState().value
+    val list = viewState.listRoute.collectAsState().value
+    route?.let {
+        Column {
+            CommonTextField(
+                value = name,
+                placeholder = stringResource(
+                    id = R.string.name
+                ),
+                changerText = { str ->
+                    name = str
+                    errorName = when {
+                        str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
+                        else -> {
+                            event(ClientEvent.ChangeNameClient(str))
+                            Error()
                         }
                     }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                isError = errorName.visible,
+                errorValue = errorName.error
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            CommonTextField(
+                value = arrears,
+                placeholder = stringResource(
+                    id = R.string.arrears
+                ),
+                changerText = { str ->
+                    arrears = str
+                    errorArrears = when {
+                        !startsWithDigit(str) -> Error(visible = true, error = Constants.ERROR.ERROR_NUMBER_INPUT)
+                        else -> {
+                            event(ClientEvent.ChangeArrearsClient(str))
+                            Error()
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                isError = errorArrears.visible,
+                errorValue = errorArrears.error
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            CommonTextField(
+                value = phone,
+                placeholder = stringResource(
+                    id = R.string.phone
+                ),
+                changerText = { str ->
+                    phone = str
+                    errorPhone = when {
+                        !isValidPhone(str) -> Error(visible = true, error = Constants.ERROR.PHONE)
+                        else -> {
+                            event(ClientEvent.ChangePhoneClient(str))
+                            Error()
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                isError = errorPhone.visible,
+                errorValue = errorPhone.error
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            CommonTextField(
+                value = cords,
+                placeholder = stringResource(
+                    id = R.string.cords
+                ),
+                changerText = { str ->
+                    cords = str
+                    errorCords = when {
+                        !isValidCords(str) -> Error(visible = true, error = Constants.ERROR.CORD)
+                        else -> {
+                            event(ClientEvent.ChangeCordClient(str))
+                            Error()
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                visualTransformation = SignedNumberWithComma(),
+                isError = errorCords.visible,
+                errorValue = errorCords.error
+            )
+            Spacer(modifier = Modifier.height(10.dp))
 
+            if (user.isModOrAdminOrSys()) {
+                Box(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(60.dp)
+                            .clickable {
+                                event(ClientEvent.DropDownMenuState(true))
+                            }, verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = route.name,
+                            modifier = Modifier.padding(start = 15.dp),
+                            color = AppTheme.colors.onSecondary,
+                            style = AppTheme.typography.titleMedium
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        Icon(
+                            imageVector = Icons.Filled.ArrowDropDown,
+                            contentDescription = null,
+                            modifier = Modifier.padding(end = 15.dp),
+                            tint = AppTheme.colors.onSecondary
+                        )
+                        DropdownMenu(expanded = viewState.dropDownState, onDismissRequest = {
+                            event(ClientEvent.DropDownMenuState(false))
+                        }) {
+                            list.forEach {
+                                DropdownMenuItem(text = { Text(text = it.name,style = AppTheme.typography.titleSmall) }, onClick = {
+                                    event(
+                                        ClientEvent.SelectedItemMenu(
+                                            it
+                                        )
+                                    )
+                                    event(
+                                        ClientEvent.DropDownMenuState(
+                                            false
+                                        )
+                                    )
+                                })
+                            }
+                        }
+                    }
                 }
             }
         }

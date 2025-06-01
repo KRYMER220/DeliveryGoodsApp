@@ -65,7 +65,7 @@ fun AnaliticView(
                             }
                         }
                     })
-                    .size(40.dp)
+                    .size(60.dp)
             )
 
             when (state.analiticAction) {
@@ -99,7 +99,7 @@ fun AnaliticView(
 
                                 }
                             })
-                            .size(40.dp)
+                            .size(60.dp)
                     )
                 }
             }
@@ -161,9 +161,8 @@ fun AnaliticMenu(
             )
         ) {
             Text(
-                text = stringResource(R.string.all_info), style = TextStyle(
-                    color = AppTheme.colors.onPrimary
-                ), fontSize = 20.sp
+                text = stringResource(R.string.all_info), style = AppTheme.typography.titleMedium, fontSize = 20.sp,
+                color = AppTheme.colors.onPrimary
             )
         }
         Spacer(modifier = Modifier.height(10.dp))
@@ -176,9 +175,8 @@ fun AnaliticMenu(
             )
         ) {
             Text(
-                text = stringResource(R.string.trip), style = TextStyle(
-                    color = AppTheme.colors.onPrimary
-                ), fontSize = 20.sp
+                text = stringResource(R.string.trip), style = AppTheme.typography.titleMedium, fontSize = 20.sp,
+                color = AppTheme.colors.onPrimary
             )
         }
         Spacer(modifier = Modifier.height(10.dp))
@@ -191,9 +189,8 @@ fun AnaliticMenu(
             )
         ) {
             Text(
-                text = stringResource(R.string.shop), style = TextStyle(
-                    color = AppTheme.colors.onPrimary
-                ), fontSize = 20.sp
+                text = stringResource(R.string.shop), style = AppTheme.typography.titleMedium, fontSize = 20.sp,
+                color = AppTheme.colors.onPrimary
             )
         }
         Spacer(modifier = Modifier.height(10.dp))
@@ -206,9 +203,8 @@ fun AnaliticMenu(
             )
         ) {
             Text(
-                text = stringResource(R.string.logs), style = TextStyle(
-                    color = AppTheme.colors.onPrimary
-                ), fontSize = 20.sp
+                text = stringResource(R.string.logs), style = AppTheme.typography.titleMedium, fontSize = 20.sp,
+                color = AppTheme.colors.onPrimary
             )
         }
     }

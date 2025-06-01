@@ -33,7 +33,7 @@ fun CommonTextField(
     isError: Boolean = false,
     errorValue: String = "",
     keyboardActions: KeyboardActions = KeyboardActions.Default,
-    textStyle: TextStyle = TextStyle.Default,
+    textStyle: TextStyle = AppTheme.typography.titleMedium,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused = interactionSource.collectIsFocusedAsState().value

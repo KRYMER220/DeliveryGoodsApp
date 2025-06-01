@@ -7,19 +7,19 @@ import ru.krymer.delivery.data.model.utilModel.getStringByTypePay
 
 data class ShopModel(
     val id: Long,
-    val idTrip: Long,
+    var idTrip: Long,
     val idFactory: Long,
     val nameShop: String,
-    val arrears: Double,
-    val addSum: Double,
-    val status: Boolean,
-    val date: Long,
-    val typePay: TypePayModel,
-    val cash: Double,
+    var arrears: Double,
+    var addSum: Double,
+    var status: Boolean,
+    var date: Long,
+    var typePay: TypePayModel,
+    var cash: Double,
     val counter: Int,
-    val noCash: Double,
+    var noCash: Double,
     var listRequest: List<RequestModel>,
-    val isOldPrice: Boolean,
+    var isOldPrice: Boolean,
     val cord: String,
     var isBonus: Boolean
 )

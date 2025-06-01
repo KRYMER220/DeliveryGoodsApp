@@ -11,25 +11,9 @@ import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.data.model.utilModel.MessageModel
 
-sealed class AuthAction {
-    data object Authorized : AuthAction()
-    data object Unauthorized : AuthAction()
-    data object None : AuthAction()
-}
-
 data class SharedViewState(
-    val authAction: AuthAction = AuthAction.None,
     val user: MutableStateFlow<UserModel?> = MutableStateFlow(null),
     val factory: FactoryModel? = null,
     val isUserBlocked: Boolean = false,
-    val navController: NavController? = null,
-    val currentNavRoute: String? = null,
-    val routeList: List<RouteModel> = mutableListOf(),
-
-    val currentRoute: RouteModel? = null,
-    val currentTrip: TripModel? = null, val currentShop: ShopModel? = null,
-
     val listMessage: MutableStateFlow<List<MessageModel>> = MutableStateFlow(listOf()),
-    val currentFont: MutableStateFlow<Int> = MutableStateFlow(0),
-    val stack: Bundle? = null,
 )

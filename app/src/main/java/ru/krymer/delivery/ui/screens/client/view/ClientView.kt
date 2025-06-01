@@ -23,7 +23,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -34,14 +33,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.ClientModel
 import ru.krymer.delivery.data.model.user.UserModel
-import ru.krymer.delivery.ui.components.CommonAddDialog
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
-import ru.krymer.delivery.ui.components.CommonUpdateDialog
+import ru.krymer.delivery.ui.components.CommonSaveDialog
 import ru.krymer.delivery.ui.screens.client.models.ClientEvent
 import ru.krymer.delivery.ui.screens.client.models.ClientViewState
 import ru.krymer.delivery.ui.theme.AppTheme
@@ -65,6 +64,7 @@ fun ClientView(
 
     LaunchedEffect(list) {
         if (list.isNotEmpty() && isFirstLoad) {
+            isFirstLoad = false
             clients.clear()
             clients.addAll(list)
         }
@@ -86,10 +86,9 @@ fun ClientView(
                 contentDescription = "exit",
                 modifier = Modifier
                     .clickable(onClick = {
-                        event(ClientEvent.ClientActionInvoked)
                         popBackStack()
                     })
-                    .size(40.dp)
+                    .size(60.dp)
             )
             if (user.isModOrAdminOrSys()) {
                 Image(
@@ -99,7 +98,7 @@ fun ClientView(
                         .clickable(onClick = {
                             event(ClientEvent.ShowAddDialog)
                         })
-                        .size(40.dp)
+                        .size(60.dp)
                 )
             }
         }
@@ -108,14 +107,14 @@ fun ClientView(
             Box(modifier = Modifier.fillMaxSize()) {
                 CircularProgressIndicator(
                     modifier = Modifier
-                        .size(30.dp)
+                        .size(60.dp)
                         .align(Alignment.Center),
                     strokeWidth = 2.dp,
                     color = MaterialTheme.colorScheme.primary
                 )
             }
         } else {
-            LazyColumn(state = lazyListState, verticalArrangement = Arrangement.spacedBy(15.dp)) {
+            LazyColumn(state = lazyListState, verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 items(clients, key = { client -> client.id }) { client ->
                     ReorderableItem(reorderableLazyListState, key = client.id) { isDragging ->
                         ClientItem(
@@ -124,12 +123,6 @@ fun ClientView(
                     }
                 }
             }
-        }
-    }
-
-    DisposableEffect(key1 = Unit) {
-        onDispose {
-            event(ClientEvent.ClientActionInvoked)
         }
     }
 
@@ -147,9 +140,9 @@ fun ClientView(
     }
 
     if (state.isDialogAdd) {
-        CommonAddDialog(isVisible = true, onDismiss = {
+        CommonSaveDialog(dismiss = {
             event(ClientEvent.DismissAddDialog)
-        }, onConfirm = {
+        }, confirm = {
             event(ClientEvent.ClientAddAction)
         }, content = {
             AddClientView(changeName = {
@@ -166,7 +159,7 @@ fun ClientView(
 
 
     if (state.isDialogUpdate) {
-        CommonUpdateDialog(isVisible = true, dismiss = {
+        CommonSaveDialog(dismiss = {
             event(ClientEvent.DismissUpdateDialog)
         }, confirm = {
             event(ClientEvent.ClientUpdateAction)
@@ -199,20 +192,22 @@ fun ClientItem(
             .padding(15.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
+            if (user.isModOrAdminOrSys()) {
+                Image(contentDescription = "drop", painter = painterResource(id = R.drawable.list_item), modifier = modifier.size(40.dp))
+            }
             Text(
-                style = MaterialTheme.typography.bodyLarge,
+                style = AppTheme.typography.titleMedium,
                 text = client.name,
                 fontSize = 20.sp,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(end = 8.dp)
-                    .align(Alignment.CenterVertically),
-                color = AppTheme.colors.textColor
+                    .padding(end = 8.dp),
+                color = AppTheme.colors.textColor,
+                textAlign = TextAlign.Center
             )
             if (user.isModOrAdminOrSys()) {
-                Image(contentDescription = "drop", painter = painterResource(id = R.drawable.list_item), modifier = modifier.size(40.dp))
                 Image(
                     contentDescription = "delete client",
                     painter = painterResource(id = R.drawable.delete),
