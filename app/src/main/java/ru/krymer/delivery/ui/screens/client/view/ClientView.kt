@@ -25,11 +25,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -81,6 +78,13 @@ fun ClientView(
                         popBackStack()
                     })
                     .size(60.dp)
+            )
+            Text(
+                style = AppTheme.typography.titleMedium,
+                text = "${clients.sumOf { it.arrears.toInt() }} руб",
+                fontSize = 20.sp,
+                color = AppTheme.colors.textColor,
+                textAlign = TextAlign.Center
             )
             if (user.isModOrAdminOrSys()) {
                 Image(
@@ -191,16 +195,25 @@ fun ClientItem(
             if (user.isModOrAdminOrSys()) {
                 Image(contentDescription = "drop", painter = painterResource(id = R.drawable.list_item), modifier = modifier.size(40.dp))
             }
-            Text(
-                style = AppTheme.typography.titleMedium,
-                text = client.name,
-                fontSize = 20.sp,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 8.dp),
-                color = AppTheme.colors.textColor,
-                textAlign = TextAlign.Center
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    style = AppTheme.typography.titleMedium,
+                    text = client.name,
+                    fontSize = 20.sp,
+                    color = AppTheme.colors.textColor,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    style = AppTheme.typography.titleMedium,
+                    text = "${client.arrears.toInt()} руб",
+                    fontSize = 16.sp,
+                    color = AppTheme.colors.textColor,
+                    textAlign = TextAlign.Center
+                )
+            }
             if (user.isModOrAdminOrSys()) {
                 Image(
                     contentDescription = "delete client",

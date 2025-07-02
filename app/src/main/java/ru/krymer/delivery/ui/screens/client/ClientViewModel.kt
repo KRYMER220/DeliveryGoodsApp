@@ -175,6 +175,7 @@ class ClientViewModel @Inject constructor(
         updateViewState { it.copy(cords = cords) }
     }
 
+
     private fun saveClient() {
         launchCoroutine {
             val name = viewState.value.name

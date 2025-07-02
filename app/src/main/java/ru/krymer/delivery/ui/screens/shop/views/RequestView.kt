@@ -3,6 +3,7 @@ package ru.krymer.delivery.ui.screens.shop.views
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -83,6 +84,7 @@ fun AlertDialogRequestShop(
         }
 
         Column(modifier = Modifier.fillMaxSize().padding(5.dp)) {
+            Spacer(modifier = Modifier.height(20.dp))
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
@@ -405,7 +407,7 @@ fun AlertDialogRequestShop(
                                         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                                             Image(
                                                 contentDescription = "submit",
-                                                painter = painterResource(id = R.drawable.submit),
+                                                painter = if (shop.status) painterResource(id = R.drawable.submit_active) else painterResource(id = R.drawable.submit),
                                                 modifier = Modifier
                                                     .size(60.dp)
                                                     .clickable {
@@ -467,7 +469,7 @@ fun AlertDialogRequestShop(
                                         )
                                         Image(
                                             contentDescription = "submit",
-                                            painter = painterResource(id = R.drawable.submit),
+                                            painter = if (shop.status) painterResource(id = R.drawable.submit_active) else painterResource(id = R.drawable.submit),
                                             modifier = Modifier
                                                 .size(60.dp)
                                                 .clickable {
@@ -516,7 +518,7 @@ fun AlertDialogRequestShop(
                                         )
                                         Image(
                                             contentDescription = "submit",
-                                            painter = painterResource(id = R.drawable.submit),
+                                            painter = if (shop.status) painterResource(id = R.drawable.submit_active) else painterResource(id = R.drawable.submit),
                                             modifier = Modifier
                                                 .size(60.dp)
                                                 .clickable {
@@ -667,6 +669,11 @@ fun ProductRequestItem(
                         .fillMaxHeight()
                         .weight(0.2f)
                         .padding(end = 5.dp)
+                        .border(
+                            width = 1.dp,
+                            color = AppTheme.colors.onPrimary,
+                            shape = RoundedCornerShape(10.dp)
+                        )
                 ) {
                     Text(
                         style = AppTheme.typography.titleSmall,
@@ -686,6 +693,11 @@ fun ProductRequestItem(
                 .fillMaxHeight()
                 .weight(0.2f)
                 .padding(end = 5.dp)
+                .border(
+                    width = 1.dp,
+                    color = AppTheme.colors.onPrimary,
+                    shape = RoundedCornerShape(10.dp)
+                )
         ) {
             Text(
                 style = AppTheme.typography.titleSmall,
@@ -705,6 +717,11 @@ fun ProductRequestItem(
                     stateKeyBoard = true
                     editExchange = true
                 })
+                .border(
+                    width = 1.dp,
+                    color = AppTheme.colors.onPrimary,
+                    shape = RoundedCornerShape(10.dp)
+                )
         ) {
             Text(
                 style = AppTheme.typography.titleSmall,
