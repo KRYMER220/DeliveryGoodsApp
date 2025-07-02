@@ -17,30 +17,31 @@ interface TripApi {
     suspend fun add(@Body trip: CreateTripRequest): BaseResponse<TripModel>
 
     @GET("routes/by/trips")
-    suspend fun getRoutesByTrip(@Query(Constants.ID.ID_FACTORY) idFactory: Long): BaseResponse<List<TripModel>>
+    suspend fun getRoutesByTrip(@Query(Constants.HttpRequestKeys.ID_FACTORY) idFactory: Long): BaseResponse<List<TripModel>>
 
     @POST("trip/update")
     suspend fun update(@Body trip: UpdateTripRequest): BaseResponse<TripModel>
 
     @DELETE("trip/delete")
-    suspend fun delete(@Query(Constants.ID.ID) id: Long): BaseResponse<TripModel>
+    suspend fun delete(@Query(Constants.HttpRequestKeys.ID) id: Long): BaseResponse<TripModel>
 
     @GET("trip/get/data")
     suspend fun getDataAboutTrip(
-        @Query(Constants.ID.ID_FACTORY) idFactory: Long,
-        @Query(Constants.ID.ID_TRIP) idTrip: Long
+        @Query(Constants.HttpRequestKeys.ID_FACTORY) idFactory: Long,
+        @Query(Constants.HttpRequestKeys.ID_TRIP) idTrip: Long
     ): BaseResponse<CourierInfoModel>
 
     @GET("trips")
     suspend fun getTrips(
-        @Query(Constants.ID.ID_FACTORY) idFactory: Long
+        @Query(Constants.HttpRequestKeys.ID_FACTORY) idFactory: Long
     ): BaseResponse<List<TripModel>>
 
     @GET("trips/paginated")
     suspend fun gePaginatedTrips(
-        @Query(Constants.ID.ID_FACTORY) idFactory: Long,
-        @Query("limit") limit: Int = 10,
-        @Query("offset") offset: Long = 0
+        @Query(Constants.HttpRequestKeys.ID_FACTORY) idFactory: Long,
+        @Query(Constants.HttpRequestKeys.LIMIT) limit: Int = 10,
+        @Query(Constants.HttpRequestKeys.LAST_DATE) lastDate: Long?,
+        @Query(Constants.HttpRequestKeys.ID) lastId: Long?
     ): BaseResponse<List<TripModel>>
 }
 

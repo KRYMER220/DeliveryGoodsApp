@@ -75,7 +75,7 @@ fun ForgotView(
         Spacer(modifier = Modifier.height(30.dp))
         Box(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = stringResource(id = R.string.login_action),
+                text = stringResource(id = R.string.sign_in),
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier
                     .align(Alignment.TopEnd)

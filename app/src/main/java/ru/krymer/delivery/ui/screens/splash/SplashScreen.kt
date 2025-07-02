@@ -21,7 +21,7 @@ import ru.krymer.delivery.data.model.user.UserModel
 fun SplashScreen() {
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
-            painter = painterResource(id = R.drawable.icon),
+            painter = painterResource(id = R.drawable.icon2),
             contentDescription = "Logo",
             modifier = Modifier
                 .align(Alignment.Center)

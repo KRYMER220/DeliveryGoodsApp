@@ -51,7 +51,6 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 fun ClientView(
     event: (ClientEvent) -> Unit, state: ClientViewState, popBackStack: () -> Unit, user: UserModel
 ) {
-    var isFirstLoad by remember { mutableStateOf(true) }
     val list = state.listClient.collectAsState().value
     var clients = remember { mutableStateListOf<ClientModel>() }
     val lazyListState = rememberLazyListState()
@@ -62,15 +61,8 @@ fun ClientView(
         event(ClientEvent.ReorderClients(fromIndex = from.index, toIndex = to.index))
     }
 
-    LaunchedEffect(list) {
-        if (list.isNotEmpty() && isFirstLoad) {
-            isFirstLoad = false
-            clients.clear()
-            clients.addAll(list)
-        }
-    }
 
-    LaunchedEffect(list.size) {
+    LaunchedEffect(list) {
         clients.clear()
         clients.addAll(list)
     }
@@ -162,7 +154,9 @@ fun ClientView(
         CommonSaveDialog(dismiss = {
             event(ClientEvent.DismissUpdateDialog)
         }, confirm = {
-            event(ClientEvent.ClientUpdateAction)
+            if (user.isModOrAdminOrSys()) {
+                event(ClientEvent.ClientUpdateAction)
+            }
         }, content = {
             UpdateClientView(
                 viewState = state, event = event, user = user

@@ -22,7 +22,7 @@ interface UserApi {
     suspend fun signIn(@Body request: SignInRequest): BaseResponse<TokenResponse>
 
     @GET("token/refresh")
-    suspend fun refreshToken(@Header("Authorization") token: String): BaseResponse<TokenResponse>
+    suspend fun refreshToken(@Header(Constants.HttpRequestKeys.TOKEN_TITLE) token: String): BaseResponse<TokenResponse>
 
     @GET("user/info")
     suspend fun getData(): BaseResponse<UserModel>
@@ -31,11 +31,11 @@ interface UserApi {
     suspend fun logout(): BaseResponse<UserModel>
 
     @DELETE("user/delete")
-    suspend fun delete(@Query(Constants.ID.ID) id: Long): BaseResponse<UserModel>
+    suspend fun delete(@Query(Constants.HttpRequestKeys.ID) id: Long): BaseResponse<UserModel>
 
     @POST("user/update")
     suspend fun update(@Body request: UpdateUserRequest): BaseResponse<UserModel>
 
     @GET("users")
-    suspend fun getUsers(@Query(Constants.ID.ID_FACTORY) idFactory: Long): BaseResponse<List<UserModel>>
+    suspend fun getUsers(@Query(Constants.HttpRequestKeys.ID_FACTORY) idFactory: Long): BaseResponse<List<UserModel>>
 }

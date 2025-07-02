@@ -140,7 +140,7 @@ fun CustomDropDownMenuClient(
             Text(
                 text = client.name,
                 modifier = Modifier.padding(start = 15.dp),
-                color = AppTheme.colors.onSecondary
+                color = AppTheme.colors.onSecondary, style = AppTheme.typography.titleMedium
             )
             Spacer(modifier = Modifier.weight(1f))
             Icon(
@@ -152,7 +152,7 @@ fun CustomDropDownMenuClient(
                 changerState(false)
             }) {
                 list.forEach { client ->
-                    DropdownMenuItem(text = { Text(text = client.name) }, onClick = {
+                    DropdownMenuItem(text = { Text(text = client.name, style = AppTheme.typography.titleSmall) }, onClick = {
                         setCurrentClient(client)
                         changerState(false)
                     })

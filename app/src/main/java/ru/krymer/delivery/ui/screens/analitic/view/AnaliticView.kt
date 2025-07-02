@@ -75,7 +75,7 @@ fun AnaliticView(
                     Text(
                         text = convertToTextDate(dateRange.first) + " - " + convertToTextDate(
                             dateRange.second
-                        ), color = AppTheme.colors.onSecondary, fontSize = 14.sp
+                        ), color = AppTheme.colors.onSecondary, fontSize = 14.sp, style = AppTheme.typography.titleMedium
                     )
                     Image(
                         painter = painterResource(id = R.drawable.date_range),

@@ -14,13 +14,8 @@
     <string name="sign_in_title">Авторизация</string>
     <string name="forgot_pass_title">Восстановить пароль</string>
     <string name="sign_in_subtitle">Забыли пароль?</string>
-    <string name="email_hint">Эл.почта</string>
     <string name="pass_hint">Пароль</string>
     <string name="sign_in">Войти</string>
-    <string name="error_input_email">Поле с адресом пусто или данные не корректны!</string>
-    <string name="error_input_pass">Поле с паролем пусто или пароль слишком короткий! Введите пароль больше 7 символов!</string>
-    <string name="forgot_action">Забыли пароль?</string>
-    <string name="login_action">Войти сейчас!</string>
     <string name="restore">Восстановить</string>
 
     //menu
@@ -34,7 +29,7 @@
     //Clients
     <string name="arrears">Долг</string>
     <string name="phone">Номер телефона</string>
-    <string name="cords">Yandex координаты</string>
+    <string name="cords">Кординаты</string>
     //Couriers
     <string name="name_user">Имя</string>
     <string name="percent_double">Процент (0.0)</string>
@@ -49,4 +44,10 @@
     //analitic
     <string name="shop">Магазины</string>
     <string name="logs">Логи</string>
+    <string name="email_hint">Ваша почта</string>
+    //error
+    <string name="del_confirm">Вы уверены, что хотите удалить</string>
+    //Other
+    <string name="yes">Да</string>
+    <string name="no">Нет</string>
 </resources>

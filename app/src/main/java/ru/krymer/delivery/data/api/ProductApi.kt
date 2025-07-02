@@ -19,8 +19,8 @@ interface ProductApi {
     suspend fun update(@Body product: UpdateProductRequest): BaseResponse<ProductModel>
 
     @DELETE("product/delete")
-    suspend fun delete(@Query(Constants.ID.ID) id: Long): BaseResponse<ProductModel>
+    suspend fun delete(@Query(Constants.HttpRequestKeys.ID) id: Long): BaseResponse<ProductModel>
 
     @GET("products")
-    suspend fun getProducts(@Query(Constants.ID.ID_FACTORY) idFactory: Long): BaseResponse<List<ProductModel>>
+    suspend fun getProducts(@Query(Constants.HttpRequestKeys.ID_FACTORY) idFactory: Long): BaseResponse<List<ProductModel>>
 }

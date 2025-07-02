@@ -18,6 +18,7 @@ data class Colors(
     val textColor: Color,
     val isLight: Boolean,
     val isChanged: Color,
+    val success: Color
 )
 
 val lightPalette = Colors(
@@ -35,7 +36,8 @@ val lightPalette = Colors(
     onError = Color.White,
     isLight = true,
     textColor = Color.Black,
-    isChanged = Color(0x4DFF0000)
+    isChanged = Color(0x4DFF0000),
+    success = Color(0xFF62FF00),
 )
 
 val darkPalette = Colors(
@@ -53,5 +55,6 @@ val darkPalette = Colors(
     onError = Color.Black,
     isLight = false,
     textColor = Color.White,
-    isChanged = Color(0x4DFF0000)
+    isChanged = Color(0x4DFF0000),
+    success = Color(0xFF62FF00),
 )

@@ -15,8 +15,8 @@ interface MessageApi {
     suspend fun add(@Body message: CreateMessage): BaseResponse<MessageModel>
 
     @DELETE("message/delete")
-    suspend fun delete(@Query(Constants.ID.ID) id: Long): BaseResponse<MessageModel>
+    suspend fun delete(@Query(Constants.HttpRequestKeys.ID) id: Long): BaseResponse<MessageModel>
 
     @GET("messages")
-    suspend fun getMessages(@Query(Constants.ID.ID_CLIENT) idClient: Long): BaseResponse<List<MessageModel>>
+    suspend fun getMessages(@Query(Constants.HttpRequestKeys.ID_CLIENT) idClient: Long): BaseResponse<List<MessageModel>>
 }

@@ -86,14 +86,16 @@ fun RouteView(
                             openRoute(it, routes)
                         },
                         deleteRoute = {
-                            event(
-                                RouteEvent.ShowDeleteDialog(
-                                    route = it
+                            if (user.isSysOrAdmin())
+                                event(
+                                    RouteEvent.ShowDeleteDialog(
+                                        route = it
+                                    )
                                 )
-                            )
                         },
                         updateRoute = {
-                            event(RouteEvent.ShowUpdateDialog(it))
+                            if (user.isSysOrAdmin())
+                                event(RouteEvent.ShowUpdateDialog(it))
                         },
                         user = user
                     )

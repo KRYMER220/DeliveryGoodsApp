@@ -17,8 +17,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.ui.theme.AppTheme
 import ru.krymer.delivery.utills.Constants
@@ -33,11 +35,11 @@ fun MenuView(
     user: UserModel
 ) {
     val listMenu = listOf(
-        Constants.MENU.ROUTE,
-        Constants.MENU.PRODUCT,
-        Constants.MENU.COURIER,
-        Constants.MENU.ANALITIC,
-        Constants.MENU.TRIP
+        R.string.route,
+        R.string.products,
+        R.string.couriers,
+        R.string.analitic,
+        R.string.trip
     )
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
@@ -59,21 +61,21 @@ fun MenuView(
             LazyColumn(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 itemsIndexed(items = listMenu) { index, nameMenu ->
                     when(nameMenu) {
-                        Constants.MENU.TRIP -> CustomButton(buttonName = nameMenu, routeTo = onTripClick)
-                        Constants.MENU.ROUTE -> if (user.isSysOrAdmin()) {
-                            CustomButton(buttonName = nameMenu, routeTo = onRouteClick)
+                        R.string.trip -> CustomButton(buttonName = stringResource(nameMenu), routeTo = onTripClick)
+                        R.string.route -> if (user.isSysOrAdmin()) {
+                            CustomButton(buttonName = stringResource(nameMenu), routeTo = onRouteClick)
                         }
 
-                        Constants.MENU.COURIER -> if (user.isSysOrAdmin()) {
-                            CustomButton(buttonName = nameMenu, routeTo = onCourierClick)
+                        R.string.couriers -> if (user.isSysOrAdmin()) {
+                            CustomButton(buttonName = stringResource(nameMenu), routeTo = onCourierClick)
                         }
 
-                        Constants.MENU.ANALITIC -> if (user.isSysOrAdmin()) {
-                            CustomButton(buttonName = nameMenu, routeTo = onAnaliticClick)
+                        R.string.analitic -> if (user.isSysOrAdmin()) {
+                            CustomButton(buttonName = stringResource(nameMenu), routeTo = onAnaliticClick)
                         }
 
-                        Constants.MENU.PRODUCT -> if (user.isSysOrAdmin()) {
-                            CustomButton(buttonName = nameMenu, routeTo = onProductClick)
+                        R.string.products -> if (user.isSysOrAdmin()) {
+                            CustomButton(buttonName = stringResource(nameMenu), routeTo = onProductClick)
                         }
                     }
                 }

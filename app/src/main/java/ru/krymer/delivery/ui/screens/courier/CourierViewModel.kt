@@ -3,10 +3,10 @@ package ru.krymer.delivery.ui.screens.courier
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -47,8 +47,10 @@ class CourierViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 block()
+            } catch (e: CancellationException) {
+                sharedViewModel.message(Constants.ERROR.CANCEL_OPERATION, type = TypeMessageModel.ERROR)
             } catch (e: Exception) {
-                sharedViewModel.message(e.message)
+                sharedViewModel.message(e.message, type = TypeMessageModel.ERROR)
             }
         }
     }
@@ -133,7 +135,7 @@ class CourierViewModel @Inject constructor(
     private fun deleteUser() {
         launchCoroutine {
             val user = viewState.value.userDelete
-            if (user != null && sharedViewModel.initSysAdm()) {
+            if (user != null) {
                 if (user.id != sharedViewModel.viewState.value.user.value?.id) {
                     val response = userApi.delete(id = user.id)
                     if (response.success) {
@@ -144,13 +146,13 @@ class CourierViewModel @Inject constructor(
                         updateViewState { it.copy(listUser = MutableStateFlow(listNew.sortedBy { r -> r.name })) }
                         dismissDeleteDialog()
                     } else {
-                        sharedViewModel.message(response.message)
+                        sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
                     }
                 } else {
-                    sharedViewModel.message(Constants.ERROR.RESRTRAINT)
+                    sharedViewModel.message(Constants.ERROR.RESRTRAINT, type = TypeMessageModel.ERROR)
                 }
             } else {
-                sharedViewModel.message(Constants.ERROR.ERROR)
+                sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
             }
         }
     }
@@ -187,10 +189,10 @@ class CourierViewModel @Inject constructor(
                     sharedViewModel.updateFactory(factoryModel = factory)
                     dismissUpdateSettingsDialog()
                 } else {
-                    sharedViewModel.message(response.message)
+                    sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
                 }
             } else {
-                sharedViewModel.message(Constants.EMPTY.EMPTY_DATA)
+                sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
             }
         }
     }
@@ -246,12 +248,14 @@ class CourierViewModel @Inject constructor(
                     updateViewState { it.copy(listUser = MutableStateFlow(list)) }
                     sharedViewModel.message(
                         response.message,
-                        typeMessageModel = TypeMessageModel.SUCCEED
+                        type = TypeMessageModel.SUCCEED
                     )
                     dismissUpdateUserDialog()
                 } else {
-                    sharedViewModel.message(response.message)
+                    sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
                 }
+            } else {
+                sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
             }
         }
     }
@@ -264,35 +268,33 @@ class CourierViewModel @Inject constructor(
            val name = viewState.value.userName
            val user = sharedViewModel.viewState.value.user.value
            if (user != null) {
-               if (sharedViewModel.initSysAdm()) {
-                   val registerRequest = SignUpRequest(
-                       email = email,
-                       password = pass,
-                       role = Constants.Role.USER,
-                       idFactory = user.idFactory,
-                       name = name,
-                       status = StatusModel.OFFLINE.getStringByStatus()
-                   )
-                   val response = userApi.signUp(registerRequest)
-                   if (response.success) {
-                       val userAdded = response.obj
-                       if (userAdded != null) {
-                           val list =
-                               viewState.value.listUser.value.map { it.copy() }.toMutableList()
-                           list.add(userAdded)
-                           updateViewState { it.copy(listUser = MutableStateFlow(list.sortedBy { u -> u.name })) }
-                           sharedViewModel.message(
-                               response.message,
-                               typeMessageModel = TypeMessageModel.SUCCEED
-                           )
-                           dismissAddDialog()
-                       }
-                   } else {
-                       sharedViewModel.message(response.message)
+               val registerRequest = SignUpRequest(
+                   email = email,
+                   password = pass,
+                   role = Constants.Role.USER,
+                   idFactory = user.idFactory,
+                   name = name,
+                   status = StatusModel.OFFLINE.getStringByStatus()
+               )
+               val response = userApi.signUp(registerRequest)
+               if (response.success) {
+                   val userAdded = response.obj
+                   if (userAdded != null) {
+                       val list =
+                           viewState.value.listUser.value.map { it.copy() }.toMutableList()
+                       list.add(userAdded)
+                       updateViewState { it.copy(listUser = MutableStateFlow(list.sortedBy { u -> u.name })) }
+                       sharedViewModel.message(
+                           response.message,
+                           type = TypeMessageModel.SUCCEED
+                       )
+                       dismissAddDialog()
                    }
                } else {
-                   sharedViewModel.message(Constants.ERROR.RESRTRAINT)
+                   sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
                }
+           } else {
+               sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
            }
        }
     }
@@ -347,7 +349,7 @@ class CourierViewModel @Inject constructor(
         launchCoroutine {
             val user = viewState.value.userBan
             if (user != null) {
-                if (user.id != sharedViewModel.viewState.value.user.value?.id && user.role != RoleModel.SYSTEM) {
+                if (user.id != sharedViewModel.viewState.value.user.value?.id) {
                     val userRequest = UpdateUserRequest(
                         id = user.id,
                         login = user.login,
@@ -370,13 +372,11 @@ class CourierViewModel @Inject constructor(
                         updateViewState { it.copy(listUser = MutableStateFlow(list)) }
                         dismissBanDialog()
                     } else {
-                        sharedViewModel.message(response.message)
+                        sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
                     }
-                } else {
-                    sharedViewModel.message(Constants.ERROR.RESRTRAINT)
                 }
             } else {
-                sharedViewModel.message(Constants.ERROR.GENERAL_ERROR)
+                sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
             }
         }
     }

@@ -3,18 +3,17 @@ package ru.krymer.delivery.ui.screens.route
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.krymer.delivery.common.EventHandler
 import ru.krymer.delivery.data.api.RouteApi
 import ru.krymer.delivery.data.model.RouteModel
+import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
 import ru.krymer.delivery.data.request.RouteRequest
-import ru.krymer.delivery.ui.screens.route.models.RouteAction
 import ru.krymer.delivery.ui.screens.route.models.RouteEvent
 import ru.krymer.delivery.ui.screens.route.models.RouteViewState
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
@@ -38,8 +37,10 @@ class RouteViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 block()
+            } catch (e: CancellationException) {
+                sharedViewModel.message(Constants.ERROR.CANCEL_OPERATION, type = TypeMessageModel.ERROR)
             } catch (e: Exception) {
-                sharedViewModel.message(e.message)
+                sharedViewModel.message(e.message, type = TypeMessageModel.ERROR)
             }
         }
     }
@@ -79,7 +80,7 @@ class RouteViewModel @Inject constructor(
                         }
                     }
                 } else {
-                    sharedViewModel.message(response.message)
+                    sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
                 }
             }
         }
@@ -123,10 +124,10 @@ class RouteViewModel @Inject constructor(
                     updateViewState { it.copy(listRoute = MutableStateFlow(list)) }
                     dismissUpdateDialog()
                 } else {
-                    sharedViewModel.message(response.message)
+                    sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
                 }
             } else {
-                sharedViewModel.message(Constants.EMPTY.EMPTY_DATA)
+                sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
             }
         }
     }
@@ -148,12 +149,12 @@ class RouteViewModel @Inject constructor(
                         list.add(route)
                         updateViewState { it.copy(listRoute = MutableStateFlow(list.sortedBy { r -> r.name })) }
                         dismissAddDialog()
-                    } else {
-                        sharedViewModel.message(Constants.ERROR.SERVER_ERROR_RESPONSE)
                     }
                 } else {
-                    sharedViewModel.message(response.message)
+                    sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
                 }
+            } else {
+                sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
             }
         }
     }
@@ -174,22 +175,18 @@ class RouteViewModel @Inject constructor(
     }
 
     private fun showUpdateDialog(route: RouteModel) {
-        if (sharedViewModel.initSysAdmMod()) {
-            updateViewState {
-                it.copy(
-                    isDialogUpdate = true, routeUpdated = route
-                )
-            }
+        updateViewState {
+            it.copy(
+                isDialogUpdate = true, routeUpdated = route
+            )
         }
     }
 
     private fun showDeleteDialog(route: RouteModel) {
-        if (sharedViewModel.initSysAdmMod()) {
-            updateViewState {
-                it.copy(
-                    isDialogDelete = true, routeDeleted = route
-                )
-            }
+        updateViewState {
+            it.copy(
+                isDialogDelete = true, routeDeleted = route
+            )
         }
     }
 
@@ -205,10 +202,10 @@ class RouteViewModel @Inject constructor(
                     updateViewState { it.copy(listRoute = MutableStateFlow(listNew.sortedBy { r -> r.name })) }
                     dismissDeleteDialog()
                 } else {
-                    sharedViewModel.message(response.message)
+                    sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
                 }
             } else {
-                sharedViewModel.message(Constants.EMPTY.EMPTY_DATA)
+                sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
             }
         }
     }

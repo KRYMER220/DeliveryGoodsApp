@@ -3,8 +3,8 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.google.gms.google.services)
     alias(libs.plugins.google.firebase.crashlytics)
-    id("com.google.dagger.hilt.android")
     alias(libs.plugins.compose.compiler)
+    id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
     alias(libs.plugins.jetbrains.kotlin.serialization)
 }
@@ -17,8 +17,8 @@ android {
         applicationId = "ru.krymer.delivery"
         minSdk = 26
         targetSdk = 36
-        versionCode = 13
-        versionName = "1.2.1"
+        versionCode = 14
+        versionName = "1.2.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -36,9 +36,6 @@ android {
         }
     }
 
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.20"
-    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -67,7 +64,6 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.logging.interceptor)
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.jwtdecode)
 
     implementation (libs.androidx.security.crypto)
 
@@ -83,8 +79,6 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.runtime.livedata)
     implementation(libs.androidx.work.runtime.ktx)
-    implementation(libs.firebase.firestore)
-    implementation(libs.firebase.auth)
     implementation(libs.androidx.hilt.common)
     implementation(libs.androidx.hilt.work)
     testImplementation(libs.junit)
@@ -96,7 +90,6 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    implementation(libs.androidx.constraintlayout)
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
@@ -107,11 +100,8 @@ dependencies {
 
 
     implementation(libs.androidx.room.runtime)
-    annotationProcessor(libs.androidx.room.compiler)
-    ksp(libs.androidx.room.room.compiler)
+    ksp(libs.androidx.room.compiler)
     implementation (libs.androidx.room.ktx)
-    implementation(libs.firebase.firestore)
-    implementation(libs.google.firebase.auth)
     implementation(platform(libs.firebase.bom))
     implementation(libs.kotlin.reflect)
     implementation(libs.androidx.hilt.work)
@@ -125,4 +115,5 @@ dependencies {
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+    implementation("io.github.dokar3:sonner:0.3.8")
 }

@@ -53,8 +53,7 @@ fun ProductView(
     popBackStack: () -> Unit,
     event: (ProductEvent) -> Unit
 ) {
-    var isFirstLoad by remember { mutableStateOf(true) }
-    val list = state.listProduct.collectAsState().value
+    val productsState = state.listProduct.collectAsState().value
     var products = remember { mutableStateListOf<ProductModel>() }
     val lazyListState = rememberLazyListState()
     val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
@@ -64,17 +63,9 @@ fun ProductView(
         event(ProductEvent.ReorderProducts(fromIndex = from.index, toIndex = to.index))
     }
 
-    LaunchedEffect(list) {
-        if (list.isNotEmpty() && isFirstLoad) {
-            isFirstLoad = false
-            products.clear()
-            products.addAll(list)
-        }
-    }
-
-    LaunchedEffect(list.size) {
+    LaunchedEffect(productsState) {
         products.clear()
-        products.addAll(list)
+        products.addAll(productsState)
     }
 
     Column(modifier = Modifier.padding(15.dp)) {
@@ -139,6 +130,7 @@ fun ProductView(
             })
         })
     }
+
 
     if (state.showUpdateSheetDialog) {
         CommonSaveDialog(dismiss = {

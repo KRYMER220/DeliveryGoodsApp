@@ -3,6 +3,7 @@ package ru.krymer.delivery.ui.screens.login
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,6 +13,7 @@ import kotlinx.coroutines.withContext
 import ru.krymer.delivery.common.EventHandler
 import ru.krymer.delivery.di.TokenManager
 import ru.krymer.delivery.data.api.UserApi
+import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
 import ru.krymer.delivery.data.request.SignInRequest
 import ru.krymer.delivery.ui.screens.login.models.LoginEvent
 import ru.krymer.delivery.ui.screens.login.models.LoginSubState
@@ -38,6 +40,8 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 block()
+            } catch (e: CancellationException) {
+                sharedViewModel.message(Constants.ERROR.CANCEL_OPERATION, type = TypeMessageModel.ERROR)
             } catch (e: Exception) {
                 sharedViewModel.message(e.message)
             }
@@ -81,7 +85,7 @@ class LoginViewModel @Inject constructor(
                 }
             } else {
                 updateViewState { it.copy(isLoginProgress = false) }
-                sharedViewModel.message(tokenResponse.message)
+                sharedViewModel.message(tokenResponse.message, type = TypeMessageModel.ERROR)
             }
         }
     }

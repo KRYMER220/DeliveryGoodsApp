@@ -18,8 +18,8 @@ interface RouteApi {
     suspend fun update(@Body route: RouteRequest): BaseResponse<RouteModel>
 
     @DELETE("route/delete")
-    suspend fun delete(@Query(Constants.ID.ID) id: Long): BaseResponse<RouteModel>
+    suspend fun delete(@Query(Constants.HttpRequestKeys.ID) id: Long): BaseResponse<RouteModel>
 
     @GET("routes")
-    suspend fun getRoutes(@Query(Constants.ID.ID_FACTORY) idFactory: Long): BaseResponse<List<RouteModel>>
+    suspend fun getRoutes(@Query(Constants.HttpRequestKeys.ID_FACTORY) idFactory: Long): BaseResponse<List<RouteModel>>
 }

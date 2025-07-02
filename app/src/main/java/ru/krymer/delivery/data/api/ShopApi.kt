@@ -17,12 +17,12 @@ interface ShopApi {
 
     @GET("shops/by/trip")
     suspend fun getShopsByTrip(
-        @Query(Constants.ID.ID_TRIP) idTrip: Long
+        @Query(Constants.HttpRequestKeys.ID_TRIP) idTrip: Long
     ): BaseResponse<List<ShopModel>>
 
     @GET("shops/by/factory")
     suspend fun getShops(
-        @Query(Constants.ID.ID_FACTORY) idFactory: Long
+        @Query(Constants.HttpRequestKeys.ID_FACTORY) idFactory: Long
     ): BaseResponse<List<ShopModel>>
 
     @POST("shop/update")
@@ -30,13 +30,13 @@ interface ShopApi {
 
     @DELETE("shop/delete")
     suspend fun delete(
-        @Query(Constants.ID.ID) id: Long,
-        @Query(Constants.ID.ID_TRIP) idTrip: Long
+        @Query(Constants.HttpRequestKeys.ID) id: Long,
+        @Query(Constants.HttpRequestKeys.ID_TRIP) idTrip: Long
     ): BaseResponse<ShopModel>
 
     @GET("shops/for/info")
     suspend fun getCurrentShopsByFactory(
-        @Query(Constants.ID.ID_FACTORY) idFactory: Long,
-        @Query(Constants.ID.ID_SHOP) id: Long
+        @Query(Constants.HttpRequestKeys.ID_FACTORY) idFactory: Long,
+        @Query(Constants.HttpRequestKeys.ID_SHOP) id: Long
     ): BaseResponse<List<ShopModel>>
 }

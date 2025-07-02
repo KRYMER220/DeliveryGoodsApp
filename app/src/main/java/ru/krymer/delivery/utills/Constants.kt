@@ -27,13 +27,16 @@ class Constants {
         const val ONLINE = "online"
     }
 
-    object ID {
+    object HttpRequestKeys {
         const val ID = "id"
         const val ID_CLIENT = "idClient"
         const val ID_FACTORY = "idFactory"
         const val ID_ROUTE = "idRoute"
         const val ID_TRIP = "idTrip"
         const val ID_SHOP = "idShop"
+        const val LAST_DATE = "lastDate"
+        const val LIMIT = "limit"
+        const val TOKEN_TITLE = "Authorization"
     }
 
     object PAY {
@@ -93,6 +96,8 @@ class Constants {
         const val USER_BANNED = "Доступ ограничен! Ваш профиль заблокирован!"
         const val MISSING_CORDS = "Гео-точка отсутствует!"
         const val LIST_EMPTY = "Список пуст!"
+        const val AUTH = "Требуется повторная авторизация!"
+        const val CANCEL_OPERATION = "Вызов операции отменен!"
     }
 
     object ACTIONS {

@@ -4,6 +4,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import ru.krymer.delivery.AppBox
 import ru.krymer.delivery.AppDatabase
 import ru.krymer.delivery.data.api.FactoryApi
 import ru.krymer.delivery.data.api.UserApi
@@ -29,7 +30,7 @@ object SharedModule {
             tokenManager = tokenManager,
             factoryApi = factoryApi,
             database = database,
-            manager = sharedPreferencesManager
+            manager = sharedPreferencesManager,
         )
     }
 }

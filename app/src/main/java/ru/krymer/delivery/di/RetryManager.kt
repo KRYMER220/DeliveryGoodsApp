@@ -2,6 +2,7 @@ package ru.krymer.delivery.di
 
 import android.util.Log
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import ru.krymer.delivery.AppDatabase
 import ru.krymer.delivery.data.api.RequestApi
 import ru.krymer.delivery.data.api.ShopApi
@@ -11,6 +12,7 @@ import ru.krymer.delivery.data.request.CreateShopRequest
 import ru.krymer.delivery.data.request.UpdateRequestShopRequest
 import ru.krymer.delivery.data.request.UpdateShopRequest
 import ru.krymer.delivery.data.response.BaseResponse
+import java.lang.reflect.Type
 import javax.inject.Inject
 
 class RetryManager @Inject constructor(
@@ -22,14 +24,14 @@ class RetryManager @Inject constructor(
 
     suspend fun retryFailedRequests() {
         val failedRequests = appDatabase.failedDao().getAllFailedRequests().sortedBy { it.timestamp }
+        val type: Type = object : TypeToken<Map<String, String>>() {}.type
         failedRequests.forEach { failedRequest ->
             try {
                 if (failedRequest.retryCount >= 5) {
                     appDatabase.failedDao().deleteById(failedRequest.id)
                     return@forEach
                 }
-                val params =
-                    gson.fromJson(failedRequest.params, Map::class.java) as Map<String, String>
+                val params = gson.fromJson<Map<String, String>>(failedRequest.params, type)
                 val response = when (failedRequest.apiType) {
                     "request" -> retryRequestRequest(failedRequest, params)
                     "shop" -> retryShopRequest(failedRequest, params)

@@ -4,6 +4,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,7 +17,6 @@ import ru.krymer.delivery.common.EventHandler
 import ru.krymer.delivery.data.api.FactoryApi
 import ru.krymer.delivery.data.api.UserApi
 import ru.krymer.delivery.data.model.FactoryModel
-import ru.krymer.delivery.data.model.RouteModel
 import ru.krymer.delivery.data.model.user.getStringByRole
 import ru.krymer.delivery.data.model.utilModel.MessageModel
 import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
@@ -33,7 +33,7 @@ class SharedViewModel @Inject constructor(
     private val tokenManager: TokenManager,
     private val factoryApi: FactoryApi,
     private val database: AppDatabase,
-    private val manager: AppPreferencesManager,
+    private val manager: AppPreferencesManager
 ) : ViewModel(), EventHandler<SharedEvents> {
 
     var backStack = mutableStateListOf<Screens>(Screens.Splash)
@@ -42,6 +42,7 @@ class SharedViewModel @Inject constructor(
         when(event) {
             SharedEvents.ClearToken -> clearTokenData()
             SharedEvents.LogOut -> launchCoroutine { logout() }
+            is SharedEvents.DeleteMessage -> deleteMessage(event.id)
         }
     }
 
@@ -49,8 +50,10 @@ class SharedViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 block()
+            } catch (e: CancellationException) {
+                message(Constants.ERROR.CANCEL_OPERATION, type = TypeMessageModel.ERROR)
             } catch (e: Exception) {
-                message(e.message)
+                message(e.message, type = TypeMessageModel.ERROR)
             }
         }
     }
@@ -65,20 +68,6 @@ class SharedViewModel @Inject constructor(
         initAuth()
     }
 
-    fun initSysAdm(): Boolean {
-        val status = viewState.value.user.value?.role?.getStringByRole() in listOf(
-            Constants.Role.SYSTEM, Constants.Role.ADMIN
-        )
-        return status
-    }
-
-    fun initSysAdmMod(): Boolean {
-        val status = viewState.value.user.value?.role?.getStringByRole() in listOf(
-            Constants.Role.SYSTEM, Constants.Role.ADMIN, Constants.Role.MODERATOR
-        )
-        return status
-    }
-
     fun clearTokenData() {
         tokenManager.deleteToken()
         updateViewState {
@@ -88,8 +77,7 @@ class SharedViewModel @Inject constructor(
                 isUserBlocked = false,
             )
         }
-
-        message("Требуется повторная авторизация!")
+        message(Constants.ERROR.AUTH)
     }
 
     fun initAuth() {
@@ -111,7 +99,6 @@ class SharedViewModel @Inject constructor(
                     backStack.clear()
                     backStack.add(Screens.Auth)
                 }
-                clearTokenData()
             }
         }
     }
@@ -132,19 +119,31 @@ class SharedViewModel @Inject constructor(
             }
             clearTokenData()
         } else {
-            message(response.message)
+            message(response.message, type = TypeMessageModel.ERROR)
         }
     }
 
-    fun message(message: String?, typeMessageModel: TypeMessageModel = TypeMessageModel.ERROR) {
-        val listMessage = viewState.value.listMessage.value.map { it.copy() }.toMutableList()
-        val obj = MessageModel(
-            id = listMessage.lastIndex.toLong(),
-            message = message ?: Constants.ERROR.ERROR,
-            type = typeMessageModel
-        )
-        listMessage.add(obj)
-        updateViewState { it.copy(listMessage = MutableStateFlow(listMessage)) }
+    private fun deleteMessage(id: Long) {
+        launchCoroutine {
+            updateViewState { state ->
+                state.copy(
+                    listMessage = MutableStateFlow(
+                        state.listMessage.value.filter { it.id != id }
+                    )
+                )
+            }
+        }
+    }
+
+    fun message(message: String?, type: TypeMessageModel = TypeMessageModel.ERROR) {
+        launchCoroutine {
+            val obj = MessageModel(
+                id = System.currentTimeMillis(),
+                message = message ?: Constants.ERROR.ERROR,
+                type = type
+            )
+            updateViewState { it.copy(listMessage = MutableStateFlow(it.listMessage.value + obj)) }
+        }
     }
 
     private fun checkValidityToken(accessToken: String) {
@@ -153,7 +152,6 @@ class SharedViewModel @Inject constructor(
                 userApi.refreshToken(token = Constants.TOKEN.TOKEN_TYPE + accessToken)
             }
             if (response.success) {
-
                 val tokens = response.obj
                 if (tokens != null) {
                     tokenManager.saveAccessToken(tokens.accessToken)
@@ -165,7 +163,7 @@ class SharedViewModel @Inject constructor(
                     }
                 }
             } else {
-                message(response.message)
+                message(response.message, type = TypeMessageModel.ERROR)
             }
         }
     }
@@ -193,36 +191,32 @@ class SharedViewModel @Inject constructor(
                     }
                 }
             } else {
-                message(response.message)
+                message(response.message, type = TypeMessageModel.ERROR)
             }
         }
     }
 
     private fun loadFactoryData(idFactory: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val response =
-                    factoryApi.getFactoryById(id = idFactory)
-                if (response.success) {
-                    val factory = response.obj
-                    if (factory != null) {
-                        val localFactory = database.factoryDao().getFactoryById(factory.id)
-                        if (localFactory != null) {
-                            database.factoryDao().updateFactory(factory = factory)
-                        } else {
-                            database.factoryDao().insertFactory(factory = factory)
-                        }
-                        updateViewState {
-                            it.copy(
-                                factory = factory
-                            )
-                        }
+        launchCoroutine {
+            val response =
+                factoryApi.getFactoryById(id = idFactory)
+            if (response.success) {
+                val factory = response.obj
+                if (factory != null) {
+                    val localFactory = database.factoryDao().getFactoryById(factory.id)
+                    if (localFactory != null) {
+                        database.factoryDao().updateFactory(factory = factory)
+                    } else {
+                        database.factoryDao().insertFactory(factory = factory)
                     }
-                } else {
-                    message(response.message)
+                    updateViewState {
+                        it.copy(
+                            factory = factory
+                        )
+                    }
                 }
-            } catch (e: Exception) {
-                message(message = e.message)
+            } else {
+                message(response.message, type = TypeMessageModel.ERROR)
             }
         }
     }

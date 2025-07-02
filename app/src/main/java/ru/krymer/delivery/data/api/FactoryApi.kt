@@ -11,7 +11,7 @@ import ru.krymer.delivery.utills.Constants
 
 interface FactoryApi {
     @GET("factory")
-    suspend fun getFactoryById(@Query(Constants.ID.ID) id: Long): BaseResponse<FactoryModel>
+    suspend fun getFactoryById(@Query(Constants.HttpRequestKeys.ID) id: Long): BaseResponse<FactoryModel>
 
     @POST("factory/update")
     suspend fun update(@Body factory: UpdateFactoryRequest): BaseResponse<FactoryModel>

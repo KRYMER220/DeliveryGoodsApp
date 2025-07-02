@@ -10,7 +10,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import ru.krymer.delivery.R
 import ru.krymer.delivery.ui.theme.AppTheme
 
 @Composable
@@ -26,7 +28,7 @@ fun CommonDeleteDialog(
             onDismissRequest = onDismiss,
             title = {
                 Text(
-                    text = "Вы уверены, что хотите удалить $itemName ?",
+                    text = "${stringResource(R.string.del_confirm)} $itemName ?",
                     modifier = Modifier.fillMaxWidth(),
                     color = AppTheme.colors.textColor
                 )
@@ -44,7 +46,7 @@ fun CommonDeleteDialog(
                         )
 
                     ) {
-                        Text(text = "Нет", color = AppTheme.colors.onPrimary)
+                        Text(text = stringResource(R.string.no), color = AppTheme.colors.onPrimary)
                     }
                     Button(
                         onClick = onConfirm,
@@ -53,7 +55,7 @@ fun CommonDeleteDialog(
                             containerColor = AppTheme.colors.onSecondary
                         )
                     ) {
-                        Text(text = "Да", color = AppTheme.colors.onPrimary)
+                        Text(text = stringResource(R.string.yes), color = AppTheme.colors.onPrimary)
                     }
                 }
             }, containerColor = AppTheme.colors.onPrimary

@@ -3,6 +3,7 @@ package ru.krymer.delivery.ui.screens.client
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,12 +13,15 @@ import ru.krymer.delivery.common.EventHandler
 import ru.krymer.delivery.data.api.ClientApi
 import ru.krymer.delivery.data.model.ClientModel
 import ru.krymer.delivery.data.model.RouteModel
+import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
 import ru.krymer.delivery.data.request.ClientRequest
 import ru.krymer.delivery.ui.screens.client.models.ClientAction
 import ru.krymer.delivery.ui.screens.client.models.ClientEvent
 import ru.krymer.delivery.ui.screens.client.models.ClientViewState
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.utills.Constants
+import ru.krymer.delivery.utills.convertToTextDate
+import ru.krymer.delivery.utills.getStartOfNextDay
 import javax.inject.Inject
 
 @HiltViewModel
@@ -37,8 +41,10 @@ class ClientViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 block()
+            } catch (e: CancellationException) {
+                sharedViewModel.message(Constants.ERROR.CANCEL_OPERATION, type = TypeMessageModel.ERROR)
             } catch (e: Exception) {
-                sharedViewModel.message(e.message)
+                sharedViewModel.message(e.message, type = TypeMessageModel.ERROR)
             }
         }
     }
@@ -80,11 +86,11 @@ class ClientViewModel @Inject constructor(
             val itemTo = list[toIndex].copy()
             val indexTo = itemTo.counter
             val newItemFrom = itemTo.toRequestUpdateIndex(indexFrom)
-            val newItemTo = itemFrom.toRequestUpdateIndex(indexTo)
+            val newItemTo = if (indexFrom != indexTo)  itemFrom.toRequestUpdateIndex(indexTo) else itemFrom.toRequestUpdateIndex(indexTo+1)
             val responseFrom = clientApi.update(client = newItemFrom)
             val responseTo = clientApi.update(client = newItemTo)
             if (!(responseTo.success && responseFrom.success)) {
-                sharedViewModel.message(Constants.ERROR.SERVER_ERROR_RESPONSE)
+                sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
             }
         }
     }
@@ -115,7 +121,7 @@ class ClientViewModel @Inject constructor(
                     ) }
                 }
             } else {
-                sharedViewModel.message(response.message)
+                sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
             }
         }
     }
@@ -194,12 +200,12 @@ class ClientViewModel @Inject constructor(
                         list.add(client)
                         updateViewState { it.copy(listClient = MutableStateFlow(list.sortedBy { c -> c.counter })) }
                         dismissDialogs()
-                    } else {
-                        sharedViewModel.message(Constants.ERROR.SERVER_ERROR_RESPONSE)
                     }
                 } else {
-                    sharedViewModel.message(response.message)
+                    sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
                 }
+            } else {
+                sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
             }
         }
     }
@@ -238,27 +244,22 @@ class ClientViewModel @Inject constructor(
     }
 
     fun deleteItemConfirmed() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val client = viewState.value.clientDelete
-                if (client != null) {
-                    val response = clientApi.delete(id = client.id)
-                    if (response.success) {
-                        val list =
-                            viewState.value.listClient.value.map { it.copy() }.toMutableList()
-                        val item = list.first { it.id == client.id }
-                        val listNew = list - item
-                        updateViewState { it.copy(listClient = MutableStateFlow(listNew.sortedBy { c -> c.counter })) }
-                    } else {
-                        sharedViewModel.message(response.message)
-                    }
+        launchCoroutine {
+            val client = viewState.value.clientDelete
+            if (client != null) {
+                val response = clientApi.delete(id = client.id)
+                if (response.success) {
+                    val list =
+                        viewState.value.listClient.value.map { it.copy() }.toMutableList()
+                    val item = list.first { it.id == client.id }
+                    val listNew = list - item
+                    updateViewState { it.copy(listClient = MutableStateFlow(listNew.sortedBy { c -> c.counter })) }
+                    dismissDialogs()
                 } else {
-                    sharedViewModel.message(Constants.ERROR.GENERAL_ERROR)
+                    sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
                 }
-            } catch (e: Exception) {
-                sharedViewModel.message(e.message)
-            } finally {
-                dismissDialogs()
+            } else {
+                sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
             }
         }
     }
@@ -290,12 +291,12 @@ class ClientViewModel @Inject constructor(
             val arrears = if (viewState.value.arrears == "") 0.0 else viewState.value.arrears.toDouble()
             val cords = viewState.value.cords
             val route = viewState.value.selectedRoute.value
-            if (client != null && route != null && name.isNotEmpty() && sharedViewModel.initSysAdmMod()) {
+            if (client != null && route != null) {
                 val request = ClientRequest(
                     id = client.id,
                     idRoute = route.id,
                     idFactory = client.idFactory,
-                    name = name,
+                    name = if (name == "") client.name else name,
                     phone = phone,
                     cord = cords,
                     counter = client.counter,
@@ -323,8 +324,10 @@ class ClientViewModel @Inject constructor(
                     }
                     dismissDialogs()
                 } else {
-                    sharedViewModel.message(response.message)
+                    sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
                 }
+            } else {
+                sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
             }
         }
     }

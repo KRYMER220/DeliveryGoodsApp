@@ -9,6 +9,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,13 +35,16 @@ fun UpdateProductView(
     changePrice: (String) -> Unit,
     productAction: (Boolean) -> Unit
 ) {
-    viewState.productUpdated?.let {
-        var name by remember { mutableStateOf(it.name) }
+
+        val product = viewState.productUpdated.collectAsState().value
+
+
+    product?.let {
+        var name by remember { mutableStateOf(product.name) }
         var errorName by remember { mutableStateOf(Error()) }
-        var price by remember { mutableStateOf("${it.price}") }
+        var price by remember { mutableStateOf("${product.price}") }
         var errorPrice by remember { mutableStateOf(Error()) }
-
-
+        var isActive by remember { mutableStateOf(product.isActive) }
         Column {
             CommonTextField(
                 isError = errorName.visible,
@@ -90,14 +94,16 @@ fun UpdateProductView(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
-                val status = it.isActive
                 Text(
-                    text = if (status) Constants.ACTIONS.HIDE else Constants.ACTIONS.SHOW,
+                    text = if (isActive) Constants.ACTIONS.HIDE else Constants.ACTIONS.SHOW,
                     color = AppTheme.colors.onSecondary
                 )
                 Checkbox(
-                    checked = !status,
-                    onCheckedChange = productAction
+                    checked = !isActive,
+                    onCheckedChange = {
+                        isActive = !isActive
+                        productAction(!isActive)
+                    }
                 )
             }
         }

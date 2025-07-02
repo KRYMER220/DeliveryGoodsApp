@@ -14,8 +14,7 @@ data class ProductViewState(
     val showUpdateSheetDialog: Boolean = false,
     val itemName: String = "",
     val itemPrice: String = "",
-    val isActiveProduct: Boolean? = null,
-    val productUpdated: ProductModel? = null,
+    val productUpdated: MutableStateFlow<ProductModel?> = MutableStateFlow(null),
     val productDelete: ProductModel? = null,
     val showDeleteDialog: Boolean = false,
 )

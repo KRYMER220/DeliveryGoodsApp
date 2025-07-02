@@ -160,7 +160,8 @@ fun TextItemInfo(
         color = AppTheme.colors.onSecondary,
         fontSize = size,
         modifier = modifier,
-        textAlign = textAlign
+        textAlign = textAlign,
+        style = AppTheme.typography.titleMedium
     )
 }
 
@@ -168,15 +169,15 @@ fun TextItemInfo(
 fun TextFactoryInformation(viewState: AnaliticViewState) {
     val dataTrips = viewState.data.collectAsState().value
     Column(modifier = Modifier.fillMaxWidth()) {
-        TextItemInfo(value = "Пробег: ${dataTrips.millage}")
-        TextItemInfo(value = "Выручка: ${dataTrips.money}")
-        TextItemInfo(value = "Наличные: ${dataTrips.cash}")
-        TextItemInfo(value = "Без/нал: ${dataTrips.noCash}")
-        TextItemInfo(value = "ЗП: ${dataTrips.salary}")
-        TextItemInfo(value = "Процент курьеров: ${dataTrips.percentSalary}")
-        TextItemInfo(value = "Стоимость доп.продукции: ${dataTrips.otherProductMoney}")
-        TextItemInfo(value = "Стоимость продукции: ${dataTrips.productPrice}")
-        TextItemInfo(value = "Стоимость возврата: ${dataTrips.productExchangePrice}")
+        TextItemInfo(value = "Пробег: ${dataTrips.millage.toInt()}")
+        TextItemInfo(value = "Выручка: ${dataTrips.money.toInt()}")
+        TextItemInfo(value = "Наличные: ${dataTrips.cash.toInt()}")
+        TextItemInfo(value = "Без/нал: ${dataTrips.noCash.toInt()}")
+        TextItemInfo(value = "ЗП: ${dataTrips.salary.toInt()}")
+        TextItemInfo(value = "Процент курьеров: ${dataTrips.percentSalary.toInt()}")
+        TextItemInfo(value = "Стоимость доп.продукции: ${dataTrips.otherProductMoney.toInt()}")
+        TextItemInfo(value = "Стоимость продукции: ${dataTrips.productPrice.toInt()}")
+        TextItemInfo(value = "Стоимость возврата: ${dataTrips.productExchangePrice.toInt()}")
         TextItemInfo(value = "Сумма возвратов: ${dataTrips.exchange} ${dataTrips.perSumExchange}%")
     }
 }

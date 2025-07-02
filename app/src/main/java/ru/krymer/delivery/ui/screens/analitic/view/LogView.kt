@@ -55,13 +55,13 @@ fun ItemLog(log: LoggerModel) {
             text = convertToTextDate(log.date, Constants.PatternDate.FULL),
             fontSize = 12.sp,
             color = AppTheme.colors.onSecondary,
-            modifier = Modifier.weight(0.4f)
+            modifier = Modifier.weight(0.4f), style = AppTheme.typography.titleSmall
         )
         Text(
             text = log.log,
             fontSize = 14.sp,
             color = AppTheme.colors.onSecondary,
-            modifier = Modifier.weight(0.6f)
+            modifier = Modifier.weight(0.6f), style = AppTheme.typography.titleSmall
         )
     }
 }

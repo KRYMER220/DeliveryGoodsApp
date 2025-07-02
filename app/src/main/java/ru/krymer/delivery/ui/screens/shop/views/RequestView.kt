@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,6 +40,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.R
@@ -79,13 +82,13 @@ fun AlertDialogRequestShop(
             noCash = stateNoCash
         }
 
-        Column(modifier = Modifier.fillMaxHeight()) {
+        Column(modifier = Modifier.fillMaxSize().padding(5.dp)) {
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 5.dp, top = 10.dp, end = 5.dp)
+
             ) {
                 Text(
                     style = AppTheme.typography.titleLarge,
@@ -97,14 +100,14 @@ fun AlertDialogRequestShop(
                         .weight(0.7f)
                         .padding(5.dp)
                 )
-                Row(modifier = Modifier.weight(0.3f), horizontalArrangement = Arrangement.End) {
+                Row(modifier = Modifier.weight(0.3f).padding(5.dp), horizontalArrangement = Arrangement.End) {
                     Row(
                         modifier = Modifier.clickable { isExpandedMenu = !isExpandedMenu },
                     ) {
                         Image(
                             contentDescription = "menu list",
                             painter = painterResource(id = R.drawable.list_item),
-                            modifier = Modifier.size(60.dp)
+                            modifier = Modifier.size(50.dp)
                         )
                     }
                     DropdownMenu(
@@ -258,6 +261,7 @@ fun AlertDialogRequestShop(
                             )
                         }
                         item {
+                            Spacer(modifier = Modifier.height(10.dp))
                             Row(
                                 horizontalArrangement = Arrangement.SpaceAround,
                                 modifier = Modifier.fillMaxWidth()
@@ -280,13 +284,13 @@ fun AlertDialogRequestShop(
                                     Text(
                                         style = AppTheme.typography.titleSmall,
                                         text = "Долг",
-                                        fontSize = 14.sp,
+                                        fontSize = 10.sp,
                                         color = AppTheme.colors.onSecondary
                                     )
                                     Text(
                                         style = AppTheme.typography.titleSmall,
                                         text = "${shop.arrears.toInt()}",
-                                        fontSize = 18.sp,
+                                        fontSize = 20.sp,
                                         color = AppTheme.colors.onSecondary
                                     )
                                 }
@@ -305,13 +309,13 @@ fun AlertDialogRequestShop(
                                         Text(
                                             style = AppTheme.typography.titleSmall,
                                             text = "Доп",
-                                            fontSize = 14.sp,
+                                            fontSize = 10.sp,
                                             color = AppTheme.colors.onSecondary
                                         )
                                         Text(
                                             style = AppTheme.typography.titleSmall,
                                             text = "${shop.addSum.toInt()}",
-                                            fontSize = 18.sp,
+                                            fontSize = 20.sp,
                                             color = AppTheme.colors.onSecondary
                                         )
                                     }
@@ -332,18 +336,18 @@ fun AlertDialogRequestShop(
                                     Text(
                                         style = AppTheme.typography.titleSmall,
                                         text = "Заявка",
-                                        fontSize = 14.sp,
+                                        fontSize = 10.sp,
                                         color = AppTheme.colors.onSecondary
                                     )
                                     Text(
                                         style = AppTheme.typography.titleSmall,
                                         text = orderMoney,
-                                        fontSize = 18.sp,
+                                        fontSize = 20.sp,
                                         color = AppTheme.colors.onSecondary
                                     )
                                 }
                             }
-                            Spacer(modifier = Modifier.height(5.dp))
+                            Spacer(modifier = Modifier.height(15.dp))
                             when (typePayState) {
                                 TypePayModel.ANOTHER -> {
                                     Column(modifier = Modifier.fillMaxWidth()) {
@@ -354,6 +358,7 @@ fun AlertDialogRequestShop(
                                             CommonTextField(
                                                 value = cash,
                                                 placeholder = "Нал",
+                                                modifier = Modifier.weight(0.333f),
                                                 changerText = { newValue ->
                                                     cash = newValue
                                                     errorCash = when {
@@ -364,7 +369,6 @@ fun AlertDialogRequestShop(
                                                         }
                                                     }
                                                 },
-                                                modifier = Modifier.weight(1f),
                                                 keyboardOptions = KeyboardOptions(
                                                     keyboardType = KeyboardType.Number, imeAction = ImeAction.Done
                                                 ),
@@ -375,6 +379,7 @@ fun AlertDialogRequestShop(
                                             CommonTextField(
                                                 value = noCash,
                                                 placeholder = "Без/нал",
+                                                modifier = Modifier.weight(0.333f),
                                                 changerText = { newValue ->
                                                     noCash = newValue
                                                     errorNoCash = when {
@@ -389,7 +394,6 @@ fun AlertDialogRequestShop(
                                                         }
                                                     }
                                                 },
-                                                modifier = Modifier.weight(1f),
                                                 keyboardOptions = KeyboardOptions(
                                                     keyboardType = KeyboardType.Number, imeAction = ImeAction.Done
                                                 ),
@@ -438,7 +442,7 @@ fun AlertDialogRequestShop(
 
                                 TypePayModel.CASH -> {
                                     Row(verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                                        horizontalArrangement = Arrangement.spacedBy(5.dp), modifier = Modifier.fillMaxWidth()) {
                                         CommonTextField(
                                             value = cash,
                                             placeholder = "",
@@ -452,9 +456,7 @@ fun AlertDialogRequestShop(
                                                     }
                                                 }
                                             },
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .fillMaxWidth()
+                                            modifier = Modifier.weight(1f, fill = false)
                                                 .padding(5.dp),
                                             keyboardOptions = KeyboardOptions(
                                                 keyboardType = KeyboardType.Number, imeAction = ImeAction.Done
@@ -467,7 +469,6 @@ fun AlertDialogRequestShop(
                                             contentDescription = "submit",
                                             painter = painterResource(id = R.drawable.submit),
                                             modifier = Modifier
-                                                .weight(1f)
                                                 .size(60.dp)
                                                 .clickable {
                                                     if (cash.isEmpty()) {
@@ -504,9 +505,7 @@ fun AlertDialogRequestShop(
                                                     }
                                                 }
                                             },
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .fillMaxWidth()
+                                            modifier = Modifier.weight(1f, fill = false)
                                                 .padding(5.dp),
                                             keyboardOptions = KeyboardOptions(
                                                 keyboardType = KeyboardType.Number, imeAction = ImeAction.Done
@@ -519,7 +518,6 @@ fun AlertDialogRequestShop(
                                             contentDescription = "submit",
                                             painter = painterResource(id = R.drawable.submit),
                                             modifier = Modifier
-                                                .weight(1f)
                                                 .size(60.dp)
                                                 .clickable {
                                                     if (noCash.isEmpty()) {
@@ -652,7 +650,7 @@ fun ProductRequestItem(
         Text(
             style = AppTheme.typography.titleSmall,
             text = request.name,
-            fontSize = 16.sp,
+            fontSize = 18.sp,
             modifier = Modifier
                 .weight(0.4f)
                 .padding(end = 5.dp)
@@ -669,15 +667,11 @@ fun ProductRequestItem(
                         .fillMaxHeight()
                         .weight(0.2f)
                         .padding(end = 5.dp)
-                        .background(
-                            shape = RoundedCornerShape(10.dp),
-                            color = AppTheme.colors.secondaryVariant
-                        )
                 ) {
                     Text(
                         style = AppTheme.typography.titleSmall,
                         text = if (countBonus == "0") "" else countBonus,
-                        fontSize = 16.sp,
+                        fontSize = 22.sp,
                         modifier = Modifier.align(Alignment.Center),
                         color = AppTheme.colors.onSecondary
                     )
@@ -692,15 +686,11 @@ fun ProductRequestItem(
                 .fillMaxHeight()
                 .weight(0.2f)
                 .padding(end = 5.dp)
-                .background(
-                    shape = RoundedCornerShape(10.dp),
-                    color = AppTheme.colors.secondaryVariant
-                )
         ) {
             Text(
                 style = AppTheme.typography.titleSmall,
                 text = if (count == "0") "" else count,
-                fontSize = 18.sp,
+                fontSize = 22.sp,
                 modifier = Modifier
                     .align(Alignment.Center),
                 color = AppTheme.colors.onSecondary
@@ -715,15 +705,11 @@ fun ProductRequestItem(
                     stateKeyBoard = true
                     editExchange = true
                 })
-                .background(
-                    shape = RoundedCornerShape(10.dp),
-                    color = AppTheme.colors.secondaryVariant
-                )
         ) {
             Text(
                 style = AppTheme.typography.titleSmall,
                 text = if (countExchange == "0") "" else countExchange,
-                fontSize = 18.sp,
+                fontSize = 22.sp,
                 modifier = Modifier.align(Alignment.Center),
                 color = AppTheme.colors.onSecondary
             )

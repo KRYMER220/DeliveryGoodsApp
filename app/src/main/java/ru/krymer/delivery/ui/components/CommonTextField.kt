@@ -61,12 +61,12 @@ fun CommonTextField(
         shape = RoundedCornerShape(10.dp),
         colors = TextFieldDefaults.colors(
             errorTextColor = AppTheme.colors.onSecondary,
-            errorContainerColor = AppTheme.colors.secondaryVariant,
+            errorContainerColor = AppTheme.colors.secondary,
             focusedTextColor = AppTheme.colors.onSecondary,
             unfocusedTextColor = AppTheme.colors.onSecondary,
-            focusedContainerColor = AppTheme.colors.secondaryVariant,
-            unfocusedContainerColor = AppTheme.colors.secondaryVariant,
-            disabledContainerColor = AppTheme.colors.secondaryVariant,
+            focusedContainerColor = AppTheme.colors.secondary,
+            unfocusedContainerColor = AppTheme.colors.secondary,
+            disabledContainerColor = AppTheme.colors.secondary,
             cursorColor = AppTheme.colors.onSecondary,
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
@@ -74,7 +74,7 @@ fun CommonTextField(
             errorIndicatorColor = Color.Transparent,
         ),
         keyboardActions = keyboardActions,
-        textStyle = textStyle
+        textStyle = textStyle.copy(textAlign = TextAlign.Center)
     )
     if (isError) {
         Text(text = errorValue, color = Color.Red, style = AppTheme.typography.titleSmall)

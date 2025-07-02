@@ -17,8 +17,8 @@ interface RequestApi {
 
     @GET("requests/get/trip")
     suspend fun getRequestsByTrip(
-        @Query(Constants.ID.ID_FACTORY) idFactory: Long,
-        @Query(Constants.ID.ID_TRIP) idTrip: Long,
+        @Query(Constants.HttpRequestKeys.ID_FACTORY) idFactory: Long,
+        @Query(Constants.HttpRequestKeys.ID_TRIP) idTrip: Long,
     ): BaseResponse<List<RequestModel>>
 
     @POST("request/update")
@@ -26,8 +26,8 @@ interface RequestApi {
 
     @DELETE("request/delete")
     suspend fun delete(
-        @Query(Constants.ID.ID) id: Long,
-        @Query(Constants.ID.ID_SHOP) idShop: Long,
-        @Query(Constants.ID.ID_TRIP) idTrip: Long
+        @Query(Constants.HttpRequestKeys.ID) id: Long,
+        @Query(Constants.HttpRequestKeys.ID_SHOP) idShop: Long,
+        @Query(Constants.HttpRequestKeys.ID_TRIP) idTrip: Long
     ): BaseResponse<RequestModel>
 }

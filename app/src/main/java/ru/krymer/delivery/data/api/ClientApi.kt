@@ -18,14 +18,14 @@ interface ClientApi {
     suspend fun update(@Body client: ClientRequest): BaseResponse<ClientModel>
 
     @DELETE("client/delete")
-    suspend fun delete(@Query(Constants.ID.ID) id: Long): BaseResponse<ClientModel>
+    suspend fun delete(@Query(Constants.HttpRequestKeys.ID) id: Long): BaseResponse<ClientModel>
 
     @GET("client")
-    suspend fun getClientById(@Query(Constants.ID.ID) id: Long): BaseResponse<ClientModel?>
+    suspend fun getClientById(@Query(Constants.HttpRequestKeys.ID) id: Long): BaseResponse<ClientModel?>
 
     @GET("clients/route")
-    suspend fun getClientsByRoute(@Query(Constants.ID.ID_ROUTE) idRoute: Long): BaseResponse<List<ClientModel>>
+    suspend fun getClientsByRoute(@Query(Constants.HttpRequestKeys.ID_ROUTE) idRoute: Long): BaseResponse<List<ClientModel>>
 
     @GET("clients/factory")
-    suspend fun getClientsByFactory(@Query(Constants.ID.ID_FACTORY) idFactory: Long): BaseResponse<List<ClientModel>>
+    suspend fun getClientsByFactory(@Query(Constants.HttpRequestKeys.ID_FACTORY) idFactory: Long): BaseResponse<List<ClientModel>>
 }

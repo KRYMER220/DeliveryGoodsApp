@@ -3,6 +3,7 @@ package ru.krymer.delivery.ui.screens.shop
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,6 +27,7 @@ import ru.krymer.delivery.data.model.RequestModel
 import ru.krymer.delivery.data.model.ShopModel
 import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.toLocal
+import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
 import ru.krymer.delivery.data.model.utilModel.TypePayModel
 import ru.krymer.delivery.data.model.utilModel.TypePayModel.ANOTHER
 import ru.krymer.delivery.data.model.utilModel.TypePayModel.CASH
@@ -890,7 +892,7 @@ class ShopViewModel @Inject constructor(
             val trip = viewState.value.currentTrip.value
             val user = sharedViewModel.viewState.value.user.value
             if (trip != null && user != null) {
-                if (user.id == trip.idCourier || sharedViewModel.initSysAdm()) {
+                if (user.id == trip.idCourier || user.isSysOrAdmin()) {
                     val request = UpdateTripRequest(
                         id = trip.id,
                         factoryId = trip.idFactory,
@@ -1144,27 +1146,32 @@ class ShopViewModel @Inject constructor(
     }
 
     private fun deleteRequest(request: RequestModel) {
-        if (sharedViewModel.initSysAdmMod()) {
-            launchCoroutine {
-                room.requestDao().deleteRequest(request)
-                val response = requestApi.delete(
-                    id = request.id, idShop = request.idShop, idTrip = request.idTrip
-                )
-                if (response.success) {
-                    val shop = viewState.value.currentShop!!
-                    val listRequest = shop.listRequest.map { it.copy() } - request
-                    shop.listRequest = listRequest
-                    val list = viewState.value.listDataRequests.value.map { it.copy() }
-                        .toMutableList() - request
-                    updateViewState {
-                        it.copy(
-                            listDataRequests = MutableStateFlow(list), currentShop = shop
-                        )
+        val user = sharedViewModel.viewState.value.user.value
+        user?.let {
+            if (user.isModOrAdminOrSys()) {
+                launchCoroutine {
+                    room.requestDao().deleteRequest(request)
+                    val response = requestApi.delete(
+                        id = request.id, idShop = request.idShop, idTrip = request.idTrip
+                    )
+                    if (response.success) {
+                        val shop = viewState.value.currentShop!!
+                        val listRequest = shop.listRequest.map { it.copy() } - request
+                        shop.listRequest = listRequest
+                        val list = viewState.value.listDataRequests.value.map { it.copy() }
+                            .toMutableList() - request
+                        updateViewState {
+                            it.copy(
+                                listDataRequests = MutableStateFlow(list), currentShop = shop
+                            )
+                        }
+                        calculateOrder()
+                    } else {
+                        sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
                     }
-                    calculateOrder()
-                } else {
-                    sharedViewModel.message(response.message)
                 }
+            } else {
+                sharedViewModel.message(Constants.ERROR.RESRTRAINT, type = TypeMessageModel.ERROR)
             }
         }
     }
@@ -1305,7 +1312,7 @@ class ShopViewModel @Inject constructor(
             if (trip != null) {
                 val user = sharedViewModel.viewState.value.user.value
                 user?.let {
-                    if (user.id == trip.idCourier || sharedViewModel.initSysAdm()) {
+                    if (user.id == trip.idCourier || user.isSysOrAdmin()) {
                         val shop = viewState.value.currentShop
                         if (shop != null) {
                             val getCash = viewState.value.getCash.value
@@ -1327,8 +1334,8 @@ class ShopViewModel @Inject constructor(
                                 status = true,
                                 isOldPrice = viewState.value.stateSwitchPrice.value,
                             )
-                            initShopFunction(event = FunShop.UPDATE)
                             updateViewState { it.copy(currentShop = dataShop) }
+                            initShopFunction(event = FunShop.UPDATE)
                             dismissRequestDialog()
                         }
                     } else {

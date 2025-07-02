@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Provider</string>
+    <string name="name">Name</string>
+    <string name="close">Close</string>
+    <string name="add">Add</string>
+    <string name="save">Save</string>
+    <string name="confirm">Submit</string>
+    <string name="price">Price</string>
+    <string name="sign_in_title">Authorization</string>
+    <string name="forgot_pass_title">Forgot password</string>
+    <string name="sign_in_subtitle">Forgot your password?</string>
+    <string name="logs">Logs</string>
+    <string name="email_hint">E-mail</string>
+    <string name="pass_hint">Password</string>
+    <string name="sign_in">Sign In</string>
+    <string name="restore">Restore</string>
+    <string name="route">Routes</string>
+    <string name="products">Goods</string>
+    <string name="couriers">Couriers</string>
+    <string name="trip">Trips</string>
+    <string name="analitic">Analitics</string>
+    <string name="arrears">Arrear</string>
+    <string name="phone">Phone</string>
+    <string name="cords">Cords</string>
+    <string name="name_user">Username</string>
+    <string name="percent_double">Percent (0.0)</string>
+    <string name="salary">Salary</string>
+    <string name="km_price">The price of a kilometer</string>
+    <string name="add_trip">Add</string>
+    <string name="range_select">Choose a range</string>
+    <string name="shop">Shops</string>
+    <string name="km_et">Mileage</string>
+    <string name="all_info">All analitic of Factory</string>
+    <string name="ok">Ok</string>
+    <string name="del_confirm">"Are you sure you want to delete "</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+</resources>

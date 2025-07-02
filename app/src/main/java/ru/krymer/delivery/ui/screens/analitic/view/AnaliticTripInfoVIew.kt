@@ -138,7 +138,7 @@ fun CustomDropDownMenuTrip(
                 Text(
                     text = trip.nameRoute,
                     modifier = Modifier.padding(start = 15.dp),
-                    color = AppTheme.colors.onSecondary
+                    color = AppTheme.colors.onSecondary, style = AppTheme.typography.titleMedium
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 Icon(
@@ -150,7 +150,7 @@ fun CustomDropDownMenuTrip(
                     changerState(false)
                 }) {
                     list.forEach { trip ->
-                        DropdownMenuItem(text = { Text(text = trip.nameRoute) }, onClick = {
+                        DropdownMenuItem(text = { Text(text = trip.nameRoute, style = AppTheme.typography.titleSmall) }, onClick = {
                             setCurrentRoute(trip)
                             changerState(false)
                         })

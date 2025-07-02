@@ -3,6 +3,7 @@ package ru.krymer.delivery.ui.screens.trip
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,6 +17,7 @@ import ru.krymer.delivery.data.api.UserApi
 import ru.krymer.delivery.data.model.RouteModel
 import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.user.UserModel
+import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
 import ru.krymer.delivery.data.request.CreateTripRequest
 import ru.krymer.delivery.data.request.UpdateTripRequest
 import ru.krymer.delivery.di.AppPreferencesManager
@@ -49,8 +51,10 @@ class TripViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 block()
+            } catch (e: CancellationException) {
+                sharedViewModel.message("Вызов операции отменен!", type = TypeMessageModel.ERROR)
             } catch (e: Exception) {
-                sharedViewModel.message(e.message)
+                sharedViewModel.message(e.message, type = TypeMessageModel.ERROR)
             }
         }
     }
@@ -93,6 +97,7 @@ class TripViewModel @Inject constructor(
 
     init {
         getLocalData()
+        getAllDataTrips()
         loadListDropMenuRoutes()
         loadListDropMenuCouriers()
     }
@@ -141,16 +146,25 @@ class TripViewModel @Inject constructor(
         launchCoroutine {
             val isLoading = viewState.value.isLoading
             if (isLoading) return@launchCoroutine
+
             updateViewState { it.copy(isLoading = true) }
             val user = sharedViewModel.viewState.value.user.value
+
             if (user != null) {
                 val limit = 10
-                val offset = if (loadMore) viewState.value.trips.value.size.toLong() else 0
+                val lastTrip = if (loadMore && viewState.value.trips.value.isNotEmpty()) {
+                    viewState.value.trips.value.last()
+                } else {
+                    null
+                }
+
                 val response = tripApi.gePaginatedTrips(
                     idFactory = user.idFactory,
                     limit = limit,
-                    offset = offset
+                    lastDate = lastTrip?.date,
+                    lastId = lastTrip?.id
                 )
+
                 if (response.success) {
                     val newTrips = response.obj ?: emptyList()
                     val currentTrips = if (loadMore) {
@@ -158,23 +172,27 @@ class TripViewModel @Inject constructor(
                     } else {
                         newTrips.toMutableList()
                     }
+
                     val newHasMore = newTrips.size == limit
                     updateViewState {
                         it.copy(
-                            trips = MutableStateFlow(currentTrips.sortedByDescending { it.date }),
-                            unFilteredTrips = MutableStateFlow(currentTrips.sortedByDescending { it.date }),
+                            trips = MutableStateFlow(currentTrips),
+                            unFilteredTrips = MutableStateFlow(currentTrips),
                             hasMore = newHasMore,
                             isLoading = false
                         )
                     }
+
                 } else {
                     sharedViewModel.message(response.message)
                     updateViewState { it.copy(isLoading = false) }
                 }
+
             } else {
                 sharedViewModel.message(Constants.ERROR.GENERAL_ERROR)
                 updateViewState { it.copy(isLoading = false) }
             }
+
         }
     }
 
@@ -199,7 +217,7 @@ class TripViewModel @Inject constructor(
             if (localTrips.isNotEmpty()) {
                 updateViewState { it.copy(trips = MutableStateFlow(localTrips), unFilteredTrips = MutableStateFlow(localTrips) ) }
             }
-            getAllDataTrips()
+
         }
     }
 

@@ -11,7 +11,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
-const val BASE_URL = "https://monolit.containerapps.ru/api/v1/"
+const val BASE_URL = "https://monolit-1.containerapps.ru/api/v1/"
 
 @Module
 @InstallIn(SingletonComponent::class)

@@ -8,5 +8,5 @@ import ru.krymer.delivery.utills.Constants
 
 interface LoggerApi {
     @GET("logs")
-    suspend fun getLogs(@Query(Constants.ID.ID_FACTORY) idFactory: Long): BaseResponse<List<LoggerModel>>
+    suspend fun getLogs(@Query(Constants.HttpRequestKeys.ID_FACTORY) idFactory: Long): BaseResponse<List<LoggerModel>>
 }

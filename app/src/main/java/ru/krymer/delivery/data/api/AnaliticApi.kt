@@ -19,8 +19,8 @@ interface AnaliticApi {
     suspend fun getDataFactoryOfRange(@Body dateRange: DateRequest): BaseResponse<Analitic>
 
     @POST("analitic/client")
-    suspend fun getClientAnalitic(@Query(Constants.ID.ID) idClient: Long): BaseResponse<Analitic>
+    suspend fun getClientAnalitic(@Query(Constants.HttpRequestKeys.ID) idClient: Long): BaseResponse<Analitic>
 
     @POST("analitic/trip")
-    suspend fun getTripAnalitic(@Query(Constants.ID.ID_ROUTE) idRoute: Long): BaseResponse<Analitic>
+    suspend fun getTripAnalitic(@Query(Constants.HttpRequestKeys.ID_ROUTE) idRoute: Long): BaseResponse<Analitic>
 }
