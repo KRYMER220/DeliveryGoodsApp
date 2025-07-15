@@ -253,7 +253,7 @@ fun ShopView(
                 )
             ) {
                 AlertDialogRequestShop(
-                    event = event, state = state
+                    event = event, state = state, user = user
                 )
             }
         }

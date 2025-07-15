@@ -390,7 +390,7 @@ fun ProductAddShopWithOrderItem(
                 Text(
                     style = AppTheme.typography.titleMedium,
                     text = countBonus,
-                    fontSize = 20.sp,
+                    fontSize = 22.sp,
                     modifier = Modifier.align(Alignment.Center),
                     color = AppTheme.colors.onSecondary
                 )
@@ -412,7 +412,7 @@ fun ProductAddShopWithOrderItem(
             Text(
                 style = AppTheme.typography.titleMedium,
                 text = count,
-                fontSize = 16.sp,
+                fontSize = 22.sp,
                 modifier = Modifier
                     .align(Alignment.Center),
                 color = AppTheme.colors.onSecondary

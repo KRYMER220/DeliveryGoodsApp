@@ -3,7 +3,6 @@ package ru.krymer.delivery.ui.screens.shop
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -519,7 +518,7 @@ class ShopViewModel @Inject constructor(
             val messages = messageApi.getMessages(idClient = client.id).obj
             updateViewState {
                 it.copy(
-                    listInfoShop = MutableStateFlow(shops),
+                    listInfoShop = MutableStateFlow(shops.sortedByDescending { it.date }),
                     messages = MutableStateFlow(messages ?: listOf())
                 )
             }
@@ -682,6 +681,7 @@ class ShopViewModel @Inject constructor(
                         name = product.name,
                         counter = product.counter
                     )
+                    room.requestDao().insertRequest(requestModel)
                     listRequest.add(requestModel)
                     dismissAddRequestDialog()
                 }
@@ -1191,7 +1191,7 @@ class ShopViewModel @Inject constructor(
                     item.copy(count = 0, status = true)
                 }
                 list[index] = request
-                updateRequest(request, true)
+                updateRequest(request)
                 shop.listRequest = list
                 val existingIndex = shops.indexOfFirst { it.id == shop.id }
                 if (existingIndex != -1) {
@@ -1253,8 +1253,8 @@ class ShopViewModel @Inject constructor(
                 } else {
                     item.copy(bonus = 0, status = true)
                 }
+                updateRequest(request)
                 list[index] = request
-                updateRequest(request, true)
                 shop.listRequest = list
                 val existingIndex = shops.indexOfFirst { it.id == shop.id }
                 if (existingIndex != -1) {
@@ -1408,7 +1408,7 @@ class ShopViewModel @Inject constructor(
         }
     }
 
-    private fun updateRequest(request: RequestModel, bool: Boolean = false) {
+    private fun updateRequest(request: RequestModel) {
         val trip = viewState.value.currentTrip.value
         if (trip != null) {
             sharedViewModel.viewState.value.user.value?.let { user ->
@@ -1422,7 +1422,7 @@ class ShopViewModel @Inject constructor(
                                 idFactory = idFactory,
                                 count = request.count,
                                 bonus = request.bonus,
-                                status = bool,
+                                status = request.status,
                                 exchange = request.exchange,
                                 price = price,
                                 oldPrice = oldPrice,

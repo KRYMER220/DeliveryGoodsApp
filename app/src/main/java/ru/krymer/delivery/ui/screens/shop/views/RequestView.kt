@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.RequestModel
 import ru.krymer.delivery.data.model.ShopModel
+import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.data.model.utilModel.Error
 import ru.krymer.delivery.data.model.utilModel.TypePayModel
 import ru.krymer.delivery.ui.components.CommonTextField
@@ -59,7 +60,7 @@ import ru.krymer.delivery.utills.Constants
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AlertDialogRequestShop(
-    state: ShopViewState, event: (ShopEvent) -> Unit
+    state: ShopViewState, event: (ShopEvent) -> Unit, user: UserModel
 ) {
     state.currentShop?.let { shop ->
 
@@ -259,7 +260,7 @@ fun AlertDialogRequestShop(
                                 request = request,
                                 deleteRequest = {
                                     event(ShopEvent.DeleteRequest(request))
-                                }, event = event, shop = shop
+                                }, event = event, shop = shop, user = user
                             )
                         }
                         item {
@@ -566,7 +567,8 @@ fun ProductRequestItem(
     request: RequestModel,
     deleteRequest: (RequestModel) -> Unit,
     event: (ShopEvent) -> Unit,
-    shop: ShopModel
+    shop: ShopModel,
+    user: UserModel
 ) {
 
 
@@ -657,7 +659,7 @@ fun ProductRequestItem(
                 .weight(0.4f)
                 .padding(end = 5.dp)
                 .combinedClickable(onDoubleClick = { deleteRequest(request) }, onClick = {}),
-            color = if (request.status) AppTheme.colors.error else AppTheme.colors.onSecondary
+            color = if (request.status && user.isSysOrAdmin()) AppTheme.colors.error else AppTheme.colors.onSecondary
         )
         if (shop.isBonus) {
                 Box(

@@ -1,5 +1,6 @@
 package ru.krymer.delivery.ui.screens.client
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -76,20 +77,27 @@ class ClientViewModel @Inject constructor(
 
     private fun reorderClients(toIndex: Int, fromIndex: Int) {
         launchCoroutine {
-            var list = viewState.value.listClient.value
-            list = list.toMutableList().apply {
-                add(toIndex, removeAt(fromIndex))
-            }
-            updateViewState { it.copy(listClient = MutableStateFlow(list)) }
-            val itemFrom = list[fromIndex].copy()
-            val indexFrom = itemFrom.counter
-            val itemTo = list[toIndex].copy()
-            val indexTo = itemTo.counter
-            val newItemFrom = itemTo.toRequestUpdateIndex(indexFrom)
-            val newItemTo = if (indexFrom != indexTo)  itemFrom.toRequestUpdateIndex(indexTo) else itemFrom.toRequestUpdateIndex(indexTo+1)
-            val responseFrom = clientApi.update(client = newItemFrom)
-            val responseTo = clientApi.update(client = newItemTo)
-            if (!(responseTo.success && responseFrom.success)) {
+            val currentList = viewState.value.listClient.value.toMutableList()
+            if (fromIndex !in currentList.indices || toIndex !in currentList.indices) return@launchCoroutine
+
+            val movedItem = currentList[fromIndex]
+            val targetItem = currentList[toIndex]
+
+            val tempCounter = movedItem.counter
+            movedItem.counter = targetItem.counter
+            targetItem.counter = tempCounter
+
+            currentList.removeAt(fromIndex)
+            currentList.add(toIndex, movedItem)
+
+            updateViewState { it.copy(listClient = MutableStateFlow(currentList)) }
+            val updateMovedItem = movedItem.toRequestUpdateIndex(movedItem.counter)
+            val updateTargetItem = targetItem.toRequestUpdateIndex(targetItem.counter)
+
+            val responseMoved = clientApi.update(client = updateMovedItem)
+            val responseTarget = clientApi.update(client = updateTargetItem)
+
+            if (!responseMoved.success || !responseTarget.success) {
                 sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
             }
         }
@@ -182,7 +190,7 @@ class ClientViewModel @Inject constructor(
             val phone = viewState.value.phone
             val arrears = if (viewState.value.arrears == "") 0.0 else viewState.value.arrears.toDouble()
             val cords = viewState.value.cords
-            val sizeList = viewState.value.listClient.value.size
+            val sizeList = if (viewState.value.listClient.value.isNotEmpty())  viewState.value.listClient.value.last().counter+1 else 0
             val route = viewState.value.currentRoute.value
             if (route != null) {
                 val clientRequest = ClientRequest(

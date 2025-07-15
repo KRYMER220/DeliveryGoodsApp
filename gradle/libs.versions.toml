@@ -3,11 +3,11 @@
 [versions]
 accompanistSystemuicontroller = "0.34.0"
 agp = "8.10.1"
-animation = "1.8.2"
+animation = "1.8.3"
 composeCharts = "0.1.2"
 converterGson = "2.9.0"
-firebaseBom = "33.15.0"
-foundation = "1.8.2"
+firebaseBom = "33.16.0"
+foundation = "1.8.3"
 gson = "2.11.0"
 hiltAndroid = "2.56.2"
 hiltAndroidCompiler = "2.56.2"
@@ -18,7 +18,7 @@ junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 kotlinReflect = "2.1.0"
-kotlinxCoroutinesAndroid = "1.8.1"
+kotlinxCoroutinesAndroid = "1.10.2"
 lifecycleRuntimeKtx = "2.9.1"
 activityCompose = "1.10.1"
 composeBom = "2025.06.01"
@@ -28,7 +28,6 @@ firebaseCrashlytics = "19.4.4"
 googleFirebaseCrashlytics = "3.0.4"
 loggingInterceptor = "4.11.0"
 material = "1.12.0"
-navigationCompose = "2.9.0"
 okhttp = "4.11.0"
 reorderable = "2.4.3"
 retrofit = "2.9.0"
@@ -40,8 +39,8 @@ securityCrypto = "1.0.0"
 workRuntimeKtx = "2.10.2"
 hiltCommon = "1.2.0"
 hiltWork = "1.2.0"
-nav3Core = "1.0.0-alpha04"
-nav3Lifecycle = "1.0.0-alpha02"
+nav3Core = "1.0.0-alpha05"
+nav3Lifecycle = "1.0.0-alpha03"
 kotlinSerialization = "2.1.21"
 kotlinxSerializationCore = "1.8.1"
 
@@ -50,7 +49,6 @@ accompanist-systemuicontroller = { module = "com.google.accompanist:accompanist-
 androidx-animation = { module = "androidx.compose.animation:animation", version.ref = "animation" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "foundation" }
-androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomCompiler" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomRuntime" }

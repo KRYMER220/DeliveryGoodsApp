@@ -1,5 +1,6 @@
 package ru.krymer.delivery.ui.screens.client.view
 
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -49,6 +50,7 @@ fun ClientView(
     event: (ClientEvent) -> Unit, state: ClientViewState, popBackStack: () -> Unit, user: UserModel
 ) {
     val list = state.listClient.collectAsState().value
+
     var clients = remember { mutableStateListOf<ClientModel>() }
     val lazyListState = rememberLazyListState()
     val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
