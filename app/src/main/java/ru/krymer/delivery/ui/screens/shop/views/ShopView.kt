@@ -112,10 +112,11 @@ fun ShopView(
                     Image(
                         painter = painterResource(id = R.drawable.outline_autorenew_24),
                         contentDescription = "update",
-                        modifier = Modifier
-                            .clickable(onClick = {
-                                event(ShopEvent.UpdateShops)
-                            })
+                        modifier = Modifier.combinedClickable(onClick = {
+                            event(ShopEvent.UpdateShops)
+                        }, onLongClick = {
+                            event(ShopEvent.UpdateLocalShops)
+                        })
                             .size(60.dp)
                     )
                 }

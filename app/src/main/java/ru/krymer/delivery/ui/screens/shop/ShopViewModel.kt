@@ -9,7 +9,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.krymer.delivery.AppDatabase
@@ -174,6 +173,13 @@ class ShopViewModel @Inject constructor(
             }
 
             ShopEvent.UpdateShops -> getDataShops()
+            ShopEvent.UpdateLocalShops -> {
+                val trip = _viewState.value.currentTrip.value
+                if (trip != null)
+                if (convertToTextDate(trip.date) == convertToTextDate(System.currentTimeMillis())) {
+                    updateTrip(trip)
+                }
+            }
         }
     }
 
@@ -192,70 +198,78 @@ class ShopViewModel @Inject constructor(
             updateViewState { it.copy(currentTrip = MutableStateFlow(trip)) }
             getLocalData(idTrip = trip.id)
             if (convertToTextDate(trip.date) == convertToTextDate(System.currentTimeMillis())) {
-                updateTrip()
+                updateTrip(trip)
             }
+            val user = sharedViewModel.viewState.value.user.value
+            if (user != null && trip.idCourier != user.id)
+                getDataShops()
         }
     }
 
-    private fun updateTrip() {
+    private fun updateTrip(trip: TripModel) {
         launchCoroutine {
-            val shops = _viewState.value.listShop.value
-            if (shops.isNotEmpty()) {
-                shops.forEach { shop ->
-                    shop.apply {
-                        shopApi.update(
-                            UpdateShopRequest(
-                                id = id,
-                                idTrip = idTrip,
-                                idFactory = idFactory,
-                                arrears = arrears,
-                                addSum = addSum,
-                                status = status,
-                                date = date,
-                                typePay = typePay.getStringByTypePay(),
-                                cash = cash,
-                                counter = counter,
-                                noCash = noCash,
-                                isOldPrice = isOldPrice,
-                                cord = cord,
-                                nameShop = nameShop
+            val user = sharedViewModel.viewState.value.user.value
+            if (user != null && user.id == trip.idCourier) {
+                val shops = _viewState.value.listShop.value
+                if (shops.isNotEmpty()) {
+                    shops.forEach { shop ->
+                        shop.apply {
+                            shopApi.update(
+                                UpdateShopRequest(
+                                    id = id,
+                                    idTrip = idTrip,
+                                    idFactory = idFactory,
+                                    arrears = arrears,
+                                    addSum = addSum,
+                                    status = status,
+                                    date = date,
+                                    typePay = typePay.getStringByTypePay(),
+                                    cash = cash,
+                                    counter = counter,
+                                    noCash = noCash,
+                                    isOldPrice = isOldPrice,
+                                    cord = cord,
+                                    nameShop = nameShop
+                                )
                             )
-                        )
 
-                    val client = _viewState.value.listClient.value.first { it.id == shop.id }
-                    val requests = room.requestDao().getRequests(shop.id, shop.idTrip)
-                    var order = 0.0
-                    if (requests.isNotEmpty()) {
-                        requests.forEach { req ->
-                            order += req.count * req.price - req.exchange * (if (isOldPrice) req.oldPrice else req.price)
-                            requestApi.update(UpdateRequestShopRequest(
-                                id = req.id,
-                                idShop = req.idShop,
-                                idTrip = req.idTrip,
-                                idFactory = req.idFactory,
-                                count = req.count,
-                                exchange = req.exchange,
-                                bonus = req.bonus,
-                                status = req.status,
-                                price = req.price,
-                                oldPrice = req.oldPrice,
-                                name = req.name,
-                                counter = req.counter
-                            ))
+                            val client = clientApi.getClientById(id = shop.id).obj
+                            if (client != null) {
+                                val requests = room.requestDao().getRequests(shop.id, shop.idTrip)
+                                var order = 0.0
+                                if (requests.isNotEmpty()) {
+                                    requests.forEach { req ->
+                                        order += req.count * req.price - req.exchange * (if (isOldPrice) req.oldPrice else req.price)
+                                        requestApi.update(UpdateRequestShopRequest(
+                                            id = req.id,
+                                            idShop = req.idShop,
+                                            idTrip = req.idTrip,
+                                            idFactory = req.idFactory,
+                                            count = req.count,
+                                            exchange = req.exchange,
+                                            bonus = req.bonus,
+                                            status = req.status,
+                                            price = req.price,
+                                            oldPrice = req.oldPrice,
+                                            name = req.name,
+                                            counter = req.counter
+                                        ))
+                                    }
+                                    val newArrear = (order + arrears + addSum) - (cash + noCash)
+                                    clientApi.update(ClientRequest(
+                                        id = client.id,
+                                        idRoute = client.idRoute,
+                                        idFactory = client.idFactory,
+                                        name = client.name,
+                                        phone = client.phone,
+                                        cord = client.cord,
+                                        counter = client.counter,
+                                        arrears = newArrear,
+                                        date = client.date
+                                    ))
+                                }
+                            }
                         }
-                        val newArrear = (order + arrears + addSum) - (cash + noCash)
-                        clientApi.update(ClientRequest(
-                            id = client.id,
-                            idRoute = client.idRoute,
-                            idFactory = client.idFactory,
-                            name = client.name,
-                            phone = client.phone,
-                            cord = client.cord,
-                            counter = client.counter,
-                            arrears = newArrear,
-                            date = client.date
-                        ))
-                      }
                     }
                 }
             }
