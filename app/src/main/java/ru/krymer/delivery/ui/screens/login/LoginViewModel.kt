@@ -81,7 +81,7 @@ class LoginViewModel @Inject constructor(
                     sharedViewModel.initAuth()
                 } else {
                     updateViewState { it.copy(isLoginProgress = false) }
-                    sharedViewModel.message(Constants.ERROR.AGAIN)
+                    sharedViewModel.message(Constants.ERROR.AUTH, type = TypeMessageModel.ERROR)
                 }
             } else {
                 updateViewState { it.copy(isLoginProgress = false) }

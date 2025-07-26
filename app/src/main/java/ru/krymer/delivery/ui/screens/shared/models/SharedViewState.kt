@@ -16,4 +16,7 @@ data class SharedViewState(
     val factory: FactoryModel? = null,
     val isUserBlocked: Boolean = false,
     val listMessage: MutableStateFlow<List<MessageModel>> = MutableStateFlow(listOf()),
+    val isShowSettings: MutableStateFlow<Boolean> = MutableStateFlow(false),
+    val lightVersion: Boolean = false,
+    val fontSizeIndex: Int = 2
 )

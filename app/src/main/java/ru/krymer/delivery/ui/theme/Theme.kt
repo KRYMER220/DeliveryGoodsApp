@@ -14,15 +14,16 @@ import ru.krymer.delivery.ui.screens.shared.models.SharedViewState
 @Composable
 fun BoxTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
+    fontSizeIndex: Int
 ) {
 
-    var typography = remember { mutableStateOf(TypographyMap[0]) }
+    val typography = createTypography(Roboto, fontSizeIndex)
     val colors = if (darkTheme) darkPalette else lightPalette
 
     CompositionLocalProvider(
         LocalColorProvider provides colors,
-        LocalTypographyProvider provides typography.value!!,
+        LocalTypographyProvider provides typography,
         content = content
     )
 }

@@ -60,7 +60,7 @@ class MainActivity : ComponentActivity() {
                     event = sharedViewModel::obtainEvent,
                     modifier = Modifier.navigationBarsPadding()
                 )
-            })
+            },fontSizeIndex = state.value.fontSizeIndex)
         }
     }
 }

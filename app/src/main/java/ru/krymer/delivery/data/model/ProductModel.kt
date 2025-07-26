@@ -4,7 +4,7 @@ data class ProductModel(
     val id: Long,
     val name: String,
     val idFactory: Long,
-    val counter: Int,
+    var counter: Int,
     val price: Double,
     val isActive: Boolean,
     val date: Long,

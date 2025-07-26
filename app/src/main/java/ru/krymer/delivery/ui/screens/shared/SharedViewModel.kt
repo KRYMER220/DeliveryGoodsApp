@@ -43,7 +43,25 @@ class SharedViewModel @Inject constructor(
             SharedEvents.ClearToken -> clearTokenData()
             SharedEvents.LogOut -> launchCoroutine { logout() }
             is SharedEvents.DeleteMessage -> deleteMessage(event.id)
+            SharedEvents.ChangeSettings -> changeSettings()
+            SharedEvents.OpenHideSettingsApp -> showHideSettings()
+            is SharedEvents.ChangeFontSizeIndex -> changeFontSize(event.index)
         }
+    }
+
+    private fun changeFontSize(index: Int) {
+        updateViewState { it.copy(fontSizeIndex = index) }
+        manager.saveInt(Constants.KEYS.FONT_SIZE, index)
+    }
+
+    private fun changeSettings() {
+        updateViewState { it.copy(lightVersion = !it.lightVersion) }
+        val settingsValue = _viewState.value.lightVersion
+        manager.saveBoolean(key = Constants.KEYS.SETTINGS, data = settingsValue)
+    }
+
+    private fun showHideSettings() {
+        updateViewState { it.copy(isShowSettings = MutableStateFlow( !it.isShowSettings.value )) }
     }
 
     private fun launchCoroutine(block: suspend () -> Unit) {
@@ -66,6 +84,11 @@ class SharedViewModel @Inject constructor(
 
     init {
         initAuth()
+        val settings = manager.getBooleanData(Constants.KEYS.SETTINGS)
+        val savedSize = manager.getIntData(Constants.KEYS.FONT_SIZE) ?: 2
+        if (settings != null) {
+            updateViewState { it.copy(lightVersion = settings,fontSizeIndex = savedSize) }
+        }
     }
 
     fun clearTokenData() {

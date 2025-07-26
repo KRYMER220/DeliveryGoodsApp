@@ -28,27 +28,28 @@ fun CommonSaveDialog(
     confirm: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState()
-        ModalBottomSheet(
+
+    ModalBottomSheet(
             onDismissRequest = dismiss,
             sheetState = sheetState,
             containerColor = AppTheme.colors.onPrimary
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(end = 15.dp, start = 15.dp)
+                .fillMaxWidth()
+                .navigationBarsPadding(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
+            Image(
+                contentDescription = "submit",
+                painter = painterResource(id = R.drawable.submit),
                 modifier = Modifier
-                    .padding(end = 15.dp, start = 15.dp)
-                    .fillMaxWidth()
-                    .navigationBarsPadding(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Image(
-                    contentDescription = "submit",
-                    painter = painterResource(id = R.drawable.submit),
-                    modifier = Modifier
-                        .size(50.dp)
-                        .combinedClickable(onClick = confirm)
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                content()
-            }
+                    .size(50.dp)
+                    .combinedClickable(onClick = confirm)
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            content()
+        }
     }
 }

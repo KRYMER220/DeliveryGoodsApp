@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.ui.theme.AppTheme
 
 @Composable
-fun CommonButton(onClick: () -> Unit, text: String = "", fontSize: TextUnit = 16.sp) {
+fun CommonButton(onClick: () -> Unit, text: String = "") {
     Button(
         onClick = onClick, colors = ButtonDefaults.buttonColors(
             containerColor = AppTheme.colors.secondary,
@@ -23,5 +23,5 @@ fun CommonButton(onClick: () -> Unit, text: String = "", fontSize: TextUnit = 16
         ), modifier = Modifier
             .height(60.dp)
             .width(70.dp)
-    ) { Text(text = text, color = AppTheme.colors.onSecondary, fontSize = fontSize, style = AppTheme.typography.titleLarge) }
+    ) { Text(text = text, color = AppTheme.colors.onSecondary, style = AppTheme.typography.titleMedium) }
 }

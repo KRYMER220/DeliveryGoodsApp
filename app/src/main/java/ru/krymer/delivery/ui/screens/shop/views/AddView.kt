@@ -97,8 +97,7 @@ fun AddShopAndRequestView(
                             onDismissRequest = {
                                 event(ShopEvent.DismissSelectorClientInAddDialog)
                             }) {
-                            val list = state.listClient.collectAsState().value
-                            list.forEach {
+                            clients.forEach {
                                 DropdownMenuItem(text = {
                                     Text(
                                         text = it.name,
@@ -134,9 +133,8 @@ fun AddShopAndRequestView(
                             .weight(0.2f)
                     ) {
                         Text(
-                            style = AppTheme.typography.titleSmall,
+                            style = AppTheme.typography.bodySmall,
                             text = "Бонусы",
-                            fontSize = 12.sp,
                             modifier = Modifier.align(Alignment.Center),
                             color = AppTheme.colors.onSecondary
                         )
@@ -145,9 +143,8 @@ fun AddShopAndRequestView(
                         modifier = Modifier.weight(0.2f)
                     ) {
                         Text(
-                            style = AppTheme.typography.titleSmall,
+                            style = AppTheme.typography.bodySmall,
                             text = "Заявка",
-                            fontSize = 12.sp,
                             modifier = Modifier.align(Alignment.Center),
                             color = AppTheme.colors.onSecondary
                         )
@@ -362,10 +359,9 @@ fun ProductAddShopWithOrderItem(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            style = AppTheme.typography.titleMedium,
+            style = AppTheme.typography.titleLarge,
             textAlign = TextAlign.Center,
             text = product.name,
-            fontSize = 20.sp,
             modifier = Modifier
                 .weight(0.4f)
                 .wrapContentHeight()
@@ -388,9 +384,8 @@ fun ProductAddShopWithOrderItem(
                     )
             ) {
                 Text(
-                    style = AppTheme.typography.titleMedium,
+                    style = AppTheme.typography.labelLarge,
                     text = countBonus,
-                    fontSize = 22.sp,
                     modifier = Modifier.align(Alignment.Center),
                     color = AppTheme.colors.onSecondary
                 )
@@ -410,9 +405,8 @@ fun ProductAddShopWithOrderItem(
                 )
         ) {
             Text(
-                style = AppTheme.typography.titleMedium,
+                style = AppTheme.typography.labelLarge,
                 text = count,
-                fontSize = 22.sp,
                 modifier = Modifier
                     .align(Alignment.Center),
                 color = AppTheme.colors.onSecondary

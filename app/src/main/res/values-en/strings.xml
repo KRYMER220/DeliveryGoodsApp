@@ -34,6 +34,7 @@
     <string name="all_info">All analitic of Factory</string>
     <string name="ok">Ok</string>
     <string name="del_confirm">"Are you sure you want to delete "</string>
+    <string name="empty_data">List is empty!</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
 </resources>

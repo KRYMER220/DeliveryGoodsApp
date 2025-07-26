@@ -6,7 +6,6 @@ import ru.krymer.delivery.data.model.MessageModel
 import ru.krymer.delivery.data.model.ProductModel
 import ru.krymer.delivery.data.model.RequestModel
 import ru.krymer.delivery.data.model.ShopModel
-import ru.krymer.delivery.data.model.utilModel.TypePayModel
 
 sealed class ShopEvent {
     data class ChangeArrear(val arrear: String): ShopEvent()
@@ -16,7 +15,6 @@ sealed class ShopEvent {
     data object ShowAddDialogShopAllRoutes : ShopEvent()
     data class ChangeCountBonusProduct(val bonus: String, val product: ProductModel) : ShopEvent()
     data class ChangeCountProduct(val count: String, val product: ProductModel) : ShopEvent()
-    data class ChangeCountExchange(val exchange: String, val product: ProductModel) : ShopEvent()
     data object DismissAddDialog : ShopEvent()
     data object ShopAddAction : ShopEvent()
     data object ShowDeleteDialog: ShopEvent()
@@ -55,14 +53,11 @@ sealed class ShopEvent {
     data object DismissAddSumDialog : ShopEvent()
     data object DismissMillageDialog : ShopEvent()
     data object DismissDialogChangeArrears : ShopEvent()
-    data object ShowChangeTypePayDialog : ShopEvent()
-    data class ChangeTypePay(val type: TypePayModel) : ShopEvent()
-    data object DismissChangeTypePayDialog : ShopEvent()
+    data object ChangeTypePay : ShopEvent()
     data class ChangeDropDownStateTypePayChanger(val state: Boolean) : ShopEvent()
     data class ChangeCountRequest(val count: String, val item: RequestModel) : ShopEvent()
     data class ChangeExchangeRequest(val exchange: String, val item: RequestModel) : ShopEvent()
     data class ChangeBonusRequest(val bonus: String, val item: RequestModel) : ShopEvent()
-    data class DeleteRequest(val request: RequestModel) : ShopEvent()
     data object DismissConfirmRequestDialog : ShopEvent()
 
     data class OpenInfoShopDialog(val shop: ShopModel) : ShopEvent()
@@ -85,4 +80,5 @@ sealed class ShopEvent {
     data object SwitchBonusState: ShopEvent()
     data object ShowHideDialogAnalitic: ShopEvent()
     data class CopyAndSaveShop(val shop: ShopModel): ShopEvent()
+    data object UpdateShops: ShopEvent()
 }

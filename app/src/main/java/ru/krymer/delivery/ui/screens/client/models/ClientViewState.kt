@@ -1,5 +1,6 @@
 package ru.krymer.delivery.ui.screens.client.models
 
+import androidx.compose.runtime.mutableStateOf
 import kotlinx.coroutines.flow.MutableStateFlow
 import ru.krymer.delivery.data.model.ClientModel
 import ru.krymer.delivery.data.model.RouteModel
@@ -17,7 +18,7 @@ data class ClientViewState(
     val currentRoute: MutableStateFlow<RouteModel?> = MutableStateFlow(null),
     val listNewClient: MutableStateFlow<List<ClientModel>> = MutableStateFlow(listOf()),
     val listRoute: MutableStateFlow<List<RouteModel>> = MutableStateFlow(listOf()),
-
+    val isLoadData: MutableStateFlow<Boolean> = MutableStateFlow(false),
     val idRoute: String = "",
     val isDialogAdd: Boolean = false,
 

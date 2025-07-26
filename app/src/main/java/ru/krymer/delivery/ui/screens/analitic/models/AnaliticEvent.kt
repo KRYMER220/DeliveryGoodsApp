@@ -16,4 +16,5 @@ sealed class AnaliticEvent {
     data class ChangeStateDropDownMenuClients(val isShow: Boolean) : AnaliticEvent()
     data class SetCurrentClient(val client: ClientModel) : AnaliticEvent()
     data class SetCurrentTrip(val trip: TripModel) : AnaliticEvent()
+    data object DeleteLogs: AnaliticEvent()
 }

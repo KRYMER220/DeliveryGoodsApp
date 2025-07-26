@@ -70,7 +70,28 @@ fun AnaliticView(
 
             when (state.analiticAction) {
                 AnaliticAction.None -> {}
-                AnaliticAction.OpenLog -> {}
+                AnaliticAction.OpenLog -> {
+                    Text(
+                        text = convertToTextDate(dateRange.first) + " - " + convertToTextDate(
+                            dateRange.second
+                        ), color = AppTheme.colors.onSecondary, fontSize = 14.sp, style = AppTheme.typography.titleMedium
+                    )
+                    Image(
+                        painter = painterResource(id = R.drawable.date_range),
+                        contentDescription = "date",
+                        modifier = Modifier
+                            .clickable(onClick = {
+                                event(AnaliticEvent.ShowDatePicker)
+                            })
+                            .size(60.dp))
+                    Image(
+                        contentDescription = "del courier",
+                        painter = painterResource(R.drawable.delete),
+                        modifier = Modifier
+                            .size(60.dp)
+                            .clickable(onClick = { event(AnaliticEvent.DeleteLogs) })
+                    )
+                }
                 else -> {
                     Text(
                         text = convertToTextDate(dateRange.first) + " - " + convertToTextDate(
@@ -95,8 +116,10 @@ fun AnaliticView(
                                         event(AnaliticEvent.ShowDatePicker)
                                     }
 
-                                    else -> {}
-
+                                    AnaliticAction.None -> {}
+                                    AnaliticAction.OpenLog -> {
+                                        event(AnaliticEvent.ShowDatePicker)
+                                    }
                                 }
                             })
                             .size(60.dp)

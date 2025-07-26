@@ -111,25 +111,29 @@ fun TripView(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.back_stack),
-                    contentDescription = "exit",
-                    modifier = Modifier
-                        .clickable(onClick = {
-                            event(TripEvent.TripActionDefault)
-                            popBackStack()
-                        })
-                        .size(60.dp)
-                )
-                Image(
-                    painter = painterResource(id = R.drawable.filter),
-                    contentDescription = "sort",
-                    modifier = Modifier
-                        .clickable(onClick = {
-                            event(TripEvent.OpenFilterTrip)
-                        })
-                        .size(60.dp)
-                )
+                if (!state.lightVersion) {
+                    Image(
+                        painter = painterResource(id = R.drawable.back_stack),
+                        contentDescription = "exit",
+                        modifier = Modifier
+                            .clickable(onClick = {
+                                event(TripEvent.TripActionDefault)
+                                popBackStack()
+                            })
+                            .size(60.dp)
+                    )
+                    Image(
+                        painter = painterResource(id = R.drawable.filter),
+                        contentDescription = "sort",
+                        modifier = Modifier
+                            .clickable(onClick = {
+                                event(TripEvent.OpenFilterTrip)
+                            })
+                            .size(60.dp)
+                    )
+                } else {
+                    Spacer(modifier = Modifier)
+                }
                 if (user.isSysOrAdmin()) {
                     Image(
                         painter = painterResource(id = R.drawable.add),
@@ -148,7 +152,7 @@ fun TripView(
             items(items = trips) { trip ->
                 TripItem(
                     trip = trip, updateTrip = {
-                    event(TripEvent.ShowUpdateDialog(it))
+                    if (user.isSysOrAdmin()) event(TripEvent.ShowUpdateDialog(it))
                 }, deleteTrip = {
                     event(TripEvent.ShowDeleteDialog(trip = it))
                 }, openTrip = {

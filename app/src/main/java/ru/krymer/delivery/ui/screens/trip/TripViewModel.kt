@@ -100,6 +100,12 @@ class TripViewModel @Inject constructor(
         getAllDataTrips()
         loadListDropMenuRoutes()
         loadListDropMenuCouriers()
+        getSettings()
+    }
+
+    private fun getSettings() {
+        val value = sharedViewModel.viewState.value.lightVersion
+        updateViewState { it.copy(lightVersion = value) }
     }
 
     private fun submitFilter() {
@@ -274,7 +280,7 @@ class TripViewModel @Inject constructor(
         val couriers = viewState.value.listCourier
         updateViewState {
             it.copy(
-                salary = "${trip.salary}",
+                salary = "${trip.salary.toInt()}",
                 currentTrip = trip,
                 currentDate = trip.date,
                 currentCourier = couriers.value.first { c -> c.id == trip.idCourier },

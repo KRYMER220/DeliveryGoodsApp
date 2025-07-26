@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -18,7 +17,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,15 +28,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.ProductModel
-import ru.krymer.delivery.ui.components.CommonAddDialog
+import ru.krymer.delivery.data.model.utilModel.Loader
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
 import ru.krymer.delivery.ui.components.CommonSaveDialog
 import ru.krymer.delivery.ui.screens.product.models.ProductEvent
@@ -53,19 +51,29 @@ fun ProductView(
     popBackStack: () -> Unit,
     event: (ProductEvent) -> Unit
 ) {
-    val productsState = state.listProduct.collectAsState().value
+    val list = state.listProduct.collectAsState().value
+    val isLoad = state.isLoadData.collectAsState().value
+    var loader by remember { mutableStateOf(Loader.LOADING) }
+
     var products = remember { mutableStateListOf<ProductModel>() }
     val lazyListState = rememberLazyListState()
     val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
         products = products.apply {
             add(to.index, removeAt(from.index))
         }
-        event(ProductEvent.ReorderProducts(fromIndex = from.index, toIndex = to.index))
     }
 
-    LaunchedEffect(productsState) {
+    LaunchedEffect(key1 = isLoad, key2 = list.size) {
+        loader = if (list.isNotEmpty()) {
+            Loader.LOAD
+        } else {
+            Loader.EMPTY
+        }
+    }
+
+    LaunchedEffect(isLoad) {
         products.clear()
-        products.addAll(productsState)
+        products.addAll(list)
     }
 
     Column(modifier = Modifier.padding(15.dp)) {
@@ -94,25 +102,31 @@ fun ProductView(
             )
         }
         Spacer(modifier = Modifier.height(5.dp))
-        if (products.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .size(60.dp)
-                        .align(Alignment.Center),
-                    strokeWidth = 2.dp,
-                    color = Color.White
-                )
-            }
-        } else {
-            LazyColumn(state = lazyListState, verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                items(products, key = { product -> product.id }) { product ->
-                    ReorderableItem(reorderableLazyListState, key = product.id) { isDragging ->
-                        ProductItem(
-                            modifier = Modifier.draggableHandle(), product = product, event = event
-                        )
+        when(loader) {
+            Loader.LOAD -> {
+                LazyColumn(state = lazyListState, verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                    items(products, key = { product -> product.id }) { product ->
+                        ReorderableItem(reorderableLazyListState, key = product.id) { isDragging ->
+                            ProductItem(
+                                modifier = Modifier.draggableHandle(
+                                    onDragStopped = {
+                                        event(ProductEvent.ReorderProducts(list = products))
+                                    }), product = product, event = event
+                            )
+                        }
                     }
                 }
+            }
+            Loader.EMPTY -> {
+                Text(text = stringResource(R.string.empty_data), color = AppTheme.colors.onSecondary, fontSize = 18.sp)
+            }
+            Loader.LOADING -> {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .size(60.dp),
+                    strokeWidth = 2.dp,
+                    color = AppTheme.colors.onSecondary
+                )
             }
         }
     }

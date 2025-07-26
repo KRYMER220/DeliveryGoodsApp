@@ -103,7 +103,7 @@ fun ShopAnaliticItem(shop: ShopModel) {
         Spacer(modifier = Modifier.height(5.dp))
         Text(
             style = AppTheme.typography.titleSmall,
-            text = "Новый долг: " + (shop.arrears - (shop.cash + shop.noCash) + sumDept).toInt(),
+            text = "Новый долг: " + (shop.arrears - (shop.cash + shop.noCash) + sumDept + shop.addSum).toInt(),
             fontSize = 12.sp,
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary

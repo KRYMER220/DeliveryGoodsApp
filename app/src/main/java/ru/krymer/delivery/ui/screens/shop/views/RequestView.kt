@@ -17,8 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,7 +40,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.R
@@ -64,7 +62,7 @@ fun AlertDialogRequestShop(
 ) {
     state.currentShop?.let { shop ->
 
-        val listMenu = listOf("Долг", "Доп.сумму", "Тип оплаты", "Старая цена", "Добавить бонус", "Удалить магазин" ,"Отправить сообщение", "Добавить заявку")
+        val listMenu = listOf("Долг", "Доп.сумму", "Старая цена", "Добавить бонус", "Удалить магазин" ,"Отправить сообщение", "Добавить заявку")
         var isExpandedMenu by remember { mutableStateOf(false) }
         val requests = state.listDataRequests.collectAsState().value
         val orderMoney = state.orderMoney.collectAsState().value.toInt().toString()
@@ -84,7 +82,7 @@ fun AlertDialogRequestShop(
             noCash = stateNoCash
         }
 
-        Column(modifier = Modifier.fillMaxSize().padding(5.dp)) {
+        Column(modifier = Modifier.fillMaxSize().padding(5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(modifier = Modifier.height(20.dp))
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -96,7 +94,6 @@ fun AlertDialogRequestShop(
                 Text(
                     style = AppTheme.typography.titleLarge,
                     text = shop.nameShop,
-                    fontSize = 18.sp,
                     textAlign = TextAlign.Center,
                     color = AppTheme.colors.onSecondary,
                     modifier = Modifier
@@ -129,10 +126,6 @@ fun AlertDialogRequestShop(
                                         event(ShopEvent.OpenAddSumDialog)
                                     }
 
-                                    "Тип оплаты" -> {
-                                        event(ShopEvent.ShowChangeTypePayDialog)
-                                    }
-
                                     "Старая цена" -> {
                                         event(ShopEvent.SwitchPrice)
                                     }
@@ -150,7 +143,7 @@ fun AlertDialogRequestShop(
                                     }
 
                                     "Удалить магазин" -> {
-                                        event(ShopEvent.ShowDeleteDialog)
+                                        if (user.isModOrAdminOrSys()) event(ShopEvent.ShowDeleteDialog)
                                     }
                                 }
                             }, text = {
@@ -159,14 +152,6 @@ fun AlertDialogRequestShop(
                                         color = if (switchOldPrice) Color.Red else AppTheme.colors.onSecondary,
                                         text = item,
                                         style = AppTheme.typography.titleSmall
-                                    )
-
-                                    "Тип оплаты" -> Text(
-                                        text = item + when (typePayState) {
-                                            TypePayModel.CASH -> " (Нал)"
-                                            TypePayModel.NO_CASH -> " (Без/Нал)"
-                                            TypePayModel.ANOTHER -> " (Смешаный)"
-                                        }, style = AppTheme.typography.titleSmall, color = AppTheme.colors.onSecondary
                                     )
 
                                     else -> Text(text = item, style = AppTheme.typography.titleSmall, color = AppTheme.colors.onSecondary)
@@ -191,9 +176,8 @@ fun AlertDialogRequestShop(
                         .padding(start = 3.dp, end = 5.dp)
                 ) {
                     Text(
-                        style = AppTheme.typography.titleSmall,
+                        style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
                         text = "",
-                        fontSize = 12.sp,
                         color = AppTheme.colors.onSecondary
                     )
                 }
@@ -205,9 +189,8 @@ fun AlertDialogRequestShop(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            style = AppTheme.typography.titleSmall,
+                            style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
                             text = "Бонус",
-                            fontSize = 12.sp,
                             modifier = Modifier.align(Alignment.Center),
                             color = AppTheme.colors.onSecondary
                         )
@@ -220,9 +203,8 @@ fun AlertDialogRequestShop(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        style = AppTheme.typography.titleSmall,
+                        style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
                         text = "Заявка",
-                        fontSize = 12.sp,
                         modifier = Modifier.align(Alignment.Center),
                         color = AppTheme.colors.onSecondary
                     )
@@ -234,9 +216,8 @@ fun AlertDialogRequestShop(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        style = AppTheme.typography.titleSmall,
+                        style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
                         text = "Обмены",
-                        fontSize = 12.sp,
                         modifier = Modifier.align(Alignment.Center),
                         color = AppTheme.colors.onSecondary
                     )
@@ -257,10 +238,7 @@ fun AlertDialogRequestShop(
                             key = { request -> request.id }
                         ) { request ->
                             ProductRequestItem(
-                                request = request,
-                                deleteRequest = {
-                                    event(ShopEvent.DeleteRequest(request))
-                                }, event = event, shop = shop, user = user
+                                request = request, event = event, shop = shop, user = user
                             )
                         }
                         item {
@@ -285,15 +263,13 @@ fun AlertDialogRequestShop(
                                         })
                                 ) {
                                     Text(
-                                        style = AppTheme.typography.titleSmall,
+                                        style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 4).sp),
                                         text = "Долг",
-                                        fontSize = 10.sp,
                                         color = AppTheme.colors.onSecondary
                                     )
                                     Text(
-                                        style = AppTheme.typography.titleSmall,
+                                        style = AppTheme.typography.labelSmall,
                                         text = "${shop.arrears.toInt()}",
-                                        fontSize = 20.sp,
                                         color = AppTheme.colors.onSecondary
                                     )
                                 }
@@ -310,15 +286,13 @@ fun AlertDialogRequestShop(
                                             })
                                     ) {
                                         Text(
-                                            style = AppTheme.typography.titleSmall,
+                                            style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
                                             text = "Доп",
-                                            fontSize = 10.sp,
                                             color = AppTheme.colors.onSecondary
                                         )
                                         Text(
-                                            style = AppTheme.typography.titleSmall,
+                                            style = AppTheme.typography.labelSmall,
                                             text = "${shop.addSum.toInt()}",
-                                            fontSize = 20.sp,
                                             color = AppTheme.colors.onSecondary
                                         )
                                     }
@@ -337,15 +311,13 @@ fun AlertDialogRequestShop(
                                         })
                                 ) {
                                     Text(
-                                        style = AppTheme.typography.titleSmall,
+                                        style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
                                         text = "Заявка",
-                                        fontSize = 10.sp,
                                         color = AppTheme.colors.onSecondary
                                     )
                                     Text(
-                                        style = AppTheme.typography.titleSmall,
+                                        style = AppTheme.typography.labelSmall,
                                         text = orderMoney,
-                                        fontSize = 20.sp,
                                         color = AppTheme.colors.onSecondary
                                     )
                                 }
@@ -381,7 +353,7 @@ fun AlertDialogRequestShop(
                                             )
                                             CommonTextField(
                                                 value = noCash,
-                                                placeholder = "Без/нал",
+                                                placeholder = "Без/Нал",
                                                 modifier = Modifier.weight(0.333f),
                                                 changerText = { newValue ->
                                                     noCash = newValue
@@ -493,7 +465,7 @@ fun AlertDialogRequestShop(
                                         horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                                         CommonTextField(
                                             value = noCash,
-                                            placeholder = "Без/нал",
+                                            placeholder = "",
                                             changerText = { newValue ->
                                                 noCash = newValue
                                                 errorNoCash = when {
@@ -536,7 +508,18 @@ fun AlertDialogRequestShop(
                                     }
                                 }
                             }
-                            Spacer(modifier = Modifier.height(15.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(modifier = Modifier.fillMaxWidth().border(
+                                width = 1.dp,
+                                color = AppTheme.colors.secondary,
+                                shape = RoundedCornerShape(10.dp)
+                            ).height(40.dp).clickable(onClick = {
+                                event(ShopEvent.ChangeTypePay)
+                            }).wrapContentHeight(Alignment.CenterVertically), text = when(typePayState) {
+                                TypePayModel.CASH -> "Нал"
+                                TypePayModel.NO_CASH -> "Без/нал"
+                                TypePayModel.ANOTHER -> "Смешаный"
+                            }, style = AppTheme.typography.titleSmall, textAlign = TextAlign.Center, color = AppTheme.colors.onSecondary)
                         }
                     } else {
                         item {
@@ -565,7 +548,6 @@ fun AlertDialogRequestShop(
 @Composable
 fun ProductRequestItem(
     request: RequestModel,
-    deleteRequest: (RequestModel) -> Unit,
     event: (ShopEvent) -> Unit,
     shop: ShopModel,
     user: UserModel
@@ -646,19 +628,17 @@ fun ProductRequestItem(
         modifier = Modifier
             .fillMaxWidth()
             .background(color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp))
-            .padding(3.dp)
+            .padding(top = 3.dp, bottom = 3.dp, start = 15.dp, end = 3.dp)
             .height(50.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            style = AppTheme.typography.titleSmall,
+            style = AppTheme.typography.titleMedium,
             text = request.name,
-            fontSize = 18.sp,
             modifier = Modifier
                 .weight(0.4f)
-                .padding(end = 5.dp)
-                .combinedClickable(onDoubleClick = { deleteRequest(request) }, onClick = {}),
+                .padding(end = 5.dp),
             color = if (request.status && user.isSysOrAdmin()) AppTheme.colors.error else AppTheme.colors.onSecondary
         )
         if (shop.isBonus) {
@@ -678,9 +658,8 @@ fun ProductRequestItem(
                         )
                 ) {
                     Text(
-                        style = AppTheme.typography.titleSmall,
+                        style = AppTheme.typography.labelSmall,
                         text = if (countBonus == "0") "" else countBonus,
-                        fontSize = 22.sp,
                         modifier = Modifier.align(Alignment.Center),
                         color = AppTheme.colors.onSecondary
                     )
@@ -702,9 +681,8 @@ fun ProductRequestItem(
                 )
         ) {
             Text(
-                style = AppTheme.typography.titleSmall,
+                style = AppTheme.typography.labelSmall,
                 text = if (count == "0") "" else count,
-                fontSize = 22.sp,
                 modifier = Modifier
                     .align(Alignment.Center),
                 color = AppTheme.colors.onSecondary
@@ -726,9 +704,8 @@ fun ProductRequestItem(
                 )
         ) {
             Text(
-                style = AppTheme.typography.titleSmall,
+                style = AppTheme.typography.labelSmall,
                 text = if (countExchange == "0") "" else countExchange,
-                fontSize = 22.sp,
                 modifier = Modifier.align(Alignment.Center),
                 color = AppTheme.colors.onSecondary
             )

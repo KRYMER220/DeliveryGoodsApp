@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -37,7 +38,9 @@ class RouteViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 block()
-            } catch (e: CancellationException) {
+            } catch (_: CancellationException) {
+                sharedViewModel.message(Constants.ERROR.CANCEL_OPERATION, type = TypeMessageModel.ERROR)
+            } catch (_: TimeoutCancellationException) {
                 sharedViewModel.message(Constants.ERROR.CANCEL_OPERATION, type = TypeMessageModel.ERROR)
             } catch (e: Exception) {
                 sharedViewModel.message(e.message, type = TypeMessageModel.ERROR)
@@ -72,10 +75,18 @@ class RouteViewModel @Inject constructor(
                 val response = routeApi.getRoutes(idFactory = user.idFactory)
                 if (response.success) {
                     val routes = response.obj
-                    if (routes != null) {
+                    if (routes.isNullOrEmpty()) {
                         updateViewState {
                             it.copy(
-                                listRoute = MutableStateFlow(routes)
+                                listRoute = MutableStateFlow(emptyList()),
+                                isLoadingData = true
+                            )
+                        }
+                    } else {
+                        updateViewState {
+                            it.copy(
+                                listRoute = MutableStateFlow(routes),
+                                isLoadingData = true
                             )
                         }
                     }
@@ -111,17 +122,13 @@ class RouteViewModel @Inject constructor(
         launchCoroutine {
             val route = viewState.value.routeUpdated
             if (route != null) {
+                val name = if (route.name == "") "Маршрут без имени" else route.name
                 val routeRequest = RouteRequest(
-                    name = route.name, idFactory = route.idFactory, date = route.date, id = route.id
+                    name = name, idFactory = route.idFactory, date = route.date, id = route.id
                 )
                 val response = routeApi.update(route = routeRequest)
                 if (response.success) {
-                    val list = viewState.value.listRoute.value.map { it.copy() }.toMutableList()
-                    val index = list.indexOfFirst { it.id == route.id }
-                    list[index] = route.copy(
-                        name = route.name
-                    )
-                    updateViewState { it.copy(listRoute = MutableStateFlow(list)) }
+                    getDataRoutes()
                     dismissUpdateDialog()
                 } else {
                     sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
@@ -136,8 +143,9 @@ class RouteViewModel @Inject constructor(
         launchCoroutine {
             val user = sharedViewModel.viewState.value.user.value
             if (user != null) {
+                val name = if (viewState.value.nameRouteAdd == "") "Маршрут без имени" else viewState.value.nameRouteAdd
                 val routeRequest = RouteRequest(
-                    name = viewState.value.nameRouteAdd,
+                    name = name,
                     date = System.currentTimeMillis(),
                     idFactory = user.idFactory
                 )
@@ -145,9 +153,7 @@ class RouteViewModel @Inject constructor(
                 if (response.success) {
                     val route = response.obj
                     if (route != null) {
-                        val list = viewState.value.listRoute.value.map { it.copy() }.toMutableList()
-                        list.add(route)
-                        updateViewState { it.copy(listRoute = MutableStateFlow(list.sortedBy { r -> r.name })) }
+                        getDataRoutes()
                         dismissAddDialog()
                     }
                 } else {
@@ -196,10 +202,7 @@ class RouteViewModel @Inject constructor(
             if (route != null) {
                 val response = routeApi.delete(id = route.id)
                 if (response.success) {
-                    val list = viewState.value.listRoute.value.map { it.copy() }.toMutableList()
-                    val item = list.first { it.id == route.id }
-                    val listNew = list - item
-                    updateViewState { it.copy(listRoute = MutableStateFlow(listNew.sortedBy { r -> r.name })) }
+                    getDataRoutes()
                     dismissDeleteDialog()
                 } else {
                     sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)

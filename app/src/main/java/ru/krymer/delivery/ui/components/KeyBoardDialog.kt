@@ -91,31 +91,31 @@ fun KeyBoardDialog(
                     )
                     Spacer(modifier = Modifier.height(5.dp))
                     Row {
-                        CommonButton(onClick = { setNumber(1) }, text = "1", fontSize = 18.sp)
+                        CommonButton(onClick = { setNumber(1) }, text = "1")
                         Spacer(modifier = Modifier.width(2.dp))
-                        CommonButton(onClick = { setNumber(2) }, text = "2", fontSize = 18.sp)
+                        CommonButton(onClick = { setNumber(2) }, text = "2")
                         Spacer(modifier = Modifier.width(2.dp))
-                        CommonButton(onClick = { setNumber(3) }, text = "3", fontSize = 18.sp)
+                        CommonButton(onClick = { setNumber(3) }, text = "3")
                     }
                     Spacer(modifier = Modifier.height(2.dp))
                     Row {
-                        CommonButton(onClick = { setNumber(4) }, text = "4", fontSize = 18.sp)
+                        CommonButton(onClick = { setNumber(4) }, text = "4")
                         Spacer(modifier = Modifier.width(2.dp))
-                        CommonButton(onClick = { setNumber(5) }, text = "5", fontSize = 18.sp)
+                        CommonButton(onClick = { setNumber(5) }, text = "5")
                         Spacer(modifier = Modifier.width(2.dp))
-                        CommonButton(onClick = { setNumber(6) }, text = "6", fontSize = 18.sp)
+                        CommonButton(onClick = { setNumber(6) }, text = "6")
                     }
                     Spacer(modifier = Modifier.height(5.dp))
                     Row {
-                        CommonButton(onClick = { setNumber(7) }, text = "7", fontSize = 18.sp)
+                        CommonButton(onClick = { setNumber(7) }, text = "7")
                         Spacer(modifier = Modifier.width(2.dp))
-                        CommonButton(onClick = { setNumber(8) }, text = "8", fontSize = 18.sp)
+                        CommonButton(onClick = { setNumber(8) }, text = "8")
                         Spacer(modifier = Modifier.width(2.dp))
-                        CommonButton(onClick = { setNumber(9) }, text = "9", fontSize = 18.sp)
+                        CommonButton(onClick = { setNumber(9) }, text = "9")
                     }
                     Spacer(modifier = Modifier.height(5.dp))
                     Row {
-                        CommonButton(onClick = { setNumber(0) }, text = "0", fontSize = 18.sp)
+                        CommonButton(onClick = { setNumber(0) }, text = "0")
                     }
                     Spacer(modifier = Modifier.height(7.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -137,7 +137,7 @@ fun KeyBoardDialog(
                             contentDescription = null,
                             modifier = Modifier
                                 .background(AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp))
-                                .size(50.dp)
+                                .size(60.dp)
                                 .weight(0.5f)
                                 .clickable(onClick = { setNumber(count.toInt()) })
                         )

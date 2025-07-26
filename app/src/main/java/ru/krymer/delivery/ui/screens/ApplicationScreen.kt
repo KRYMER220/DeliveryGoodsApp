@@ -1,31 +1,47 @@
 package ru.krymer.delivery.ui.screens
 
 import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxColors
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entry
 import androidx.navigation3.runtime.entryProvider
@@ -40,6 +56,7 @@ import com.dokar.sonner.rememberToasterState
 import ru.krymer.delivery.Screens
 import ru.krymer.delivery.data.model.utilModel.MessageModel
 import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
+import ru.krymer.delivery.ui.components.CommonInfoAlertDialog
 import ru.krymer.delivery.ui.screens.analitic.AnaliticScreen
 import ru.krymer.delivery.ui.screens.client.ClientScreen
 import ru.krymer.delivery.ui.screens.courier.CourierScreen
@@ -47,7 +64,6 @@ import ru.krymer.delivery.ui.screens.login.LoginScreen
 import ru.krymer.delivery.ui.screens.main.MenuScreen
 import ru.krymer.delivery.ui.screens.product.ProductScreen
 import ru.krymer.delivery.ui.screens.route.RouteScreen
-import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.ui.screens.shared.models.SharedEvents
 import ru.krymer.delivery.ui.screens.shared.models.SharedViewState
 import ru.krymer.delivery.ui.screens.shop.ShopScreen
@@ -67,6 +83,8 @@ fun ApplicationScreen(
 ) {
 
     val user = sharedState.value.user.collectAsState().value
+    val isShowSettings = sharedState.value.isShowSettings.collectAsState().value
+
     NavDisplay(
         modifier = modifier,
         backStack = backStack, onBack = { backStack.removeLastOrNull() }, transitionSpec = {
@@ -106,7 +124,7 @@ fun ApplicationScreen(
                             Screens.Trip -> backStack.add(Screens.Trip)
                             else -> {}
                         }
-                    }, user = user
+                    }, user = user, event = event
                 )
             }
 
@@ -180,7 +198,78 @@ fun ApplicationScreen(
             }
         })
     ToasterMessages(sharedState.value, event = event)
+
+    if (isShowSettings) {
+        CommonInfoAlertDialog(
+            onDismissRequest = {
+                event(SharedEvents.OpenHideSettingsApp)
+            },
+            content = {
+                SettingsApp(event = event, state = sharedState)
+            },
+            modifier = Modifier
+        )
+    }
 }
+
+@Composable
+fun SettingsApp(state: State<SharedViewState>, event: (SharedEvents) -> Unit) {
+    var isFilterByCourier by remember { mutableStateOf(state.value.lightVersion) }
+    val animatedValue by animateFloatAsState(
+        targetValue = state.value.fontSizeIndex.toFloat(),
+        animationSpec = tween(durationMillis = 300),
+        label = "fontSizeSliderAnimation"
+    )
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Checkbox(
+                modifier = Modifier.size(60.dp),
+                checked = isFilterByCourier,
+                onCheckedChange = {
+                    isFilterByCourier = !isFilterByCourier
+                    event(SharedEvents.ChangeSettings)
+                },
+                colors = CheckboxColors(
+                    checkedCheckmarkColor = AppTheme.colors.onSecondary,
+                    uncheckedCheckmarkColor = AppTheme.colors.secondary,
+                    checkedBoxColor = Color.Transparent,
+                    uncheckedBoxColor = Color.Transparent,
+                    disabledCheckedBoxColor = Color.Transparent,
+                    disabledUncheckedBoxColor = Color.Transparent,
+                    disabledIndeterminateBoxColor = Color.Transparent,
+                    checkedBorderColor = AppTheme.colors.onSecondary,
+                    uncheckedBorderColor = AppTheme.colors.onSecondary,
+                    disabledBorderColor = Color.Transparent,
+                    disabledUncheckedBorderColor = Color.Transparent,
+                    disabledIndeterminateBorderColor = Color.Transparent
+                )
+            )
+            Text(text = if (isFilterByCourier) "Выключить режим" else "Включить режим", color = AppTheme.colors.onSecondary, style = AppTheme.typography.titleMedium)
+        }
+        Text(
+            text = "Размер шрифта",
+            style = AppTheme.typography.titleMedium,
+            color = AppTheme.colors.onSecondary
+        )
+
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp)
+        ) {
+            Slider(
+                value = animatedValue,
+                onValueChange = { newValue ->
+                    event(SharedEvents.ChangeFontSizeIndex(newValue.toInt()))
+                },
+            valueRange = 0f..4f,
+                steps = 3,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text(text = animatedValue.toString())
+        }
+    }
+}
+
+
 
 @Composable
 fun UserBlocked(logout: () -> Unit) {

@@ -5,6 +5,7 @@ import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Query
+import ru.krymer.delivery.data.model.ClientModel
 import ru.krymer.delivery.data.model.ProductModel
 import ru.krymer.delivery.data.request.CreateProductRequest
 import ru.krymer.delivery.data.request.UpdateProductRequest
@@ -17,6 +18,9 @@ interface ProductApi {
 
     @POST("product/update")
     suspend fun update(@Body product: UpdateProductRequest): BaseResponse<ProductModel>
+
+    @POST("product/move")
+    suspend fun moves(@Body products: List<UpdateProductRequest>): BaseResponse<ClientModel>
 
     @DELETE("product/delete")
     suspend fun delete(@Query(Constants.HttpRequestKeys.ID) id: Long): BaseResponse<ProductModel>

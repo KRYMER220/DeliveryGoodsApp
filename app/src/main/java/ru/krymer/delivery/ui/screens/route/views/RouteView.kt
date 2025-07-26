@@ -22,15 +22,23 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.RouteModel
 import ru.krymer.delivery.data.model.user.UserModel
+import ru.krymer.delivery.data.model.utilModel.Loader
 import ru.krymer.delivery.ui.components.CommonAddDialog
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
 import ru.krymer.delivery.ui.components.CommonSaveDialog
@@ -48,8 +56,18 @@ fun RouteView(
 ) {
 
     val routes = state.listRoute.collectAsState().value
+    var loader by remember { mutableStateOf(Loader.LOADING) }
 
-    Column(modifier = Modifier.padding(15.dp)) {
+    LaunchedEffect(key1 = state.isLoadingData, key2 = routes.size) {
+        delay(500)
+        loader = if (routes.isNotEmpty()) {
+            Loader.LOAD
+        } else {
+            Loader.EMPTY
+        }
+    }
+
+    Column(modifier = Modifier.padding(15.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -77,41 +95,44 @@ fun RouteView(
             }
         }
         Spacer(modifier = Modifier.height(15.dp))
-        if (routes.isNotEmpty()) {
-            LazyColumn {
-                items(routes) { route ->
-                    RouteItem(
-                        route = route,
-                        openRoute = {
-                            openRoute(it, routes)
-                        },
-                        deleteRoute = {
-                            if (user.isSysOrAdmin())
-                                event(
-                                    RouteEvent.ShowDeleteDialog(
-                                        route = it
-                                    )
-                                )
-                        },
-                        updateRoute = {
-                            if (user.isSysOrAdmin())
-                                event(RouteEvent.ShowUpdateDialog(it))
-                        },
-                        user = user
-                    )
-                    Spacer(modifier = Modifier.padding(bottom = 10.dp))
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            when(loader) {
+                Loader.LOAD -> {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.fillMaxSize()) {
+                        items(routes) { route ->
+                            RouteItem(
+                                route = route,
+                                openRoute = {
+                                    openRoute(it, routes)
+                                },
+                                deleteRoute = {
+                                    if (user.isSysOrAdmin())
+                                        event(
+                                            RouteEvent.ShowDeleteDialog(
+                                                route = it
+                                            )
+                                        )
+                                },
+                                updateRoute = {
+                                    if (user.isSysOrAdmin())
+                                        event(RouteEvent.ShowUpdateDialog(it))
+                                },
+                                user = user
+                            )
+                        }
+                    }
                 }
-            }
-
-        } else {
-            Box(modifier = Modifier.fillMaxSize()) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .size(30.dp)
-                        .align(Alignment.Center),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Loader.EMPTY -> {
+                    Text(text = stringResource(R.string.empty_data), color = AppTheme.colors.onSecondary, fontSize = 18.sp)
+                }
+                Loader.LOADING -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .size(60.dp),
+                        strokeWidth = 2.dp,
+                        color = AppTheme.colors.onSecondary
+                    )
+                }
             }
         }
     }
@@ -166,12 +187,12 @@ fun RouteItem(
                 onClick = { openRoute(route) },
                 onLongClick = { updateRoute(route) })
             .background(
-                color = AppTheme.colors.secondary, shape = RoundedCornerShape(16.dp)
+                color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)
             )
             .padding(15.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 style = AppTheme.typography.titleMedium,
@@ -179,7 +200,6 @@ fun RouteItem(
                 fontSize = 20.sp,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(end = 8.dp)
                     .align(Alignment.CenterVertically),
                 color = AppTheme.colors.textColor
             )

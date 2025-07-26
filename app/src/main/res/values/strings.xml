@@ -47,6 +47,7 @@
     <string name="email_hint">Ваша почта</string>
     //error
     <string name="del_confirm">Вы уверены, что хотите удалить</string>
+    <string name="empty_data">Список пуст!</string>
     //Other
     <string name="yes">Да</string>
     <string name="no">Нет</string>

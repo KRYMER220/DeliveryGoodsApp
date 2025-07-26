@@ -1,17 +1,12 @@
 package ru.krymer.delivery.ui.screens.analitic
 
-import android.util.Log
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import ir.ehsannarmani.compose_charts.models.Bars
-import ir.ehsannarmani.compose_charts.models.Line
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -62,6 +57,19 @@ class AnaliticViewModel @Inject constructor(
             is AnaliticEvent.ChangeStateDropDownMenuClients -> changeStateDropDownMenuClients(event.isShow)
             is AnaliticEvent.SetCurrentClient -> setCurrentClient(client = event.client)
             is AnaliticEvent.SetCurrentTrip -> setCurrentTrip(trip = event.trip)
+            AnaliticEvent.DeleteLogs -> deleteLogs()
+        }
+    }
+
+    private fun deleteLogs() {
+        launchCoroutine {
+            val factory = sharedViewModel.viewState.value.factory
+            factory?.let {
+                val response = logApi.deleteLogs(idFactory = factory.id)
+                if (response.success) {
+                    updateViewState { it.copy(logs = MutableStateFlow(emptyList())) }
+                }
+            }
         }
     }
 
@@ -214,8 +222,34 @@ class AnaliticViewModel @Inject constructor(
                 AnaliticAction.None -> {}
                 AnaliticAction.OpenAll -> loadDataFactoryOfDateRange()
                 AnaliticAction.OpenClient -> loadDataClientOfDateRange()
-                AnaliticAction.OpenLog -> {}
+                AnaliticAction.OpenLog -> loadLogsOfDateRange()
                 AnaliticAction.OpenTrip -> loadDatTripOfDateRange()
+            }
+        }
+    }
+
+    private fun loadLogsOfDateRange() {
+        launchCoroutine {
+            val date = viewState.value.dateRangeForSearch
+            val factory = sharedViewModel.viewState.value.factory
+            factory?.let {
+                val response = logApi.getLogsOfRange(dateRange = DateRequest(
+                    dateStart = date.first, dateEnd = date.second, id = factory.id
+                ))
+                if (response.success) {
+                    val logs = response.obj
+                    if (logs.isNullOrEmpty()) {
+                        sharedViewModel.message(Constants.ERROR.LIST_EMPTY)
+                    } else {
+                        updateViewState {
+                            it.copy(
+                                logs = MutableStateFlow(logs), isLoadLogs = true
+                            )
+                        }
+                    }
+                } else {
+                    sharedViewModel.message(Constants.ERROR.SERVER_ERROR_RESPONSE)
+                }
             }
         }
     }

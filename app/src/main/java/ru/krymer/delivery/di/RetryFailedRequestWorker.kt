@@ -43,7 +43,7 @@ class RetryWorkManager @Inject constructor(
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
         val workRequest = PeriodicWorkRequestBuilder<RetryFailedRequestsWorker>(
-            15,
+            1,
             TimeUnit.MINUTES
         )
             .setConstraints(constraints)

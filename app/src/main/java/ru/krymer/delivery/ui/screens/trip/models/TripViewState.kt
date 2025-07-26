@@ -39,5 +39,6 @@ data class TripViewState(
     val isShowFilterDialog: Boolean = false,
     val checkBoxIsFilterCourier: Boolean = false,
     var hasMore: Boolean = true,
-    var isLoading: Boolean = false
+    var isLoading: Boolean = false,
+    val lightVersion: Boolean = false,
 )

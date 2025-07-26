@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.RequestModel
 import ru.krymer.delivery.data.model.ShopModel
-import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
 import ru.krymer.delivery.ui.theme.AppTheme
 import ru.krymer.delivery.utills.convertToTextDate
@@ -45,15 +44,17 @@ fun InfoContent(state: ShopViewState, onUpdate: () -> Unit) {
         val exchange = state.allExchangeRequestsInfo.collectAsState().value
         val requests = state.listInfoRequests.collectAsState().value
         Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Image(
-                    painter = painterResource(id = R.drawable.folow),
-                    contentDescription = "clip",
-                    modifier = Modifier
-                        .clickable(onClick = {
-                            onUpdate()
-                        })
-                        .size(40.dp)
+            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    style = AppTheme.typography.titleSmall,
+                    text = "Общее: $count",
+                    color = AppTheme.colors.onSecondary
+                )
+                Spacer(modifier = Modifier.height(5.dp))
+                Text(
+                    style = AppTheme.typography.titleSmall,
+                    text = "Обмены: $exchange",
+                    color = AppTheme.colors.onSecondary
                 )
             }
             Row(
@@ -66,33 +67,31 @@ fun InfoContent(state: ShopViewState, onUpdate: () -> Unit) {
                     modifier = Modifier.weight(0.2f),
                 )
                 Text(
-                    style = AppTheme.typography.titleMedium,
+                    style = AppTheme.typography.bodySmall,
                     text = "Цена",
-                    fontSize = 14.sp,
                     color = AppTheme.colors.onSecondary,
                     modifier = Modifier.weight(0.2f),
                     textAlign = TextAlign.Center,
                 )
+                if (!state.lightVersion) {
+                    Text(
+                        style = AppTheme.typography.bodySmall,
+                        text = "Бонус",
+                        color = AppTheme.colors.onSecondary,
+                        modifier = Modifier.weight(0.2f),
+                        textAlign = TextAlign.Center,
+                    )
+                }
                 Text(
-                    style = AppTheme.typography.titleMedium,
-                    text = "Бонус",
-                    fontSize = 14.sp,
-                    color = AppTheme.colors.onSecondary,
-                    modifier = Modifier.weight(0.2f),
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    style = AppTheme.typography.titleMedium,
+                    style = AppTheme.typography.bodySmall,
                     text = "Заявка",
-                    fontSize = 14.sp,
                     color = AppTheme.colors.onSecondary,
                     modifier = Modifier.weight(0.2f),
                     textAlign = TextAlign.Center,
                 )
                 Text(
-                    style = AppTheme.typography.titleMedium,
+                    style = AppTheme.typography.bodySmall,
                     text = "Возврат",
-                    fontSize = 14.sp,
                     color = AppTheme.colors.onSecondary,
                     modifier = Modifier.weight(0.2f),
                     textAlign = TextAlign.Center,
@@ -101,26 +100,23 @@ fun InfoContent(state: ShopViewState, onUpdate: () -> Unit) {
 
             LazyColumn(horizontalAlignment = Alignment.CenterHorizontally) {
                 items(requests) { product ->
-                    InfoContentProductItem(product = product)
+                    InfoContentProductItem(product = product, state = state)
                 }
             }
 
-            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    style = AppTheme.typography.titleMedium,
-                    text = "Общее: $count",
-                    fontSize = 18.sp,
-                    color = AppTheme.colors.onSecondary
-                )
-                Spacer(modifier = Modifier.height(5.dp))
-                Text(
-                    style = AppTheme.typography.titleMedium,
-                    text = "Обмены: $exchange",
-                    fontSize = 18.sp,
-                    color = AppTheme.colors.onSecondary
-                )
+            if (!state.lightVersion) {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Image(
+                        painter = painterResource(id = R.drawable.folow),
+                        contentDescription = "clip",
+                        modifier = Modifier
+                            .clickable(onClick = {
+                                onUpdate()
+                            })
+                            .size(40.dp)
+                    )
+                }
             }
-            Spacer(modifier = Modifier.height(20.dp))
         }
     } else {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -136,7 +132,7 @@ fun InfoContent(state: ShopViewState, onUpdate: () -> Unit) {
 }
 
 @Composable
-fun InfoContentProductItem(product: RequestModel) {
+fun InfoContentProductItem(product: RequestModel, state: ShopViewState) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -145,42 +141,39 @@ fun InfoContentProductItem(product: RequestModel) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            style = AppTheme.typography.titleSmall,
+            style = AppTheme.typography.bodySmall,
             text = product.name,
-            fontSize = 14.sp,
             modifier = Modifier
                 .padding(5.dp)
                 .weight(0.2f),
             color = AppTheme.colors.onSecondary
         )
         Text(
-            style = AppTheme.typography.titleSmall,
+            style = AppTheme.typography.bodySmall,
             text = "${product.price.toInt()}",
-            fontSize = 14.sp,
             textAlign = TextAlign.Center,
             color = AppTheme.colors.onSecondary,
             modifier = Modifier.weight(0.2f)
         )
+        if (!state.lightVersion) {
+            Text(
+                style = AppTheme.typography.bodySmall,
+                text = "${product.bonus}",
+                textAlign = TextAlign.Center,
+                color = AppTheme.colors.onSecondary,
+                modifier = Modifier.weight(0.2f)
+            )
+        }
         Text(
-            style = AppTheme.typography.titleSmall,
-            text = "${product.bonus}",
-            fontSize = 14.sp,
-            textAlign = TextAlign.Center,
-            color = AppTheme.colors.onSecondary,
-            modifier = Modifier.weight(0.2f)
-        )
-        Text(
-            style = AppTheme.typography.titleSmall,
+            style = AppTheme.typography.bodySmall,
             text = "${product.count}",
-            fontSize = 14.sp,
             textAlign = TextAlign.Center,
             color = AppTheme.colors.onSecondary,
             modifier = Modifier.weight(0.2f)
         )
         Text(
-            style = AppTheme.typography.titleSmall,
+            style = AppTheme.typography.bodySmall,
             text = "${product.exchange}",
-            fontSize = 14.sp,
             textAlign = TextAlign.Center,
             color = AppTheme.colors.onSecondary,
             modifier = Modifier.weight(0.2f)
@@ -201,74 +194,65 @@ fun ItemInfoShop(shop: ShopModel, copyInfoData: (ShopModel) -> Unit = {}) {
     ) {
         val sumDept = shop.listRequest.sumOf { it.price * it.count - it.price * it.exchange }
         Text(
-            style = AppTheme.typography.titleMedium,
+            style = AppTheme.typography.bodySmall,
             text = convertToTextDate(shop.date),
-            fontSize = 14.sp,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
             color = AppTheme.colors.onSecondary
         )
 
         Text(
-            style = AppTheme.typography.titleMedium,
+            style = AppTheme.typography.bodySmall,
             text = shop.nameShop,
-            fontSize = 14.sp,
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
 
         Text(
-            style = AppTheme.typography.titleMedium,
+            style = AppTheme.typography.bodySmall,
             text = "Пред. реал: " + shop.arrears.toInt(),
-            fontSize = 14.sp,
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
 
         Text(
-            style = AppTheme.typography.titleMedium,
+            style = AppTheme.typography.bodySmall,
             text = "Заявка: " + sumDept.toInt(),
-            fontSize = 14.sp,
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
 
         Text(
-            style = AppTheme.typography.titleMedium,
+            style = AppTheme.typography.bodySmall,
             text = "Доп. сумма: " + shop.addSum.toInt(),
-            fontSize = 14.sp,
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
 
         Text(
-            style = AppTheme.typography.titleMedium,
+            style = AppTheme.typography.bodySmall,
             text = "Нал: " + shop.cash.toInt(),
-            fontSize = 14.sp,
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
 
         Text(
-            style = AppTheme.typography.titleMedium,
+            style = AppTheme.typography.bodySmall,
             text = "Без/Нал: " + shop.noCash.toInt(),
-            fontSize = 14.sp,
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
 
         Text(
-            style = AppTheme.typography.titleSmall,
+            style = AppTheme.typography.bodySmall,
             text = "Получено: " + (shop.cash + shop.noCash).toInt(),
-            fontSize = 12.sp,
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
 
         Text(
-            style = AppTheme.typography.titleSmall,
-            text = "Новый долг: " + (shop.arrears - (shop.cash + shop.noCash) + sumDept).toInt(),
-            fontSize = 12.sp,
+            style = AppTheme.typography.bodySmall,
+            text = "Новый долг: " + (shop.arrears - (shop.cash + shop.noCash) + sumDept + shop.addSum).toInt(),
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
@@ -289,9 +273,8 @@ fun ItemInfoShop(shop: ShopModel, copyInfoData: (ShopModel) -> Unit = {}) {
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        style = AppTheme.typography.titleSmall,
+                        style = AppTheme.typography.bodySmall,
                         text = "Бонус",
-                        fontSize = 12.sp,
                         modifier = Modifier.align(Alignment.Center),
                         color = AppTheme.colors.onSecondary
                     )
@@ -308,9 +291,8 @@ fun ItemInfoShop(shop: ShopModel, copyInfoData: (ShopModel) -> Unit = {}) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    style = AppTheme.typography.titleSmall,
+                    style = AppTheme.typography.bodySmall,
                     text = "Заявка",
-                    fontSize = 12.sp,
                     modifier = Modifier.align(Alignment.Center),
                     color = AppTheme.colors.onSecondary
                 )
@@ -321,9 +303,8 @@ fun ItemInfoShop(shop: ShopModel, copyInfoData: (ShopModel) -> Unit = {}) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    style = AppTheme.typography.titleSmall,
+                    style = AppTheme.typography.bodySmall,
                     text = "Обмен",
-                    fontSize = 12.sp,
                     modifier = Modifier.align(Alignment.Center),
                     color = AppTheme.colors.onSecondary
                 )
@@ -359,9 +340,8 @@ fun RequestInfoItem(requestModel: RequestModel) {
                     .weight(0.40f)
             ) {
                 Text(
-                    style = AppTheme.typography.titleSmall,
+                    style = AppTheme.typography.bodySmall,
                     text = requestModel.name,
-                    fontSize = 14.sp,
                     color = AppTheme.colors.onSecondary
                 )
             }
@@ -371,9 +351,8 @@ fun RequestInfoItem(requestModel: RequestModel) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    style = AppTheme.typography.titleSmall,
+                    style = AppTheme.typography.bodySmall,
                     text = if (requestModel.bonus != 0) "${requestModel.bonus}" else "",
-                    fontSize = 14.sp,
                     modifier = Modifier.align(Alignment.Center),
                     color = AppTheme.colors.onSecondary
                 )
@@ -384,9 +363,8 @@ fun RequestInfoItem(requestModel: RequestModel) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    style = AppTheme.typography.titleSmall,
+                    style = AppTheme.typography.bodySmall,
                     text = if (requestModel.count != 0) "${requestModel.count}" else "",
-                    fontSize = 14.sp,
                     modifier = Modifier.align(Alignment.Center),
                     color = AppTheme.colors.onSecondary
                 )
@@ -397,9 +375,8 @@ fun RequestInfoItem(requestModel: RequestModel) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    style = AppTheme.typography.titleSmall,
+                    style = AppTheme.typography.bodySmall,
                     text = if (requestModel.exchange != 0) "${requestModel.exchange}" else "",
-                    fontSize = 14.sp,
                     modifier = Modifier.align(Alignment.Center),
                     color = AppTheme.colors.onSecondary
                 )

@@ -73,8 +73,7 @@ fun UpdateClientView(
                     }
                 },
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp),
+                    .fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                 isError = errorName.visible,
                 errorValue = errorName.error
@@ -96,8 +95,7 @@ fun UpdateClientView(
                     }
                 },
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp),
+                    .fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 isError = errorArrears.visible,
                 errorValue = errorArrears.error
@@ -119,8 +117,7 @@ fun UpdateClientView(
                     }
                 },
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp),
+                    .fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 isError = errorPhone.visible,
                 errorValue = errorPhone.error
@@ -142,8 +139,7 @@ fun UpdateClientView(
                     }
                 },
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp),
+                    .fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 visualTransformation = SignedNumberWithComma(),
                 isError = errorCords.visible,

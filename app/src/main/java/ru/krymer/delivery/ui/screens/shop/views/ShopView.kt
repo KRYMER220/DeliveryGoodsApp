@@ -1,5 +1,6 @@
 package ru.krymer.delivery.ui.screens.shop.views
 
+import android.util.Log
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -13,10 +14,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -38,8 +41,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.delay
@@ -74,7 +80,7 @@ fun ShopView(
         if (shops.isNotEmpty() && isFirstLoad) {
             isFirstLoad = false
             coroutineScope.launch {
-                delay(300)
+                delay(500)
                 lazyListState.animateScrollToItem(1)
             }
         }
@@ -102,16 +108,17 @@ fun ShopView(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.back_stack),
-                    contentDescription = "exit",
-                    modifier = Modifier
-                        .clickable(onClick = {
-                            event(ShopEvent.ShopActionInvoked)
-                            popBackStack()
-                        })
-                        .size(60.dp)
-                )
+                if (!state.lightVersion) {
+                    Image(
+                        painter = painterResource(id = R.drawable.outline_autorenew_24),
+                        contentDescription = "update",
+                        modifier = Modifier
+                            .clickable(onClick = {
+                                event(ShopEvent.UpdateShops)
+                            })
+                            .size(60.dp)
+                    )
+                }
                 Image(
                     painter = painterResource(id = R.drawable.car_info),
                     contentDescription = "courier millage",
@@ -192,14 +199,12 @@ fun ShopView(
     }
 
     if (state.isShowMillageDialog) {
-        CommonSaveDialog(dismiss = {
+        CommonInfoAlertDialog(onDismissRequest = {
             event(ShopEvent.DismissMillageDialog)
-        }, confirm = {
-            event(ShopEvent.MillageSaveAction)
         }, content = {
             MillageAndInfoView(state = state, onMillageTFC = {
                 event(ShopEvent.ValueChangeMillage(millage = it))
-            })
+            }, event = event)
         })
     }
 
@@ -260,9 +265,8 @@ fun ShopView(
     }
 
     if (state.stateInfoDialog) {
-        InfoDialog(
-            isVisible = true,
-            onDismiss = { event(ShopEvent.DismissRequestInfoDialog) },
+        CommonInfoAlertDialog(
+            onDismissRequest = { event(ShopEvent.DismissRequestInfoDialog) },
             content = {
                 InfoContent(
                     state = state,
@@ -303,24 +307,6 @@ fun ShopView(
         )
     }
 
-    if (state.isShowTypePayChangeDialog) {
-        CommonInfoAlertDialog(
-            onDismissRequest = { event(ShopEvent.DismissChangeTypePayDialog) },
-            content = {
-                ChangeTypePayView(
-                    state = state,
-                    changeTypePay = { event(ShopEvent.ChangeTypePay(it)) },
-                    changeStateChangerTypePay = {
-                        event(
-                            ShopEvent.ChangeDropDownStateTypePayChanger(
-                                it
-                            )
-                        )
-                    }
-                )
-            }
-        )
-    }
 
     if (state.isShowDialogArrears) {
         CommonAlertAddDialog(
@@ -369,6 +355,7 @@ fun ShopsItem(
     index: Int
 ) {
     Box(modifier = modifier
+        .heightIn(min = 60.dp, max = Dp.Unspecified)
         .combinedClickable(
             onLongClick = { openLocate(shop) },
             onClick = { openShop(shop) }, onDoubleClick = { openInfoCurrentShop(shop) })
@@ -376,10 +363,11 @@ fun ShopsItem(
             color = AppTheme.colors.secondary,
             shape = RoundedCornerShape(10.dp)
         )
-        .padding(10.dp)
+        .padding(10.dp),
+        contentAlignment = Alignment.Center
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(5.dp),
             horizontalArrangement = Arrangement.spacedBy(5.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -388,19 +376,19 @@ fun ShopsItem(
                 text = "$index",
                 color = AppTheme.colors.onSecondary
             )
+            Spacer(modifier = Modifier.width(10.dp))
             Text(
-                style = AppTheme.typography.labelMedium,
+                style = AppTheme.typography.titleSmall,
                 text = shop.nameShop,
                 modifier = Modifier
                     .weight(1f),
                 color = AppTheme.colors.onSecondary,
-                textAlign = TextAlign.Center
             )
             Image(
                 contentDescription = "status",
                 painter = if (shop.status) painterResource(id = R.drawable.active_circle) else painterResource(id = R.drawable.inactive_circle),
                 modifier = Modifier
-                    .size(20.dp)
+                    .size(15.dp)
             )
         }
     }

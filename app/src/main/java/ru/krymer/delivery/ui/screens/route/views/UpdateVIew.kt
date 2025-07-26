@@ -43,8 +43,7 @@ fun UpdateRouteView(
                     }
                 },
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp),
+                    .fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                 isError = errorName.visible,
                 errorValue = errorName.error

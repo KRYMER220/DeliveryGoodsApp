@@ -4,6 +4,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -18,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import ru.krymer.delivery.ui.theme.AppTheme
 
@@ -38,8 +40,7 @@ fun AuthField(
     val isFocused = interactionSource.collectIsFocusedAsState().value
 
     TextField(
-        modifier = Modifier.fillMaxWidth()
-            .height(60.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp, max = Dp.Unspecified),
         value = value,
         placeholder = {
             if (!isFocused && value.isEmpty()) {
@@ -73,7 +74,8 @@ fun AuthField(
             errorIndicatorColor = Color.Transparent,
         ),
         keyboardActions = keyboardActions,
-        textStyle = AppTheme.typography.titleLarge
+        textStyle = AppTheme.typography.titleLarge,
+        interactionSource = interactionSource
     )
     if (isError) {
         Text(text = errorValue, color = Color.Red, style = AppTheme.typography.titleSmall)

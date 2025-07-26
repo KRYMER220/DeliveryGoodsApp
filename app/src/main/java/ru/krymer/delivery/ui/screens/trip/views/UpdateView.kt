@@ -71,8 +71,9 @@ fun UpdateTripView(
                             modifier = Modifier
                                 .padding(start = 15.dp)
                                 .align(Alignment.Center),
-                            color = AppTheme.colors.onSecondary
-                        )
+                            color = AppTheme.colors.onSecondary,
+                            style = AppTheme.typography.titleMedium
+                            )
                         if (state.dropDownStateDatePicker) {
                             val datePickerState = rememberDatePickerState()
                             DatePickerDialog(onDismissRequest = {
@@ -117,7 +118,8 @@ fun UpdateTripView(
                             Text(
                                 text = r.name,
                                 modifier = Modifier.padding(start = 15.dp),
-                                color = AppTheme.colors.onSecondary
+                                color = AppTheme.colors.onSecondary,
+                                style = AppTheme.typography.titleMedium
                             )
                             Spacer(modifier = Modifier.weight(1f))
                             Icon(
@@ -156,7 +158,8 @@ fun UpdateTripView(
                             Text(
                                 text = c.name,
                                 modifier = Modifier.padding(start = 15.dp),
-                                color = AppTheme.colors.onSecondary
+                                color = AppTheme.colors.onSecondary,
+                                style = AppTheme.typography.titleMedium
                             )
                             Spacer(modifier = Modifier.weight(1f))
                             Icon(

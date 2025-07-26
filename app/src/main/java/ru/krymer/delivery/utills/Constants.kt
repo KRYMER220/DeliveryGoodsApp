@@ -13,8 +13,9 @@ class Constants {
 
     object KEYS {
         const val COURIER_FILTER = "courier"
-        const val FONT = "font"
+        const val SETTINGS = "settings"
         const val AUTH = "auth"
+        const val FONT_SIZE = "fSize"
     }
 
     object PatternDate {

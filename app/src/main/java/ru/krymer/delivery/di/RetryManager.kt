@@ -3,6 +3,7 @@ package ru.krymer.delivery.di
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.delay
 import ru.krymer.delivery.AppDatabase
 import ru.krymer.delivery.data.api.RequestApi
 import ru.krymer.delivery.data.api.ShopApi
@@ -27,11 +28,12 @@ class RetryManager @Inject constructor(
         val type: Type = object : TypeToken<Map<String, String>>() {}.type
         failedRequests.forEach { failedRequest ->
             try {
-                if (failedRequest.retryCount >= 5) {
+                if (failedRequest.retryCount >= 1000000) {
                     appDatabase.failedDao().deleteById(failedRequest.id)
                     return@forEach
                 }
                 val params = gson.fromJson<Map<String, String>>(failedRequest.params, type)
+                delay(5000)
                 val response = when (failedRequest.apiType) {
                     "request" -> retryRequestRequest(failedRequest, params)
                     "shop" -> retryShopRequest(failedRequest, params)

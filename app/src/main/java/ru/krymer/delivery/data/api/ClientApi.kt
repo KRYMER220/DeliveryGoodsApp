@@ -17,6 +17,9 @@ interface ClientApi {
     @POST("client/update")
     suspend fun update(@Body client: ClientRequest): BaseResponse<ClientModel>
 
+    @POST("client/move")
+    suspend fun moves(@Body clients: List<ClientRequest>): BaseResponse<ClientModel>
+
     @DELETE("client/delete")
     suspend fun delete(@Query(Constants.HttpRequestKeys.ID) id: Long): BaseResponse<ClientModel>
 

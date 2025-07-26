@@ -5,9 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -21,7 +19,6 @@ import ru.krymer.delivery.ui.screens.product.models.ProductEvent
 import ru.krymer.delivery.ui.screens.product.models.ProductViewState
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.utills.Constants
-import ru.krymer.delivery.utills.isEmptyInput
 import javax.inject.Inject
 
 @HiltViewModel
@@ -63,7 +60,7 @@ class ProductViewModel @Inject constructor(
             is ProductEvent.DismissUpdateDialog -> dismissUpdateDialog()
             is ProductEvent.ChangeIsActiveProduct -> changeStatusProduct()
             is ProductEvent.DeleteProduct -> deleteProduct()
-            is ProductEvent.ReorderProducts -> reorderProducts(toIndex = event.toIndex, fromIndex = event.fromIndex)
+            is ProductEvent.ReorderProducts -> reorderProducts(list = event.list)
         }
     }
 
@@ -71,41 +68,23 @@ class ProductViewModel @Inject constructor(
         getDataProducts()
     }
 
-    private fun reorderProducts(toIndex: Int, fromIndex: Int) {
+    private fun reorderProducts(list: List<ProductModel>) {
         launchCoroutine {
-            dismissUpdateDialog()
-            var list = viewState.value.listProduct.value
-            list = list.toMutableList().apply {
-                add(toIndex, removeAt(fromIndex))
-            }
-            updateViewState { it.copy(listProduct = MutableStateFlow(list)) }
-            val itemFrom = list[fromIndex].copy()
-            val indexFrom = itemFrom.counter
-            val itemTo = list[toIndex].copy()
-            val indexTo = itemTo.counter
-
-            val newItemFrom = itemTo.toRequestUpdateIndex(indexFrom)
-            val newItemTo = if (indexFrom != indexTo)  itemFrom.toRequestUpdateIndex(indexTo) else itemFrom.toRequestUpdateIndex(indexTo+1)
-            val responseFrom = productApi.update(product = newItemFrom)
-            val responseTo = productApi.update(product = newItemTo)
-            if (!(responseTo.success && responseFrom.success)) {
-                sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
-            }
+            val requests = list.map { product -> UpdateProductRequest(
+                id = product.id,
+                idFactory = product.idFactory,
+                name = product.name,
+                counter = product.counter,
+                date = product.date,
+                price = product.price,
+                isActive = product.isActive,
+                oldPrice = product.oldPrice
+            ) }
+            productApi.moves(products = requests)
         }
     }
 
-    private fun ProductModel.toRequestUpdateIndex(index: Int): UpdateProductRequest {
-        return UpdateProductRequest(
-            id = id,
-            name = name,
-            idFactory = idFactory,
-            counter = index,
-            price = price,
-            isActive = isActive,
-            date = date,
-            oldPrice = oldPrice
-        )
-    }
+
 
     private fun changeStatusProduct() {
         val product = viewState.value.productUpdated.value
@@ -115,20 +94,26 @@ class ProductViewModel @Inject constructor(
 
     private fun getDataProducts() {
         launchCoroutine {
+            updateViewState { it.copy(isLoadData = MutableStateFlow(false)) }
             val user = sharedViewModel.viewState.value.user.value
             if (user != null) {
                 val response = productApi.getProducts(idFactory = user.idFactory)
                 if (response.success) {
                     val products = response.obj
-                    if (products != null) {
+                    if (!products.isNullOrEmpty()) {
                         updateViewState {
                             it.copy(
-                                listProduct = MutableStateFlow(products)
+                                listProduct = MutableStateFlow(products),
+                                isLoadData = MutableStateFlow(true)
                             )
                         }
                     } else {
-                        delay(5000)
-                        getDataProducts()
+                        updateViewState {
+                            it.copy(
+                                listProduct = MutableStateFlow(emptyList()),
+                                isLoadData = MutableStateFlow(true)
+                            )
+                        }
                     }
                 } else {
                     sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
@@ -167,11 +152,7 @@ class ProductViewModel @Inject constructor(
             if (product != null) {
                 val response = productApi.delete(id = product.id)
                 if (response.success) {
-                    val list =
-                        viewState.value.listProduct.value.map { it.copy() }.toMutableList()
-                    val item = list.first { it.id == product.id }
-                    val listNew = list - item
-                    updateViewState { it.copy(listProduct = MutableStateFlow(listNew.sortedBy { p -> p.price })) }
+                    getDataProducts()
                     dismissDeleteDialog()
                 } else {
                     sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
@@ -244,14 +225,7 @@ class ProductViewModel @Inject constructor(
                 )
                 val response = productApi.update(product = productRequest)
                 if (response.success) {
-                    val list =
-                        viewState.value.listProduct.value.map { it.copy() }.toMutableList()
-                    val index = list.indexOfFirst { it.id == product.id }
-                    val newProduct = product.copy(
-                        name = product.name, isActive = product.isActive, price = product.price, oldPrice = product.oldPrice
-                    )
-                    list[index] = newProduct
-                    updateViewState { it.copy(listProduct = MutableStateFlow(list)) }
+                    getDataProducts()
                     dismissUpdateDialog()
                 } else {
                     sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
@@ -281,10 +255,7 @@ class ProductViewModel @Inject constructor(
                 if (response.success) {
                     val product = response.obj
                     if (product != null) {
-                        val list =
-                            viewState.value.listProduct.value.map { it.copy() }.toMutableList()
-                        list.add(product)
-                        updateViewState { it.copy(listProduct = MutableStateFlow(list.sortedBy { p -> p.price })) }
+                        getDataProducts()
                         dismissAddDialog()
                     }
                 } else {

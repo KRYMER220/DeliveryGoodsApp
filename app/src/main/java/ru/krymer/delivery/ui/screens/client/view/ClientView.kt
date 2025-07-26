@@ -26,17 +26,23 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.ClientModel
 import ru.krymer.delivery.data.model.user.UserModel
+import ru.krymer.delivery.data.model.utilModel.Loader
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
 import ru.krymer.delivery.ui.components.CommonSaveDialog
 import ru.krymer.delivery.ui.screens.client.models.ClientEvent
@@ -50,23 +56,31 @@ fun ClientView(
     event: (ClientEvent) -> Unit, state: ClientViewState, popBackStack: () -> Unit, user: UserModel
 ) {
     val list = state.listClient.collectAsState().value
-
+    val isLoad = state.isLoadData.collectAsState().value
+    var loader by remember { mutableStateOf(Loader.LOADING) }
     var clients = remember { mutableStateListOf<ClientModel>() }
     val lazyListState = rememberLazyListState()
     val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
         clients = clients.apply {
             add(to.index, removeAt(from.index))
         }
-        event(ClientEvent.ReorderClients(fromIndex = from.index, toIndex = to.index))
     }
 
+    LaunchedEffect(key1 = isLoad, key2 = list.size) {
+        delay(500)
+        loader = if (list.isNotEmpty()) {
+            Loader.LOAD
+        } else {
+            Loader.EMPTY
+        }
+    }
 
-    LaunchedEffect(list) {
+    LaunchedEffect(isLoad) {
         clients.clear()
         clients.addAll(list)
     }
 
-    Column(modifier = Modifier.padding(15.dp)) {
+    Column(modifier = Modifier.padding(15.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -101,24 +115,32 @@ fun ClientView(
             }
         }
         Spacer(modifier = Modifier.height(15.dp))
-        if (clients.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .size(60.dp)
-                        .align(Alignment.Center),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-        } else {
-            LazyColumn(state = lazyListState, verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                items(clients, key = { client -> client.id }) { client ->
-                    ReorderableItem(reorderableLazyListState, key = client.id) { isDragging ->
-                        ClientItem(
-                            modifier = Modifier.draggableHandle(), client = client, user = user, event = event
-                        )
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            when(loader) {
+                Loader.LOAD -> {
+                    LazyColumn(state = lazyListState, verticalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.fillMaxSize()) {
+                        items(clients, key = { client -> client.id }) { client ->
+                            ReorderableItem(reorderableLazyListState, key = client.id) { isDragging ->
+                                ClientItem(
+                                    modifier = Modifier.draggableHandle(
+                                        onDragStopped = {
+                                            event(ClientEvent.ReorderClients(list = clients))
+                                        }), client = client, user = user, event = event
+                                )
+                            }
+                        }
                     }
+                }
+                Loader.EMPTY -> {
+                    Text(text = stringResource(R.string.empty_data), color = AppTheme.colors.onSecondary, fontSize = 18.sp)
+                }
+                Loader.LOADING -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .size(60.dp),
+                        strokeWidth = 2.dp,
+                        color = AppTheme.colors.onSecondary
+                    )
                 }
             }
         }

@@ -16,6 +16,5 @@ sealed class ProductEvent {
     data object DismissAddDialog : ProductEvent()
     data object DismissUpdateDialog : ProductEvent()
     data object ChangeIsActiveProduct : ProductEvent()
-    data class ReorderProducts(val fromIndex: Int, val toIndex: Int) : ProductEvent()
-
+    data class ReorderProducts(val list: List<ProductModel>) : ProductEvent()
 }

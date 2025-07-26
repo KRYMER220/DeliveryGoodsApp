@@ -1,6 +1,5 @@
 package ru.krymer.delivery.ui.screens.client
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,13 +15,10 @@ import ru.krymer.delivery.data.model.ClientModel
 import ru.krymer.delivery.data.model.RouteModel
 import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
 import ru.krymer.delivery.data.request.ClientRequest
-import ru.krymer.delivery.ui.screens.client.models.ClientAction
 import ru.krymer.delivery.ui.screens.client.models.ClientEvent
 import ru.krymer.delivery.ui.screens.client.models.ClientViewState
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.utills.Constants
-import ru.krymer.delivery.utills.convertToTextDate
-import ru.krymer.delivery.utills.getStartOfNextDay
 import javax.inject.Inject
 
 @HiltViewModel
@@ -70,36 +66,25 @@ class ClientViewModel @Inject constructor(
             is ClientEvent.DismissUpdateDialog -> dismissDialogs()
             is ClientEvent.DeleteClient -> deleteItemConfirmed()
             is ClientEvent.ReorderClients -> {
-                reorderClients(toIndex = event.toIndex, fromIndex = event.fromIndex)
+                reorderClients(list = event.list)
             }
         }
     }
 
-    private fun reorderClients(toIndex: Int, fromIndex: Int) {
+    private fun reorderClients(list: List<ClientModel>) {
         launchCoroutine {
-            val currentList = viewState.value.listClient.value.toMutableList()
-            if (fromIndex !in currentList.indices || toIndex !in currentList.indices) return@launchCoroutine
-
-            val movedItem = currentList[fromIndex]
-            val targetItem = currentList[toIndex]
-
-            val tempCounter = movedItem.counter
-            movedItem.counter = targetItem.counter
-            targetItem.counter = tempCounter
-
-            currentList.removeAt(fromIndex)
-            currentList.add(toIndex, movedItem)
-
-            updateViewState { it.copy(listClient = MutableStateFlow(currentList)) }
-            val updateMovedItem = movedItem.toRequestUpdateIndex(movedItem.counter)
-            val updateTargetItem = targetItem.toRequestUpdateIndex(targetItem.counter)
-
-            val responseMoved = clientApi.update(client = updateMovedItem)
-            val responseTarget = clientApi.update(client = updateTargetItem)
-
-            if (!responseMoved.success || !responseTarget.success) {
-                sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
-            }
+            val requests = list.map { client -> ClientRequest(
+                id = client.id,
+                idRoute = client.idRoute,
+                idFactory = client.idFactory,
+                name = client.name,
+                phone = client.phone,
+                cord = client.cord,
+                counter = client.counter,
+                arrears = client.arrears,
+                date = client.date
+            ) }
+            clientApi.moves(clients = requests)
         }
     }
 
@@ -109,23 +94,25 @@ class ClientViewModel @Inject constructor(
 
     fun getDataClients(route: RouteModel) {
         launchCoroutine {
+            updateViewState { it.copy(isLoadData = MutableStateFlow(false)) }
             val response = clientApi.getClientsByRoute(
                 idRoute = route.id
             )
             if (response.success) {
                 val clients = response.obj
-                if (clients != null) {
+                if (!clients.isNullOrEmpty()) {
                     updateViewState {
                         it.copy(
                             listClient = MutableStateFlow(clients),
-                            currentRoute = MutableStateFlow(route)
+                            currentRoute = MutableStateFlow(route),
+                            isLoadData = MutableStateFlow(true)
                         )
                     }
                 } else {
                     updateViewState {
                         it.copy(
                         listClient = MutableStateFlow(emptyList()),
-                        currentRoute = MutableStateFlow(route)
+                        currentRoute = MutableStateFlow(route), isLoadData = MutableStateFlow(true)
                     ) }
                 }
             } else {
@@ -140,19 +127,6 @@ class ClientViewModel @Inject constructor(
         }
     }
 
-    private fun ClientModel.toRequestUpdateIndex(index: Int): ClientRequest {
-        return ClientRequest(
-            id = id,
-            idRoute = idRoute,
-            idFactory = idFactory,
-            name = name,
-            phone = phone,
-            cord = cord,
-            counter = index,
-            arrears = arrears,
-            date = date
-        )
-    }
 
 
     private fun changeStateDropMenu(state: Boolean) {
@@ -187,9 +161,9 @@ class ClientViewModel @Inject constructor(
     private fun saveClient() {
         launchCoroutine {
             val name = viewState.value.name
-            val phone = viewState.value.phone
-            val arrears = if (viewState.value.arrears == "") 0.0 else viewState.value.arrears.toDouble()
-            val cords = viewState.value.cords
+            val phone = viewState.value.phone.trim()
+            val arrears = if (viewState.value.arrears == "") 0.0 else viewState.value.arrears.trim().toDouble()
+            val cords = viewState.value.cords.trim()
             val sizeList = if (viewState.value.listClient.value.isNotEmpty())  viewState.value.listClient.value.last().counter+1 else 0
             val route = viewState.value.currentRoute.value
             if (route != null) {
@@ -202,14 +176,8 @@ class ClientViewModel @Inject constructor(
                 )
                 val response = clientApi.add(client = clientRequest)
                 if (response.success) {
-                    val client = response.obj
-                    if (client != null) {
-                        val list =
-                            viewState.value.listClient.value.map { it.copy() }.toMutableList()
-                        list.add(client)
-                        updateViewState { it.copy(listClient = MutableStateFlow(list.sortedBy { c -> c.counter })) }
-                        dismissDialogs()
-                    }
+                    getDataClients(route = route)
+                    dismissDialogs()
                 } else {
                     sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
                 }
@@ -255,14 +223,11 @@ class ClientViewModel @Inject constructor(
     fun deleteItemConfirmed() {
         launchCoroutine {
             val client = viewState.value.clientDelete
-            if (client != null) {
+            val route = viewState.value.currentRoute.value
+            if (client != null && route != null) {
                 val response = clientApi.delete(id = client.id)
                 if (response.success) {
-                    val list =
-                        viewState.value.listClient.value.map { it.copy() }.toMutableList()
-                    val item = list.first { it.id == client.id }
-                    val listNew = list - item
-                    updateViewState { it.copy(listClient = MutableStateFlow(listNew.sortedBy { c -> c.counter })) }
+                    getDataClients(route = route)
                     dismissDialogs()
                 } else {
                     sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
@@ -296,9 +261,9 @@ class ClientViewModel @Inject constructor(
         launchCoroutine {
             val client = viewState.value.clientUpdate
             val name = viewState.value.name
-            val phone = viewState.value.phone
-            val arrears = if (viewState.value.arrears == "") 0.0 else viewState.value.arrears.toDouble()
-            val cords = viewState.value.cords
+            val phone = viewState.value.phone.trim()
+            val arrears = if (viewState.value.arrears == "") 0.0 else viewState.value.arrears.trim().toDouble()
+            val cords = viewState.value.cords.trim()
             val route = viewState.value.selectedRoute.value
             if (client != null && route != null) {
                 val request = ClientRequest(
@@ -314,23 +279,7 @@ class ClientViewModel @Inject constructor(
                 )
                 val response = clientApi.update(client = request)
                 if (response.success) {
-                    val list =
-                        viewState.value.listClient.value.map { it.copy() }.toMutableList()
-                    val index = list.indexOfFirst { it.id == client.id }
-                    if (client.idRoute == route.id) {
-                        val updatedClient = client.copy(
-                            name = name,
-                            phone = phone,
-                            arrears = arrears,
-                            cord = cords
-                        )
-                        list[index] = updatedClient
-                        updateViewState { it.copy(listClient = MutableStateFlow(list)) }
-                    } else {
-                        val item = list.first { it.id == client.id }
-                        val listNew = list - item
-                        updateViewState { it.copy(listClient = MutableStateFlow(listNew.sortedBy { c -> c.counter })) }
-                    }
+                    getDataClients(route = route)
                     dismissDialogs()
                 } else {
                     sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)

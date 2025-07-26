@@ -3,6 +3,7 @@ package ru.krymer.delivery.ui.components
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -17,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.ui.theme.AppTheme
@@ -40,13 +42,13 @@ fun CommonTextField(
 
 
     TextField(
-        modifier = modifier,
+        modifier = modifier.heightIn(min = 60.dp, max = Dp.Unspecified),
         value = value,
         placeholder = {
             if (!isFocused && value.isEmpty()) {
                 Text(
                     text = placeholder,
-                    style = AppTheme.typography.titleLarge,
+                    style = AppTheme.typography.titleSmall,
                     color = AppTheme.colors.onSecondary,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()

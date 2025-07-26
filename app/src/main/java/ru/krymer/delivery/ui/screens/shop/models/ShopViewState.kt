@@ -66,7 +66,6 @@ data class ShopViewState(
 
     val showDeleteDialog: Boolean = false,
     val typePay: MutableStateFlow<TypePayModel> = MutableStateFlow(TypePayModel.CASH),
-    val isShowTypePayChangeDialog: Boolean = false,
     val isShowDropDownTypePay: Boolean = false,
 
     val stateConfirmRequestDialog: Boolean = false,
@@ -84,5 +83,5 @@ data class ShopViewState(
     val isBonusState: Boolean = false,
 
     val isShowAnaliticTrip: Boolean = false,
-
+    val lightVersion: Boolean = false,
     )

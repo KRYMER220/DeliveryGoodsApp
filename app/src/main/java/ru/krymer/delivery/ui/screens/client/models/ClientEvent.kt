@@ -19,5 +19,5 @@ sealed class ClientEvent {
     data object DismissAddDialog : ClientEvent()
     data object DismissUpdateDialog : ClientEvent()
     data object DeleteClient : ClientEvent()
-    data class ReorderClients(val fromIndex: Int, val toIndex: Int) : ClientEvent()
+    data class ReorderClients(val list: List<ClientModel>) : ClientEvent()
 }
