@@ -939,6 +939,7 @@ class ShopViewModel @Inject constructor(
     private fun showDialogMillage() {
         updateViewState { it.copy(isShowMillageDialog = true) }
         getDataForCourier()
+        getListRequestsInfo()
     }
 
     private fun getDataForCourier() {
@@ -1003,8 +1004,9 @@ class ShopViewModel @Inject constructor(
                     )
                     val response = tripApi.update(request)
                     val newTrip = trip.copy(millage = millage)
+                    room.tripDao().updateTrip(newTrip)
+                    updateViewState { it.copy(currentTrip = MutableStateFlow(newTrip)) }
                     if (response.success) {
-                        updateViewState { it.copy(currentTrip = MutableStateFlow(newTrip)) }
                         getDataForCourier()
                     } else {
                         sharedViewModel.message(response.message)
@@ -1411,10 +1413,12 @@ class ShopViewModel @Inject constructor(
                             val getNoCash = viewState.value.getNoCash.value
                             val cash = if (getCash.isEmpty()) 0.0 else getCash.toDouble()
                             val noCash = if (getNoCash.isEmpty()) 0.0 else getNoCash.toDouble()
-
+                            val arrear = shop.arrears
                             val addSum = shop.addSum
                             val typePay = viewState.value.typePay.value
-
+                            val order = viewState.value.orderMoney.value
+                            val newArrear = (order + arrear + addSum) - (cash + noCash)
+                            updateClient(shop.copy(arrears = newArrear))
                             val dataShop = shop.copy(
                                 addSum = addSum,
                                 cash = cash,
@@ -1484,9 +1488,6 @@ class ShopViewModel @Inject constructor(
                     nameShop = nameShop
                 )
                 room.shopDao().updateShop(newShop.toLocal())
-                val order = viewState.value.orderMoney.value
-                val newArrear = (order + arrears + addSum) - (cash + noCash)
-                updateClient(newShop.copy(arrears = newArrear))
                 val list = viewState.value.listShop.value.map { it.copy() }.toMutableList()
                 val index = list.indexOfFirst { it.id == newShop.id }
                 list[index] = newShop

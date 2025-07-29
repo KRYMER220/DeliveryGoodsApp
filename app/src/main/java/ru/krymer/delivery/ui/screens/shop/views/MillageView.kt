@@ -51,6 +51,11 @@ fun MillageAndInfoView(
     Column(verticalArrangement = Arrangement.spacedBy(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             style = AppTheme.typography.titleMedium,
+            text = "Касса: $allMoney",
+            color = AppTheme.colors.onSecondary
+        )
+        Text(
+            style = AppTheme.typography.titleMedium,
             text = "Нал: $cash",
             color = AppTheme.colors.onSecondary
         )
@@ -61,12 +66,7 @@ fun MillageAndInfoView(
         )
         Text(
             style = AppTheme.typography.titleMedium,
-            text = "Общая: $allMoney",
-            color = AppTheme.colors.onSecondary
-        )
-        Text(
-            style = AppTheme.typography.titleMedium,
-            text = "Остаток: $remains",
+            text = "Зарплата(фикс): $salaryFix",
             color = AppTheme.colors.onSecondary
         )
         Text(
@@ -76,7 +76,7 @@ fun MillageAndInfoView(
         )
         Text(
             style = AppTheme.typography.titleMedium,
-            text = "Зарплата(фикс): $salaryFix",
+            text = "Остаток: $remains",
             color = AppTheme.colors.onSecondary
         )
         CommonTextField(

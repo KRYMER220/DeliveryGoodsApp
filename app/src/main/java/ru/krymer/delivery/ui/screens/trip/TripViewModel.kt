@@ -97,7 +97,6 @@ class TripViewModel @Inject constructor(
 
     init {
         getLocalData()
-        getAllDataTrips()
         loadListDropMenuRoutes()
         loadListDropMenuCouriers()
         getSettings()
@@ -211,7 +210,7 @@ class TripViewModel @Inject constructor(
         updateViewState { it.copy(isShowFilterDialog = !it.isShowFilterDialog) }
     }
 
-    private fun getLocalData() {
+    fun getLocalData() {
         launchCoroutine {
             val isFilterCourier = manager.getBooleanData(Constants.KEYS.COURIER_FILTER)
             isFilterCourier?.let { filter ->
@@ -223,7 +222,7 @@ class TripViewModel @Inject constructor(
             if (localTrips.isNotEmpty()) {
                 updateViewState { it.copy(trips = MutableStateFlow(localTrips), unFilteredTrips = MutableStateFlow(localTrips) ) }
             }
-
+            getAllDataTrips()
         }
     }
 
@@ -246,7 +245,7 @@ class TripViewModel @Inject constructor(
                     date = date,
                     courierId = courier.id,
                     routeId = route.id,
-                    salary = if (salary.isEmpty() || salary == "") courier.salary else salary.toDouble(),
+                    salary = if (salary == "") courier.salary else salary.toDouble(),
                     percentCourier = courier.percentSalary,
                     priceMillage = trip.priceMillage,
                     millage = trip.millage,
@@ -257,15 +256,17 @@ class TripViewModel @Inject constructor(
                 if (response.success) {
                     val list = viewState.value.trips.value.map { it.copy() }.toMutableList()
                     val index = list.indexOfFirst { it.id == trip.id }
-                    list[index] = trip.copy(
-                        nameRoute = route.name,
-                        nameCourier = courier.name,
-                        salary = courier.salary,
-                        percentCourier = courier.percentSalary,
-                        idRoute = route.id,
-                        date = date,
-                        idCourier = courier.id
+                    val newTrip = trip.copy(
+                        nameRoute = tripRequest.nameRoute,
+                        nameCourier = tripRequest.nameCourier,
+                        salary = tripRequest.salary,
+                        percentCourier = tripRequest.percentCourier,
+                        idRoute = tripRequest.routeId,
+                        date = tripRequest.date,
+                        idCourier = tripRequest.courierId
                     )
+                    database.tripDao().updateTrip(newTrip)
+                    list[index] = newTrip
                     updateViewState { it.copy(trips = MutableStateFlow(list.sortedByDescending { l -> l.date })) }
                     dismissUpdateDialog()
                 } else {

@@ -19,8 +19,7 @@ fun CommonInfoAlertDialog(
     Dialog(onDismissRequest = onDismissRequest) {
         Card(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 10.dp, end = 10.dp),
+                .fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             colors = CardColors(
                 containerColor = AppTheme.colors.onPrimary,
@@ -32,7 +31,7 @@ fun CommonInfoAlertDialog(
             Box(
                 modifier = modifier
                     .fillMaxWidth()
-                    .padding(10.dp)
+                    .padding(5.dp)
             ) {
                 content()
             }

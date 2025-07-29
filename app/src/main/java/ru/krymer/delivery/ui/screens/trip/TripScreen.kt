@@ -2,6 +2,7 @@ package ru.krymer.delivery.ui.screens.trip
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.hilt.navigation.compose.hiltViewModel
 import ru.krymer.delivery.data.model.TripModel
@@ -15,7 +16,9 @@ fun TripScreen(
 ) {
     user?.let {
         val viewModel = hiltViewModel<TripViewModel>()
-
+        LaunchedEffect(Unit) {
+            viewModel.getLocalData()
+        }
         TripView(
             popBackStack = popBackStack,
             user = user,

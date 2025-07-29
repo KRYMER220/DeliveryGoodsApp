@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -108,39 +110,43 @@ fun ShopView(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (!state.lightVersion) {
-                    Image(
-                        painter = painterResource(id = R.drawable.outline_autorenew_24),
-                        contentDescription = "update",
-                        modifier = Modifier.combinedClickable(onClick = {
-                            event(ShopEvent.UpdateShops)
-                        }, onLongClick = {
-                            event(ShopEvent.UpdateLocalShops)
-                        })
-                            .size(60.dp)
-                    )
-                }
+                Image(
+                    painter = painterResource(id = R.drawable.outline_autorenew_24),
+                    contentDescription = "update",
+                    modifier = Modifier.combinedClickable(onClick = {
+                        event(ShopEvent.UpdateShops)
+                    }, onLongClick = {
+                        event(ShopEvent.UpdateLocalShops)
+                    })
+                        .size(60.dp)
+                )
                 Image(
                     painter = painterResource(id = R.drawable.car_info),
                     contentDescription = "courier millage",
                     modifier = Modifier
-                        .clickable(onClick = {
-                            event(ShopEvent.OpenMillageDialog)
-                        })
-                        .size(60.dp)
-                )
-                Image(
-                    painter = painterResource(id = R.drawable.count),
-                    contentDescription = "product quantity",
-                    modifier = Modifier
-                        .padding(start = 10.dp, end = 10.dp)
                         .combinedClickable(onClick = {
-                            event(ShopEvent.ShowRequestsInfoDialog)
+                            event(ShopEvent.OpenMillageDialog)
                         }, onLongClick = {
-                            event(ShopEvent.ShowHideDialogAnalitic)
+                            if (state.lightVersion) {
+                                event(ShopEvent.ShowHideDialogAnalitic)
+                            }
                         })
                         .size(60.dp)
                 )
+                if (!state.lightVersion) {
+                    Image(
+                        painter = painterResource(id = R.drawable.count),
+                        contentDescription = "product quantity",
+                        modifier = Modifier
+                            .padding(start = 10.dp, end = 10.dp)
+                            .combinedClickable(onClick = {
+                                event(ShopEvent.ShowRequestsInfoDialog)
+                            }, onLongClick = {
+                                event(ShopEvent.ShowHideDialogAnalitic)
+                            })
+                            .size(60.dp)
+                    )
+                }
                 if (user.isModOrAdminOrSys()) {
                     Image(
                         painter = painterResource(id = R.drawable.add),
@@ -203,9 +209,115 @@ fun ShopView(
         CommonInfoAlertDialog(onDismissRequest = {
             event(ShopEvent.DismissMillageDialog)
         }, content = {
-            MillageAndInfoView(state = state, onMillageTFC = {
-                event(ShopEvent.ValueChangeMillage(millage = it))
-            }, event = event)
+            val count = state.allCountRequestsInfo.collectAsState().value
+            val exchange = state.allExchangeRequestsInfo.collectAsState().value
+            val requests = state.listInfoRequests.collectAsState().value
+            LazyColumn {
+                if (state.lightVersion) {
+                    item {
+                        Column(
+                            Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                style = AppTheme.typography.titleSmall,
+                                text = "Общее: $count",
+                                color = AppTheme.colors.onSecondary
+                            )
+                            Spacer(modifier = Modifier.height(5.dp))
+                            Text(
+                                style = AppTheme.typography.titleSmall,
+                                text = "Обмены: $exchange",
+                                color = AppTheme.colors.onSecondary
+                            )
+                        }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(5.dp)
+                        ) {
+                            Spacer(
+                                modifier = Modifier.weight(0.2f),
+                            )
+                            Text(
+                                style = AppTheme.typography.bodySmall,
+                                text = "Цена",
+                                color = AppTheme.colors.onSecondary,
+                                modifier = Modifier.weight(0.2f),
+                                textAlign = TextAlign.Center,
+                            )
+                            if (!state.lightVersion) {
+                                Text(
+                                    style = AppTheme.typography.bodySmall,
+                                    text = "Бонус",
+                                    color = AppTheme.colors.onSecondary,
+                                    modifier = Modifier.weight(0.2f),
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
+                            Text(
+                                style = AppTheme.typography.bodySmall,
+                                text = "Заявка",
+                                color = AppTheme.colors.onSecondary,
+                                modifier = Modifier.weight(0.2f),
+                                textAlign = TextAlign.Center,
+                            )
+                            Text(
+                                style = AppTheme.typography.bodySmall,
+                                text = "Возврат",
+                                color = AppTheme.colors.onSecondary,
+                                modifier = Modifier.weight(0.2f),
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                    }
+                    if (requests.isNotEmpty()) {
+                        items(requests) { product ->
+                            InfoContentProductItem(product = product, state = state)
+                        }
+                    } else {
+                        item {
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier
+                                        .size(30.dp)
+                                        .align(Alignment.Center),
+                                    strokeWidth = 2.dp,
+                                    color = AppTheme.colors.onSecondary
+                                )
+                            }
+                        }
+                    }
+                }
+                item {
+                    if (!state.lightVersion) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.folow),
+                                contentDescription = "clip",
+                                modifier = Modifier
+                                    .clickable(onClick = {
+                                        event(ShopEvent.CopyInfoData(context = context))
+                                    })
+                                    .size(40.dp)
+                            )
+                        }
+                    }
+                }
+
+                item {
+                    Spacer(modifier = Modifier.fillMaxWidth().height(10.dp))
+                }
+                item {
+                    MillageAndInfoView(state = state, onMillageTFC = {
+                        event(ShopEvent.ValueChangeMillage(millage = it))
+                    }, event = event)
+                }
+            }
         })
     }
 
