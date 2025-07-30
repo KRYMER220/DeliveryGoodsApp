@@ -15,6 +15,7 @@ import ru.krymer.delivery.di.TokenManager
 import ru.krymer.delivery.data.api.UserApi
 import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
 import ru.krymer.delivery.data.request.SignInRequest
+import ru.krymer.delivery.di.AppPreferencesManager
 import ru.krymer.delivery.ui.screens.login.models.LoginEvent
 import ru.krymer.delivery.ui.screens.login.models.LoginSubState
 import ru.krymer.delivery.ui.screens.login.models.LoginViewState
@@ -26,7 +27,8 @@ import javax.inject.Inject
 class LoginViewModel @Inject constructor(
     private val userApi: UserApi,
     private val tokenManager: TokenManager,
-    private val sharedViewModel: SharedViewModel
+    private val sharedViewModel: SharedViewModel,
+    private val pref: AppPreferencesManager
 ) : ViewModel(), EventHandler<LoginEvent> {
 
     private val _viewState = MutableStateFlow(LoginViewState())
@@ -77,6 +79,7 @@ class LoginViewModel @Inject constructor(
                 val tokens = tokenResponse.obj
                 if (tokens != null) {
                     tokenManager.saveAccessToken(tokens.accessToken)
+                    pref.saveBoolean(key = Constants.KEYS.AUTH, data = true)
                     updateViewState { it.copy(isLoginProgress = false) }
                     sharedViewModel.initAuth()
                 } else {

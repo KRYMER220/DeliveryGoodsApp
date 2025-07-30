@@ -13,7 +13,7 @@ import ru.krymer.delivery.data.model.utilModel.MessageModel
 
 data class SharedViewState(
     val user: MutableStateFlow<UserModel?> = MutableStateFlow(null),
-    val factory: FactoryModel? = null,
+    val factory: MutableStateFlow<FactoryModel?> = MutableStateFlow(null),
     val isUserBlocked: Boolean = false,
     val listMessage: MutableStateFlow<List<MessageModel>> = MutableStateFlow(listOf()),
     val isShowSettings: MutableStateFlow<Boolean> = MutableStateFlow(false),

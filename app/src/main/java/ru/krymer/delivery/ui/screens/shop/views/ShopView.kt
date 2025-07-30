@@ -111,16 +111,6 @@ fun ShopView(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.outline_autorenew_24),
-                    contentDescription = "update",
-                    modifier = Modifier.combinedClickable(onClick = {
-                        event(ShopEvent.UpdateShops)
-                    }, onLongClick = {
-                        event(ShopEvent.UpdateLocalShops)
-                    })
-                        .size(60.dp)
-                )
-                Image(
                     painter = painterResource(id = R.drawable.car_info),
                     contentDescription = "courier millage",
                     modifier = Modifier

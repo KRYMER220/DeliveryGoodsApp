@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -17,7 +18,6 @@ import ru.krymer.delivery.common.EventHandler
 import ru.krymer.delivery.data.api.FactoryApi
 import ru.krymer.delivery.data.api.UserApi
 import ru.krymer.delivery.data.model.FactoryModel
-import ru.krymer.delivery.data.model.user.getStringByRole
 import ru.krymer.delivery.data.model.utilModel.MessageModel
 import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
 import ru.krymer.delivery.di.AppPreferencesManager
@@ -96,11 +96,10 @@ class SharedViewModel @Inject constructor(
         updateViewState {
             it.copy(
                 user = MutableStateFlow(null),
-                factory = null,
+                factory = MutableStateFlow(null),
                 isUserBlocked = false,
             )
         }
-        message(Constants.ERROR.AUTH)
     }
 
     fun initAuth() {
@@ -108,17 +107,18 @@ class SharedViewModel @Inject constructor(
             val token = tokenManager.getAccessToken()
             val isAuth = manager.getBooleanData(Constants.KEYS.AUTH)
             if (token != null) {
-                withContext(Dispatchers.Main) {
-                    if (isAuth != false && isAuth != null) {
+                if (isAuth != false) {
+                    withContext(Dispatchers.Main) {
                         backStack.clear()
                         backStack.add(Screens.Menu)
-                        checkValidityToken(token)
-                    } else {
-                        checkValidityToken(token)
+                        localAuth(token = token)
                     }
+                } else {
+                    checkValidityToken(token)
                 }
             } else {
                 withContext(Dispatchers.Main) {
+                    clearTokenData()
                     backStack.clear()
                     backStack.add(Screens.Auth)
                 }
@@ -126,23 +126,30 @@ class SharedViewModel @Inject constructor(
         }
     }
 
+    private fun localAuth(token: String) {
+        launchCoroutine {
+            val user = database.userDao().getUser()
+            user?.let {
+                updateViewState { it.copy(user = MutableStateFlow(user)) }
+                checkValidityToken(token = token)
+            } ?: run {
+                checkValidityToken(token = token)
+            }
+        }
+    }
 
     suspend fun logout() {
         val response = userApi.logout()
-        if (response.success) {
-            val user = viewState.value.user.value
-            val factory = viewState.value.factory
-            if (user != null && factory != null) {
-                database.userDao().deleteUser(user)
-                database.factoryDao().deleteFactory(factory)
-            }
-            withContext(Dispatchers.Main) {
-                backStack.clear()
-                backStack.add(Screens.Auth)
-            }
+        withContext(Dispatchers.Main) {
+            database.factoryDao().deleteFactory()
+            database.userDao().delete()
+            backStack.clear()
+            backStack.add(Screens.Auth)
             clearTokenData()
-        } else {
-            message(response.message, type = TypeMessageModel.ERROR)
+        }
+        if (!response.success) {
+            delay(5000)
+            logout()
         }
     }
 
@@ -169,16 +176,15 @@ class SharedViewModel @Inject constructor(
         }
     }
 
-    private fun checkValidityToken(accessToken: String) {
+    private fun checkValidityToken(token: String) {
         launchCoroutine {
             val response = withContext(Dispatchers.IO) {
-                userApi.refreshToken(token = Constants.TOKEN.TOKEN_TYPE + accessToken)
+                userApi.refreshToken(token = Constants.TOKEN.TOKEN_TYPE + token)
             }
             if (response.success) {
                 val tokens = response.obj
                 if (tokens != null) {
                     tokenManager.saveAccessToken(tokens.accessToken)
-                    manager.saveBoolean(Constants.KEYS.AUTH, true)
                     loadUserData()
                     withContext(Dispatchers.Main) {
                         backStack.clear()
@@ -186,6 +192,8 @@ class SharedViewModel @Inject constructor(
                     }
                 }
             } else {
+                delay(7000)
+                checkValidityToken(token = token)
                 message(response.message, type = TypeMessageModel.ERROR)
             }
         }
@@ -196,7 +204,7 @@ class SharedViewModel @Inject constructor(
             val response = userApi.getData()
             if (response.success) {
                 val user = response.obj
-                if (user != null) {
+                user?.let {
                     if (user.isBan) updateViewState { it.copy(isUserBlocked = true) }
                     else {
                         updateViewState {
@@ -204,7 +212,7 @@ class SharedViewModel @Inject constructor(
                                 user = MutableStateFlow(user), isUserBlocked = false
                             )
                         }
-                        val localUser = database.userDao().getUserById(user.id)
+                        val localUser = database.userDao().getUser()
                         if (localUser != null) {
                             database.userDao().updateUser(user = user)
                         } else {
@@ -212,6 +220,8 @@ class SharedViewModel @Inject constructor(
                         }
                         loadFactoryData(idFactory = user.idFactory)
                     }
+                } ?: run {
+                    loadUserData()
                 }
             } else {
                 message(response.message, type = TypeMessageModel.ERROR)
@@ -225,7 +235,7 @@ class SharedViewModel @Inject constructor(
                 factoryApi.getFactoryById(id = idFactory)
             if (response.success) {
                 val factory = response.obj
-                if (factory != null) {
+                factory?.let {
                     val localFactory = database.factoryDao().getFactoryById(factory.id)
                     if (localFactory != null) {
                         database.factoryDao().updateFactory(factory = factory)
@@ -234,17 +244,23 @@ class SharedViewModel @Inject constructor(
                     }
                     updateViewState {
                         it.copy(
-                            factory = factory
+                            factory = MutableStateFlow(factory)
                         )
                     }
+                } ?: run {
+                    delay(7000)
+                    loadFactoryData(idFactory = idFactory)
                 }
             } else {
+                database.factoryDao().deleteFactory()
+                delay(7000)
+                loadFactoryData(idFactory = idFactory)
                 message(response.message, type = TypeMessageModel.ERROR)
             }
         }
     }
 
-    fun updateFactory(factoryModel: FactoryModel) {
-        updateViewState { it.copy(factory = factoryModel) }
+    fun updateFactory(factory: FactoryModel) {
+        updateViewState { it.copy(factory = MutableStateFlow(factory)) }
     }
 }

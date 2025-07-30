@@ -72,7 +72,6 @@ class TripViewModel @Inject constructor(
             is TripEvent.OpenHideDatePickerForAddTrip -> changeStateDropMenuDatePicker()
             is TripEvent.ChangeDate -> changeDate(event.date)
             is TripEvent.UpdateTrip -> updateTrip()
-            is TripEvent.OpenTrip -> shopsItemClicked(event.trip)
             is TripEvent.TripActionDefault -> tripActionInvoked()
             is TripEvent.DismissDeleteDialog -> dismissDeleteDialog()
             is TripEvent.DismissUpdateDialog -> dismissUpdateDialog()
@@ -114,7 +113,7 @@ class TripViewModel @Inject constructor(
                 val isFilterCourier = viewState.value.checkBoxIsFilterCourier
                 manager.saveBoolean(key = Constants.KEYS.COURIER_FILTER, isFilterCourier)
                 manager.getBooleanData(key = Constants.KEYS.COURIER_FILTER)
-                getAllDataTrips()
+                getLocalData()
             }
             switcherFilterDialog()
         }
@@ -210,19 +209,38 @@ class TripViewModel @Inject constructor(
         updateViewState { it.copy(isShowFilterDialog = !it.isShowFilterDialog) }
     }
 
-    fun getLocalData() {
+    private fun getLocalData() {
         launchCoroutine {
-            val isFilterCourier = manager.getBooleanData(Constants.KEYS.COURIER_FILTER)
-            isFilterCourier?.let { filter ->
-                updateViewState {
-                    it.copy(checkBoxIsFilterCourier = filter)
+            val isFilterCourier = manager.getBooleanData(Constants.KEYS.COURIER_FILTER) == true
+            val user = sharedViewModel.viewState.value.user.value
+            user?.let {
+                if (!isFilterCourier) {
+                    val localTrips = database.tripDao().getTrips().sortedByDescending { it.date }
+                    if (localTrips.isNotEmpty()) {
+                        updateViewState {
+                            it.copy(
+                                trips = MutableStateFlow(localTrips),
+                                unFilteredTrips = MutableStateFlow(localTrips),
+                                checkBoxIsFilterCourier = false
+                            )
+                        }
+                    }
+                } else {
+                    val localTrips =
+                        database.tripDao().getTrips().filter { it.idCourier == user.id }
+                            .sortedByDescending { it.date }
+                    if (localTrips.isNotEmpty()) {
+                        updateViewState {
+                            it.copy(
+                                trips = MutableStateFlow(localTrips),
+                                unFilteredTrips = MutableStateFlow(localTrips),
+                                checkBoxIsFilterCourier = true
+                            )
+                        }
+                    }
                 }
+                getAllDataTrips()
             }
-            val localTrips = database.tripDao().getTrips().sortedByDescending { it.date }
-            if (localTrips.isNotEmpty()) {
-                updateViewState { it.copy(trips = MutableStateFlow(localTrips), unFilteredTrips = MutableStateFlow(localTrips) ) }
-            }
-            getAllDataTrips()
         }
     }
 
@@ -265,7 +283,6 @@ class TripViewModel @Inject constructor(
                         date = tripRequest.date,
                         idCourier = tripRequest.courierId
                     )
-                    database.tripDao().updateTrip(newTrip)
                     list[index] = newTrip
                     updateViewState { it.copy(trips = MutableStateFlow(list.sortedByDescending { l -> l.date })) }
                     dismissUpdateDialog()
@@ -310,7 +327,7 @@ class TripViewModel @Inject constructor(
 
     private fun saveTrip() {
         launchCoroutine {
-            val factory = sharedViewModel.viewState.value.factory
+            val factory = sharedViewModel.viewState.value.factory.value
             val curRoute = viewState.value.currentRoute
             val curCourier = viewState.value.currentCourier
             val date = viewState.value.currentDate
@@ -469,9 +486,5 @@ class TripViewModel @Inject constructor(
                 currentCourier = viewState.value.listCourier.value[0],
             )
         }
-    }
-
-    private fun shopsItemClicked(trip: TripModel) {
-
     }
 }
