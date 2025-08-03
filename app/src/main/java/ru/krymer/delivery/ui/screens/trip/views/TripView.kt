@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -44,8 +43,6 @@ import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.ui.components.CommonAlertAddDialog
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
-import ru.krymer.delivery.ui.navigation.NavigationTree
-import ru.krymer.delivery.ui.screens.trip.models.TripAction
 import ru.krymer.delivery.ui.screens.trip.models.TripEvent
 import ru.krymer.delivery.ui.screens.trip.models.TripViewState
 import ru.krymer.delivery.ui.theme.AppTheme
@@ -81,12 +78,14 @@ fun TripView(
         }
     }
 
-    LaunchedEffect(trips) {
-        if (trips.isNotEmpty() && isFirstLoad) {
-            isFirstLoad = false
-            coroutineScope.launch {
-                delay(300)
-                lazyListState.animateScrollToItem(1)
+    if (!state.lightVersion) {
+        LaunchedEffect(trips) {
+            if (trips.isNotEmpty() && isFirstLoad) {
+                coroutineScope.launch {
+                    isFirstLoad = false
+                    delay(500)
+                    lazyListState.animateScrollToItem(1)
+                }
             }
         }
     }
@@ -152,12 +151,12 @@ fun TripView(
             items(items = trips) { trip ->
                 TripItem(
                     trip = trip, updateTrip = {
-                    if (user.isSysOrAdmin()) event(TripEvent.ShowUpdateDialog(it))
-                }, deleteTrip = {
-                    event(TripEvent.ShowDeleteDialog(trip = it))
-                }, openTrip = {
-                    openTrip(it)
-                }, user = user
+                        if (user.isSysOrAdmin()) event(TripEvent.ShowUpdateDialog(it))
+                    }, deleteTrip = {
+                        event(TripEvent.ShowDeleteDialog(trip = it))
+                    }, openTrip = {
+                        openTrip(it)
+                    }, user = user
                 )
                 Spacer(modifier = Modifier.height(3.dp))
             }
@@ -174,6 +173,7 @@ fun TripView(
                 }
             }
         }
+
     }
 
     if (state.showDeleteDialog) {

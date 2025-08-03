@@ -19,6 +19,5 @@ data class TripModel(
     val idCourier: Long,
     val nameCourier: String,
     val nameRoute: String,
-    val idRoute: Long,
-    val isLoaded: Boolean,
+    val idRoute: Long
 )

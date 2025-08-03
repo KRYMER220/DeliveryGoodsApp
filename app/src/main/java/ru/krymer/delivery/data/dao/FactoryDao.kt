@@ -14,8 +14,8 @@ interface FactoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFactory(factory: FactoryModel)
 
-    @Query("DELETE FROM factory")
-    suspend fun deleteFactory()
+    @Delete
+    suspend fun deleteFactory(factory: FactoryModel)
 
     @Update
     suspend fun updateFactory(factory: FactoryModel)

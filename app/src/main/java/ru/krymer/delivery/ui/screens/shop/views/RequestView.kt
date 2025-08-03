@@ -82,7 +82,9 @@ fun AlertDialogRequestShop(
             noCash = stateNoCash
         }
 
-        Column(modifier = Modifier.fillMaxSize().padding(5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(modifier = Modifier
+            .fillMaxSize()
+            .padding(5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(modifier = Modifier.height(20.dp))
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -100,7 +102,9 @@ fun AlertDialogRequestShop(
                         .weight(0.7f)
                         .padding(5.dp)
                 )
-                Row(modifier = Modifier.weight(0.3f).padding(5.dp), horizontalArrangement = Arrangement.End) {
+                Row(modifier = Modifier
+                    .weight(0.3f)
+                    .padding(5.dp), horizontalArrangement = Arrangement.End) {
                     Row(
                         modifier = Modifier.clickable { isExpandedMenu = !isExpandedMenu },
                     ) {
@@ -238,7 +242,11 @@ fun AlertDialogRequestShop(
                             key = { request -> request.id }
                         ) { request ->
                             ProductRequestItem(
-                                request = request, event = event, shop = shop, user = user
+                                request = request,
+                                event = event,
+                                shop = shop,
+                                user = user,
+                                state = state
                             )
                         }
                         item {
@@ -431,7 +439,8 @@ fun AlertDialogRequestShop(
                                                     }
                                                 }
                                             },
-                                            modifier = Modifier.weight(1f, fill = false)
+                                            modifier = Modifier
+                                                .weight(1f, fill = false)
                                                 .padding(5.dp),
                                             keyboardOptions = KeyboardOptions(
                                                 keyboardType = KeyboardType.Number, imeAction = ImeAction.Done
@@ -480,7 +489,8 @@ fun AlertDialogRequestShop(
                                                     }
                                                 }
                                             },
-                                            modifier = Modifier.weight(1f, fill = false)
+                                            modifier = Modifier
+                                                .weight(1f, fill = false)
                                                 .padding(5.dp),
                                             keyboardOptions = KeyboardOptions(
                                                 keyboardType = KeyboardType.Number, imeAction = ImeAction.Done
@@ -509,13 +519,18 @@ fun AlertDialogRequestShop(
                                 }
                             }
                             Spacer(modifier = Modifier.height(10.dp))
-                            Text(modifier = Modifier.fillMaxWidth().border(
-                                width = 1.dp,
-                                color = AppTheme.colors.secondary,
-                                shape = RoundedCornerShape(10.dp)
-                            ).height(40.dp).clickable(onClick = {
-                                event(ShopEvent.ChangeTypePay)
-                            }).wrapContentHeight(Alignment.CenterVertically), text = when(typePayState) {
+                            Text(modifier = Modifier
+                                .fillMaxWidth()
+                                .border(
+                                    width = 1.dp,
+                                    color = AppTheme.colors.secondary,
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                                .height(40.dp)
+                                .clickable(onClick = {
+                                    event(ShopEvent.ChangeTypePay)
+                                })
+                                .wrapContentHeight(Alignment.CenterVertically), text = when(typePayState) {
                                 TypePayModel.CASH -> "Нал"
                                 TypePayModel.NO_CASH -> "Без/нал"
                                 TypePayModel.ANOTHER -> "Смешаный"
@@ -550,9 +565,9 @@ fun ProductRequestItem(
     request: RequestModel,
     event: (ShopEvent) -> Unit,
     shop: ShopModel,
-    user: UserModel
+    user: UserModel,
+    state: ShopViewState
 ) {
-
 
     var count by remember {
         mutableStateOf(request.count.toString())
@@ -586,7 +601,10 @@ fun ProductRequestItem(
                         count = it.toString(), item = request
                     )
                 )
-            }, text = "Заявка:\n" + request.name, value = count
+                },
+                text = "Заявка:\n" + request.name,
+                value = count,
+                isLightVersion = state.lightVersion
             )
         }
         if (editExchange) {
@@ -602,7 +620,10 @@ fun ProductRequestItem(
                         exchange = it.toString(), item = request
                     )
                 )
-            }, text = "Возврат:\n" + request.name, value = countExchange
+            },
+                text = "Возврат:\n" + request.name,
+                value = countExchange,
+                isLightVersion = state.lightVersion
             )
         }
         if (editBonus) {
@@ -618,7 +639,10 @@ fun ProductRequestItem(
                         bonus = it.toString(), item = request
                     )
                 )
-            }, text = "Бонус:\n" + request.name, value = countBonus
+            },
+                text = "Бонус:\n" + request.name,
+                value = countBonus,
+                isLightVersion = state.lightVersion
             )
         }
     }

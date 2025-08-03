@@ -16,6 +16,9 @@ fun TripScreen(
 ) {
     user?.let {
         val viewModel = hiltViewModel<TripViewModel>()
+        LaunchedEffect(Unit) {
+            viewModel.getLocalData()
+        }
         TripView(
             popBackStack = popBackStack,
             user = user,

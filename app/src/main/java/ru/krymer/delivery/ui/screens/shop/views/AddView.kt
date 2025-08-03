@@ -167,7 +167,7 @@ fun AddShopAndRequestView(
                     )
                 },
                     onChangeStatus = { event(ShopEvent.ChangeAddStatusProduct(it)) },
-                    stateBonus = state.isBonusState
+                    stateBonus = state.isBonusState, state = state
                 )
             }
 
@@ -284,7 +284,9 @@ fun AddRequestView(
                             )
                         )
                     },
-                        onChangeStatus = { event(ShopEvent.ChangeAddStatusProduct(it)) })
+                        onChangeStatus = { event(ShopEvent.ChangeAddStatusProduct(it)) },
+                        state = state
+                    )
                 }
             }
         }
@@ -307,7 +309,8 @@ fun ProductAddShopWithOrderItem(
     onVCCount: (String) -> Unit,
     onVCCountBonus: (String) -> Unit,
     onChangeStatus: (ProductModel) -> Unit,
-    stateBonus: Boolean = false
+    stateBonus: Boolean = false,
+    state: ShopViewState
 ) {
 
     var count by rememberSaveable {
@@ -332,7 +335,7 @@ fun ProductAddShopWithOrderItem(
                 editCount = false
                 count = it.toString()
                 onVCCount(count)
-            }, text = "Заявка: " + product.name, value = count
+            }, text = "Заявка: " + product.name, value = count, isLightVersion = state.lightVersion
             )
         }
         if (editBonus) {
@@ -344,7 +347,10 @@ fun ProductAddShopWithOrderItem(
                 editBonus = false
                 countBonus = it.toString()
                 onVCCountBonus(countBonus)
-            }, text = "Бонус: " + product.name, value = countBonus
+            },
+                text = "Бонус: " + product.name,
+                value = countBonus,
+                isLightVersion = state.lightVersion
             )
         }
     }

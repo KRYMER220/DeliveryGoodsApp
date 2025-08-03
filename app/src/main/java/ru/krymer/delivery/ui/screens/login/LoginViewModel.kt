@@ -11,11 +11,17 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ru.krymer.delivery.common.EventHandler
-import ru.krymer.delivery.di.TokenManager
 import ru.krymer.delivery.data.api.UserApi
 import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
 import ru.krymer.delivery.data.request.SignInRequest
-import ru.krymer.delivery.di.AppPreferencesManager
+<<<<<<< HEAD
+<<<<<<< HEAD
+import ru.krymer.delivery.di.SecureDataStore
+import ru.krymer.delivery.di.putBoolean
+=======
+>>>>>>> parent of 359f480 (fix)
+=======
+>>>>>>> parent of 359f480 (fix)
 import ru.krymer.delivery.ui.screens.login.models.LoginEvent
 import ru.krymer.delivery.ui.screens.login.models.LoginSubState
 import ru.krymer.delivery.ui.screens.login.models.LoginViewState
@@ -26,9 +32,18 @@ import javax.inject.Inject
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val userApi: UserApi,
-    private val tokenManager: TokenManager,
+<<<<<<< HEAD
+<<<<<<< HEAD
+    private val secureDataStore: SecureDataStore,
     private val sharedViewModel: SharedViewModel,
-    private val pref: AppPreferencesManager
+=======
+    private val tokenManager: TokenManager,
+    private val sharedViewModel: SharedViewModel
+>>>>>>> parent of 359f480 (fix)
+=======
+    private val tokenManager: TokenManager,
+    private val sharedViewModel: SharedViewModel
+>>>>>>> parent of 359f480 (fix)
 ) : ViewModel(), EventHandler<LoginEvent> {
 
     private val _viewState = MutableStateFlow(LoginViewState())
@@ -78,8 +93,15 @@ class LoginViewModel @Inject constructor(
             if (tokenResponse.success) {
                 val tokens = tokenResponse.obj
                 if (tokens != null) {
+<<<<<<< HEAD
+                    secureDataStore.putString(Constants.TOKEN.ACCESS, tokens.accessToken)
+                    secureDataStore.putBoolean(Constants.KEYS.AUTH, true)
+=======
                     tokenManager.saveAccessToken(tokens.accessToken)
-                    pref.saveBoolean(key = Constants.KEYS.AUTH, data = true)
+<<<<<<< HEAD
+>>>>>>> parent of 359f480 (fix)
+=======
+>>>>>>> parent of 359f480 (fix)
                     updateViewState { it.copy(isLoginProgress = false) }
                     sharedViewModel.initAuth()
                 } else {

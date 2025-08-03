@@ -7,8 +7,6 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import ru.krymer.delivery.data.model.ShopLocalModel
-import ru.krymer.delivery.data.model.ShopModel
-import ru.krymer.delivery.data.model.utilModel.getStringByTypePay
 
 @Dao
 interface ShopDao {
@@ -22,9 +20,9 @@ interface ShopDao {
     suspend fun updateShop(shop: ShopLocalModel)
 
     @Query("SELECT * FROM shop WHERE idTrip = :idTrip")
-    suspend fun getShops(idTrip: Long): List<ShopLocalModel?>
+    suspend fun getShops(idTrip: Long): List<ShopLocalModel>
 
     @Query("SELECT * FROM shop WHERE id = :id")
-    suspend fun getShopsById(id: Long): List<ShopLocalModel?>
+    suspend fun getShopsById(id: Long): List<ShopLocalModel>
 }
 

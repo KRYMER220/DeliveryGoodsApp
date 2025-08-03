@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -18,10 +17,11 @@ import ru.krymer.delivery.common.EventHandler
 import ru.krymer.delivery.data.api.FactoryApi
 import ru.krymer.delivery.data.api.UserApi
 import ru.krymer.delivery.data.model.FactoryModel
+import ru.krymer.delivery.data.model.user.getStringByRole
 import ru.krymer.delivery.data.model.utilModel.MessageModel
 import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
-import ru.krymer.delivery.di.AppPreferencesManager
-import ru.krymer.delivery.di.TokenManager
+import ru.krymer.delivery.di.SecureDataStore
+import ru.krymer.delivery.di.getBoolean
 import ru.krymer.delivery.ui.screens.shared.models.SharedEvents
 import ru.krymer.delivery.ui.screens.shared.models.SharedViewState
 import ru.krymer.delivery.utills.Constants
@@ -30,10 +30,8 @@ import javax.inject.Inject
 @HiltViewModel
 class SharedViewModel @Inject constructor(
     private val userApi: UserApi,
-    private val tokenManager: TokenManager,
     private val factoryApi: FactoryApi,
-    private val database: AppDatabase,
-    private val manager: AppPreferencesManager
+    private val database: AppDatabase, private val secureDataStore: SecureDataStore
 ) : ViewModel(), EventHandler<SharedEvents> {
 
     var backStack = mutableStateListOf<Screens>(Screens.Splash)
@@ -50,14 +48,18 @@ class SharedViewModel @Inject constructor(
     }
 
     private fun changeFontSize(index: Int) {
-        updateViewState { it.copy(fontSizeIndex = index) }
-        manager.saveInt(Constants.KEYS.FONT_SIZE, index)
+        launchCoroutine {
+            updateViewState { it.copy(fontSizeIndex = index) }
+            secureDataStore.putString(Constants.KEYS.FONT_SIZE, index.toString())
+        }
     }
 
     private fun changeSettings() {
-        updateViewState { it.copy(lightVersion = !it.lightVersion) }
-        val settingsValue = _viewState.value.lightVersion
-        manager.saveBoolean(key = Constants.KEYS.SETTINGS, data = settingsValue)
+        launchCoroutine {
+            updateViewState { it.copy(lightVersion = !it.lightVersion) }
+            val settingsValue = _viewState.value.lightVersion
+            secureDataStore.putString(Constants.KEYS.SETTINGS, settingsValue.toString())
+        }
     }
 
     private fun showHideSettings() {
@@ -84,41 +86,61 @@ class SharedViewModel @Inject constructor(
 
     init {
         initAuth()
-        val settings = manager.getBooleanData(Constants.KEYS.SETTINGS)
-        val savedSize = manager.getIntData(Constants.KEYS.FONT_SIZE) ?: 2
-        if (settings != null) {
-            updateViewState { it.copy(lightVersion = settings,fontSizeIndex = savedSize) }
+        initSettings()
+    }
+
+    private fun initSettings() {
+        launchCoroutine {
+            val settings =
+                secureDataStore.getString(Constants.KEYS.SETTINGS)?.toBooleanStrictOrNull()
+            val savedSize = secureDataStore.getString(Constants.KEYS.FONT_SIZE)?.toIntOrNull() ?: 2
+            if (settings != null) {
+                updateViewState { it.copy(lightVersion = settings, fontSizeIndex = savedSize) }
+            }
         }
     }
 
     fun clearTokenData() {
+<<<<<<< HEAD
+        launchCoroutine {
+            secureDataStore.clear()
+            updateViewState {
+                it.copy(
+                    user = MutableStateFlow(null),
+                    factory = MutableStateFlow(null),
+                    isUserBlocked = false,
+                )
+            }
+=======
         tokenManager.deleteToken()
         updateViewState {
             it.copy(
                 user = MutableStateFlow(null),
-                factory = MutableStateFlow(null),
+                factory = null,
                 isUserBlocked = false,
             )
+>>>>>>> parent of 359f480 (fix)
         }
+        message(Constants.ERROR.AUTH)
     }
 
     fun initAuth() {
         launchCoroutine {
-            val token = tokenManager.getAccessToken()
-            val isAuth = manager.getBooleanData(Constants.KEYS.AUTH)
+            val token = secureDataStore.getString(Constants.TOKEN.ACCESS)
+            val isAuth = secureDataStore.getBoolean(Constants.KEYS.AUTH) == true
+
             if (token != null) {
-                if (isAuth != false) {
-                    withContext(Dispatchers.Main) {
+                withContext(Dispatchers.Main) {
+                    if (isAuth != false && isAuth != null) {
                         backStack.clear()
                         backStack.add(Screens.Menu)
-                        localAuth(token = token)
+                        checkValidityToken(token)
+                    } else {
+                        checkValidityToken(token)
                     }
-                } else {
-                    checkValidityToken(token)
                 }
             } else {
                 withContext(Dispatchers.Main) {
-                    clearTokenData()
                     backStack.clear()
                     backStack.add(Screens.Auth)
                 }
@@ -126,30 +148,23 @@ class SharedViewModel @Inject constructor(
         }
     }
 
-    private fun localAuth(token: String) {
-        launchCoroutine {
-            val user = database.userDao().getUser()
-            user?.let {
-                updateViewState { it.copy(user = MutableStateFlow(user)) }
-                checkValidityToken(token = token)
-            } ?: run {
-                checkValidityToken(token = token)
-            }
-        }
-    }
 
     suspend fun logout() {
         val response = userApi.logout()
-        withContext(Dispatchers.Main) {
-            database.factoryDao().deleteFactory()
-            database.userDao().delete()
-            backStack.clear()
-            backStack.add(Screens.Auth)
+        if (response.success) {
+            val user = viewState.value.user.value
+            val factory = viewState.value.factory
+            if (user != null && factory != null) {
+                database.userDao().deleteUser(user)
+                database.factoryDao().deleteFactory(factory)
+            }
+            withContext(Dispatchers.Main) {
+                backStack.clear()
+                backStack.add(Screens.Auth)
+            }
             clearTokenData()
-        }
-        if (!response.success) {
-            delay(5000)
-            logout()
+        } else {
+            message(response.message, type = TypeMessageModel.ERROR)
         }
     }
 
@@ -176,15 +191,23 @@ class SharedViewModel @Inject constructor(
         }
     }
 
-    private fun checkValidityToken(token: String) {
+    private fun checkValidityToken(accessToken: String) {
         launchCoroutine {
             val response = withContext(Dispatchers.IO) {
-                userApi.refreshToken(token = Constants.TOKEN.TOKEN_TYPE + token)
+                userApi.refreshToken(token = Constants.TOKEN.TOKEN_TYPE + accessToken)
             }
             if (response.success) {
                 val tokens = response.obj
                 if (tokens != null) {
+<<<<<<< HEAD
+                    secureDataStore.putString(Constants.TOKEN.ACCESS, tokens.accessToken)
+=======
                     tokenManager.saveAccessToken(tokens.accessToken)
+                    manager.saveBoolean(Constants.KEYS.AUTH, true)
+<<<<<<< HEAD
+>>>>>>> parent of 359f480 (fix)
+=======
+>>>>>>> parent of 359f480 (fix)
                     loadUserData()
                     withContext(Dispatchers.Main) {
                         backStack.clear()
@@ -192,8 +215,6 @@ class SharedViewModel @Inject constructor(
                     }
                 }
             } else {
-                delay(7000)
-                checkValidityToken(token = token)
                 message(response.message, type = TypeMessageModel.ERROR)
             }
         }
@@ -204,7 +225,7 @@ class SharedViewModel @Inject constructor(
             val response = userApi.getData()
             if (response.success) {
                 val user = response.obj
-                user?.let {
+                if (user != null) {
                     if (user.isBan) updateViewState { it.copy(isUserBlocked = true) }
                     else {
                         updateViewState {
@@ -212,7 +233,7 @@ class SharedViewModel @Inject constructor(
                                 user = MutableStateFlow(user), isUserBlocked = false
                             )
                         }
-                        val localUser = database.userDao().getUser()
+                        val localUser = database.userDao().getUserById(user.id)
                         if (localUser != null) {
                             database.userDao().updateUser(user = user)
                         } else {
@@ -220,8 +241,6 @@ class SharedViewModel @Inject constructor(
                         }
                         loadFactoryData(idFactory = user.idFactory)
                     }
-                } ?: run {
-                    loadUserData()
                 }
             } else {
                 message(response.message, type = TypeMessageModel.ERROR)
@@ -235,7 +254,7 @@ class SharedViewModel @Inject constructor(
                 factoryApi.getFactoryById(id = idFactory)
             if (response.success) {
                 val factory = response.obj
-                factory?.let {
+                if (factory != null) {
                     val localFactory = database.factoryDao().getFactoryById(factory.id)
                     if (localFactory != null) {
                         database.factoryDao().updateFactory(factory = factory)
@@ -244,23 +263,17 @@ class SharedViewModel @Inject constructor(
                     }
                     updateViewState {
                         it.copy(
-                            factory = MutableStateFlow(factory)
+                            factory = factory
                         )
                     }
-                } ?: run {
-                    delay(7000)
-                    loadFactoryData(idFactory = idFactory)
                 }
             } else {
-                database.factoryDao().deleteFactory()
-                delay(7000)
-                loadFactoryData(idFactory = idFactory)
                 message(response.message, type = TypeMessageModel.ERROR)
             }
         }
     }
 
-    fun updateFactory(factory: FactoryModel) {
-        updateViewState { it.copy(factory = MutableStateFlow(factory)) }
+    fun updateFactory(factoryModel: FactoryModel) {
+        updateViewState { it.copy(factory = factoryModel) }
     }
 }

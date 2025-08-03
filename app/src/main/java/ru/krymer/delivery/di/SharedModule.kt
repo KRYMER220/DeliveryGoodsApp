@@ -4,11 +4,9 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import ru.krymer.delivery.AppBox
 import ru.krymer.delivery.AppDatabase
 import ru.krymer.delivery.data.api.FactoryApi
 import ru.krymer.delivery.data.api.UserApi
-import ru.krymer.delivery.data.dao.FailedDao
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import javax.inject.Singleton
 
@@ -20,17 +18,15 @@ object SharedModule {
     @Singleton
     fun provideSharedViewModel(
         userApi: UserApi,
-        tokenManager: TokenManager,
         factoryApi: FactoryApi,
         database: AppDatabase,
-        sharedPreferencesManager: AppPreferencesManager
+        secureDataStore: SecureDataStore
     ): SharedViewModel {
         return SharedViewModel(
             userApi = userApi,
-            tokenManager = tokenManager,
             factoryApi = factoryApi,
             database = database,
-            manager = sharedPreferencesManager,
+            secureDataStore = secureDataStore
         )
     }
 }

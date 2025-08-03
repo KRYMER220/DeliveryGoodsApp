@@ -162,7 +162,7 @@ class CourierViewModel @Inject constructor(
     }
 
     private fun showSettings() {
-        val factory = sharedViewModel.viewState.value.factory.value
+        val factory = sharedViewModel.viewState.value.factory
         if (factory != null) {
             updateViewState {
                 it.copy(
@@ -186,7 +186,7 @@ class CourierViewModel @Inject constructor(
                 )
                 val response = factoryApi.update(factory = newFactory)
                 if (response.success) {
-                    sharedViewModel.updateFactory(factory = factory)
+                    sharedViewModel.updateFactory(factoryModel = factory)
                     dismissUpdateSettingsDialog()
                 } else {
                     sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)

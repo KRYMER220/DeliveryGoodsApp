@@ -3,9 +3,7 @@ package ru.krymer.delivery.data.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import ru.krymer.delivery.data.model.utilModel.TypePayModel
-import ru.krymer.delivery.data.model.utilModel.getRuStringByTypePay
 import ru.krymer.delivery.data.model.utilModel.getStringByTypePay
-import ru.krymer.delivery.data.model.utilModel.getTypePayByString
 
 data class ShopModel(
     val id: Long,
@@ -61,23 +59,4 @@ fun ShopModel.toLocal() = ShopLocalModel(
     isOldPrice = isOldPrice,
     cord = cord,
     isBonus = isBonus
-)
-
-fun ShopLocalModel.toModel() = ShopModel(
-    id = id,
-    idTrip =idTrip,
-    idFactory = idFactory,
-    nameShop = nameShop,
-    arrears = arrears,
-    addSum = addSum,
-    status = status,
-    date = date,
-    typePay = typePay.getTypePayByString(),
-    cash = cash,
-    counter = counter,
-    noCash = noCash,
-    isOldPrice = isOldPrice,
-    cord = cord,
-    isBonus = isBonus,
-    listRequest = emptyList()
 )

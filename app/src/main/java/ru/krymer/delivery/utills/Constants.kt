@@ -18,6 +18,10 @@ class Constants {
         const val FONT_SIZE = "fSize"
     }
 
+    object URL {
+        const val APP = "https://www.rustore.ru/catalog/app/ru.krymer.delivery"
+    }
+
     object PatternDate {
         const val DEFAULT = "dd.MM.yyyy"
         const val FULL = "dd-MM-yyyy\nHH:mm:ss"

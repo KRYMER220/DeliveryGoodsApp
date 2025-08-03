@@ -1,6 +1,7 @@
 package ru.krymer.delivery.data.dao
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -12,8 +13,8 @@ interface UserDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUser(user: UserModel)
 
-    @Query("DELETE FROM users")
-    suspend fun delete()
+    @Delete
+    suspend fun deleteUser(user: UserModel)
 
     @Update
     suspend fun updateUser(user: UserModel)

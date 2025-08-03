@@ -63,9 +63,9 @@ class AnaliticViewModel @Inject constructor(
 
     private fun deleteLogs() {
         launchCoroutine {
-            val user = sharedViewModel.viewState.value.user.value
-            user?.let {
-                val response = logApi.deleteLogs(idFactory = user.idFactory)
+            val factory = sharedViewModel.viewState.value.factory
+            factory?.let {
+                val response = logApi.deleteLogs(idFactory = factory.id)
                 if (response.success) {
                     updateViewState { it.copy(logs = MutableStateFlow(emptyList())) }
                 }
@@ -112,9 +112,9 @@ class AnaliticViewModel @Inject constructor(
     }
 
     private suspend fun getTrips() {
-        val user = sharedViewModel.viewState.value.user.value
-        if (user != null) {
-            val result = tripApi.getRoutesByTrip(idFactory = user.idFactory)
+        val factory = sharedViewModel.viewState.value.factory
+        if (factory != null) {
+            val result = tripApi.getRoutesByTrip(idFactory = factory.id)
             if (result.success) {
                 val routes = result.obj
                 if (!routes.isNullOrEmpty()) {
@@ -172,9 +172,9 @@ class AnaliticViewModel @Inject constructor(
     }
 
     private suspend fun getClients() {
-        val user = sharedViewModel.viewState.value.user.value
-        if (user != null) {
-            val result = clientApi.getClientsByFactory(idFactory = user.id)
+        val factory = sharedViewModel.viewState.value.factory
+        if (factory != null) {
+            val result = clientApi.getClientsByFactory(idFactory = factory.id)
             if (result.success) {
                 val clients = result.obj
                 if (!clients.isNullOrEmpty()) {
@@ -231,10 +231,10 @@ class AnaliticViewModel @Inject constructor(
     private fun loadLogsOfDateRange() {
         launchCoroutine {
             val date = viewState.value.dateRangeForSearch
-            val user = sharedViewModel.viewState.value.user.value
-            user?.let {
+            val factory = sharedViewModel.viewState.value.factory
+            factory?.let {
                 val response = logApi.getLogsOfRange(dateRange = DateRequest(
-                    dateStart = date.first, dateEnd = date.second, id = user.id
+                    dateStart = date.first, dateEnd = date.second, id = factory.id
                 ))
                 if (response.success) {
                     val logs = response.obj
@@ -290,23 +290,20 @@ class AnaliticViewModel @Inject constructor(
     }
 
     private suspend fun getLogData() {
-        val user = sharedViewModel.viewState.value.user.value
-        user?.let {
-            val result = logApi.getLogs(idFactory = user.idFactory)
-            if (result.success) {
-                val logs = result.obj
-                if (logs.isNullOrEmpty()) {
-                    sharedViewModel.message(Constants.ERROR.LIST_EMPTY)
-                } else {
-                    updateViewState {
-                        it.copy(
-                            logs = MutableStateFlow(logs), isLoadLogs = true
-                        )
-                    }
-                }
+        val result = logApi.getLogs(sharedViewModel.viewState.value.factory!!.id)
+        if (result.success) {
+            val logs = result.obj
+            if (logs.isNullOrEmpty()) {
+                sharedViewModel.message(Constants.ERROR.LIST_EMPTY)
             } else {
-                sharedViewModel.message(Constants.ERROR.SERVER_ERROR_RESPONSE)
+                updateViewState {
+                    it.copy(
+                        logs = MutableStateFlow(logs), isLoadLogs = true
+                    )
+                }
             }
+        } else {
+            sharedViewModel.message(Constants.ERROR.SERVER_ERROR_RESPONSE)
         }
     }
 

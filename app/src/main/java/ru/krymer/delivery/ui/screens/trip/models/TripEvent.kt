@@ -17,6 +17,7 @@ sealed class TripEvent {
     data class SelectRoute(val route: RouteModel) : TripEvent()
     data object OpenHideDatePickerForAddTrip : TripEvent()
     data class ChangeDate(val date: Long) : TripEvent()
+    data class OpenTrip(val trip: TripModel) : TripEvent()
     data object DismissDeleteDialog : TripEvent()
     data object DismissUpdateDialog : TripEvent()
     data object DeleteTrip : TripEvent()

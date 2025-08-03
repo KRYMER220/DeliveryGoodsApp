@@ -1,11 +1,13 @@
 package ru.krymer.delivery.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Checkbox
@@ -30,7 +31,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -39,9 +39,9 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entry
 import androidx.navigation3.runtime.entryProvider
@@ -220,7 +220,11 @@ fun SettingsApp(state: State<SharedViewState>, event: (SharedEvents) -> Unit) {
         animationSpec = tween(durationMillis = 300),
         label = "fontSizeSliderAnimation"
     )
-    Column {
+    val context = LocalContext.current
+    val packageInfo =
+        remember { context.packageManager.getPackageInfo(context.packageName, 0) }.versionName
+            ?: "N/A"
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Checkbox(
                 modifier = Modifier.size(60.dp),
@@ -266,6 +270,13 @@ fun SettingsApp(state: State<SharedViewState>, event: (SharedEvents) -> Unit) {
             )
             Text(text = animatedValue.toString())
         }
+        Text(
+            text = "Version: $packageInfo", style = AppTheme.typography.titleLarge,
+            color = AppTheme.colors.onSecondary, modifier = Modifier.clickable(onClick = {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(Constants.URL.APP))
+                context.startActivity(intent)
+            })
+        )
     }
 }
 
