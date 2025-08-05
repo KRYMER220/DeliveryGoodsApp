@@ -281,7 +281,7 @@ fun ShopView(
                     }
                 }
                 item {
-                    if (!state.lightVersion) {
+                    if (user.isSysOrAdmin() && !state.lightVersion) {
                         Box(
                             modifier = Modifier.fillMaxWidth(),
                             contentAlignment = Alignment.Center

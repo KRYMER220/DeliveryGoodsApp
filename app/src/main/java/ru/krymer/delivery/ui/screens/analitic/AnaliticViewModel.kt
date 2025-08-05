@@ -174,7 +174,7 @@ class AnaliticViewModel @Inject constructor(
     private suspend fun getClients() {
         val user = sharedViewModel.viewState.value.user.value
         if (user != null) {
-            val result = clientApi.getClientsByFactory(idFactory = user.id)
+            val result = clientApi.getClientsByFactory(idFactory = user.idFactory)
             if (result.success) {
                 val clients = result.obj
                 if (!clients.isNullOrEmpty()) {
@@ -271,12 +271,15 @@ class AnaliticViewModel @Inject constructor(
     }
 
     private fun showLogView() {
-        updateViewState {
-            it.copy(
-                analiticAction = AnaliticAction.OpenLog
-            )
+        launchCoroutine {
+            updateViewState {
+                it.copy(
+                    analiticAction = AnaliticAction.OpenLog,
+                )
+            }
+            changeRangeDate(Pair(System.currentTimeMillis(), System.currentTimeMillis()))
+            loadLogsOfDateRange()
         }
-        launchCoroutine { getLogData() }
     }
 
     private fun launchCoroutine(block: suspend () -> Unit) {
@@ -285,27 +288,6 @@ class AnaliticViewModel @Inject constructor(
                 block()
             } catch (e: Exception) {
                 sharedViewModel.message(e.message)
-            }
-        }
-    }
-
-    private suspend fun getLogData() {
-        val user = sharedViewModel.viewState.value.user.value
-        user?.let {
-            val result = logApi.getLogs(idFactory = user.idFactory)
-            if (result.success) {
-                val logs = result.obj
-                if (logs.isNullOrEmpty()) {
-                    sharedViewModel.message(Constants.ERROR.LIST_EMPTY)
-                } else {
-                    updateViewState {
-                        it.copy(
-                            logs = MutableStateFlow(logs), isLoadLogs = true
-                        )
-                    }
-                }
-            } else {
-                sharedViewModel.message(Constants.ERROR.SERVER_ERROR_RESPONSE)
             }
         }
     }

@@ -11,8 +11,6 @@ import ru.krymer.delivery.data.response.BaseResponse
 import ru.krymer.delivery.utills.Constants
 
 interface LoggerApi {
-    @GET("logs")
-    suspend fun getLogs(@Query(Constants.HttpRequestKeys.ID_FACTORY) idFactory: Long): BaseResponse<List<LoggerModel>>
 
     @POST("logs/ofRange")
     suspend fun getLogsOfRange(@Body dateRange: DateRequest): BaseResponse<List<LoggerModel>>

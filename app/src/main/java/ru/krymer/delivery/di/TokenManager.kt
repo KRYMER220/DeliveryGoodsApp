@@ -3,6 +3,8 @@ package ru.krymer.delivery.di
 import android.content.SharedPreferences
 import ru.krymer.delivery.utills.Constants
 import javax.inject.Inject
+import androidx.core.content.edit
+
 class TokenManager @Inject constructor(
     @EncryptedPref private val sharedPreferences: SharedPreferences
 ) {
@@ -11,10 +13,10 @@ class TokenManager @Inject constructor(
     }
 
     fun deleteToken() {
-        sharedPreferences.edit().remove(Constants.TOKEN.ACCESS).apply()
+        sharedPreferences.edit { remove(Constants.TOKEN.ACCESS) }
     }
 
     fun saveAccessToken(token: String?) {
-        sharedPreferences.edit().putString(Constants.TOKEN.ACCESS, token).apply()
+        sharedPreferences.edit { putString(Constants.TOKEN.ACCESS, token) }
     }
 }

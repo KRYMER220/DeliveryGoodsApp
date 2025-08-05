@@ -1,5 +1,6 @@
 package ru.krymer.delivery.ui.screens
 
+import android.content.pm.PackageManager
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -39,6 +40,7 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -215,12 +217,18 @@ fun ApplicationScreen(
 @Composable
 fun SettingsApp(state: State<SharedViewState>, event: (SharedEvents) -> Unit) {
     var isFilterByCourier by remember { mutableStateOf(state.value.lightVersion) }
+    val context = LocalContext.current
+    val versionName = try {
+        context.packageManager.getPackageInfo(context.packageName, 0).versionName
+    } catch (e: PackageManager.NameNotFoundException) {
+        "Unknown"
+    }
     val animatedValue by animateFloatAsState(
         targetValue = state.value.fontSizeIndex.toFloat(),
         animationSpec = tween(durationMillis = 300),
         label = "fontSizeSliderAnimation"
     )
-    Column {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Checkbox(
                 modifier = Modifier.size(60.dp),
@@ -266,6 +274,11 @@ fun SettingsApp(state: State<SharedViewState>, event: (SharedEvents) -> Unit) {
             )
             Text(text = animatedValue.toString())
         }
+        Text(
+            text = "Версия: $versionName",
+            style = AppTheme.typography.titleSmall,
+            color = AppTheme.colors.onSecondary
+        )
     }
 }
 
