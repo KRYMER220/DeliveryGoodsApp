@@ -1,5 +1,6 @@
 package ru.krymer.delivery.ui.screens.shop.views
 
+import android.util.Log
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -42,9 +43,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.delay
@@ -57,6 +60,7 @@ import ru.krymer.delivery.ui.components.CommonDeleteDialog
 import ru.krymer.delivery.ui.components.CommonInfoAlertDialog
 import ru.krymer.delivery.ui.components.CommonSaveDialog
 import ru.krymer.delivery.ui.components.ConfirmView
+import ru.krymer.delivery.ui.components.InfoDialog
 import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
 import ru.krymer.delivery.ui.theme.AppTheme
@@ -74,14 +78,12 @@ fun ShopView(
     val lazyListState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
-    if (!state.lightVersion) {
     LaunchedEffect(shops) {
         if (shops.isNotEmpty() && isFirstLoad) {
+            isFirstLoad = false
             coroutineScope.launch {
-                isFirstLoad = false
                 delay(500)
                 lazyListState.animateScrollToItem(1)
-            }
             }
         }
     }
@@ -108,16 +110,6 @@ fun ShopView(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.outline_autorenew_24),
-                    contentDescription = "update",
-                    modifier = Modifier.combinedClickable(onClick = {
-                        event(ShopEvent.UpdateShops)
-                    }, onLongClick = {
-                        event(ShopEvent.UpdateLocalShops)
-                    })
-                        .size(60.dp)
-                )
                 Image(
                     painter = painterResource(id = R.drawable.car_info),
                     contentDescription = "courier millage",
@@ -289,7 +281,7 @@ fun ShopView(
                     }
                 }
                 item {
-                    if (user.isSysOrAdmin() && state.lightVersion) {
+                    if (!state.lightVersion) {
                         Box(
                             modifier = Modifier.fillMaxWidth(),
                             contentAlignment = Alignment.Center
@@ -308,9 +300,7 @@ fun ShopView(
                 }
 
                 item {
-                    Spacer(modifier = Modifier
-                        .fillMaxWidth()
-                        .height(10.dp))
+                    Spacer(modifier = Modifier.fillMaxWidth().height(10.dp))
                 }
                 item {
                     MillageAndInfoView(state = state, onMillageTFC = {
@@ -363,10 +353,7 @@ fun ShopView(
             decorFitsSystemWindows = false
         )) {
             Card(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-                    .navigationBarsPadding(), colors = CardColors(
+                modifier = Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding(), colors = CardColors(
                     containerColor = AppTheme.colors.onPrimary,
                     contentColor = AppTheme.colors.onPrimary,
                     disabledContentColor = AppTheme.colors.onPrimary,
@@ -483,9 +470,7 @@ fun ShopsItem(
         contentAlignment = Alignment.Center
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(5.dp),
+            modifier = Modifier.fillMaxWidth().padding(5.dp),
             horizontalArrangement = Arrangement.spacedBy(5.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {

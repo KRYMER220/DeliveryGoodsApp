@@ -28,10 +28,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import ru.krymer.delivery.R
@@ -43,8 +45,7 @@ fun KeyBoardDialog(
     setNumber: (Int) -> Unit,
     modifier: Modifier = Modifier,
     value: String = "0",
-    text: String = "",
-    isLightVersion: Boolean = false
+    text: String = ""
 ) {
 
     var count by remember {
@@ -55,18 +56,14 @@ fun KeyBoardDialog(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .clickable(
-                    onClick = onDismissRequest,
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() })
+                .clickable(onClick = onDismissRequest, indication = null, interactionSource = remember { MutableInteractionSource() })
                 .padding(bottom = 16.dp),
             contentAlignment = Alignment.BottomCenter
         ) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 10.dp, end = 10.dp)
-                    .clickable(
+                    .padding(start = 10.dp, end = 10.dp).clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {},
@@ -94,51 +91,31 @@ fun KeyBoardDialog(
                     )
                     Spacer(modifier = Modifier.height(5.dp))
                     Row {
-                        CommonButton(onClick = {
-                            if (isLightVersion) count = "1" else setNumber(1)
-                        }, text = "1")
+                        CommonButton(onClick = { setNumber(1) }, text = "1")
                         Spacer(modifier = Modifier.width(2.dp))
-                        CommonButton(onClick = {
-                            if (isLightVersion) count = "2" else setNumber(2)
-                        }, text = "2")
+                        CommonButton(onClick = { setNumber(2) }, text = "2")
                         Spacer(modifier = Modifier.width(2.dp))
-                        CommonButton(onClick = {
-                            if (isLightVersion) count = "3" else setNumber(3)
-                        }, text = "3")
+                        CommonButton(onClick = { setNumber(3) }, text = "3")
                     }
                     Spacer(modifier = Modifier.height(2.dp))
                     Row {
-                        CommonButton(onClick = {
-                            if (isLightVersion) count = "4" else setNumber(4)
-                        }, text = "4")
+                        CommonButton(onClick = { setNumber(4) }, text = "4")
                         Spacer(modifier = Modifier.width(2.dp))
-                        CommonButton(onClick = {
-                            if (isLightVersion) count = "5" else setNumber(5)
-                        }, text = "5")
+                        CommonButton(onClick = { setNumber(5) }, text = "5")
                         Spacer(modifier = Modifier.width(2.dp))
-                        CommonButton(onClick = {
-                            if (isLightVersion) count = "6" else setNumber(6)
-                        }, text = "6")
+                        CommonButton(onClick = { setNumber(6) }, text = "6")
                     }
                     Spacer(modifier = Modifier.height(5.dp))
                     Row {
-                        CommonButton(onClick = {
-                            if (isLightVersion) count = "7" else setNumber(7)
-                        }, text = "7")
+                        CommonButton(onClick = { setNumber(7) }, text = "7")
                         Spacer(modifier = Modifier.width(2.dp))
-                        CommonButton(onClick = {
-                            if (isLightVersion) count = "8" else setNumber(8)
-                        }, text = "8")
+                        CommonButton(onClick = { setNumber(8) }, text = "8")
                         Spacer(modifier = Modifier.width(2.dp))
-                        CommonButton(onClick = {
-                            if (isLightVersion) count = "9" else setNumber(9)
-                        }, text = "9")
+                        CommonButton(onClick = { setNumber(9) }, text = "9")
                     }
                     Spacer(modifier = Modifier.height(5.dp))
                     Row {
-                        CommonButton(onClick = {
-                            if (isLightVersion) count = "0" else setNumber(0)
-                        }, text = "0")
+                        CommonButton(onClick = { setNumber(0) }, text = "0")
                     }
                     Spacer(modifier = Modifier.height(7.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -159,10 +136,7 @@ fun KeyBoardDialog(
                             painter = painterResource(R.drawable.submit),
                             contentDescription = null,
                             modifier = Modifier
-                                .background(
-                                    AppTheme.colors.secondary,
-                                    shape = RoundedCornerShape(10.dp)
-                                )
+                                .background(AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp))
                                 .size(60.dp)
                                 .weight(0.5f)
                                 .clickable(onClick = { setNumber(count.toInt()) })

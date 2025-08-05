@@ -26,6 +26,7 @@ import ru.krymer.delivery.data.model.RequestModel
 import ru.krymer.delivery.data.model.ShopModel
 import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.toLocal
+import ru.krymer.delivery.data.model.toModel
 import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
 import ru.krymer.delivery.data.model.utilModel.TypePayModel
 import ru.krymer.delivery.data.model.utilModel.TypePayModel.ANOTHER
@@ -45,8 +46,8 @@ import ru.krymer.delivery.ui.screens.shop.models.ShopAction
 import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
 import ru.krymer.delivery.utills.Constants
-import ru.krymer.delivery.utills.convertToTextDate
 import ru.krymer.delivery.utills.copyToClipboard
+import ru.krymer.delivery.utills.isSameDay
 import javax.inject.Inject
 
 enum class FunShop {
@@ -171,15 +172,6 @@ class ShopViewModel @Inject constructor(
                 updateViewState { it.copy(currentShop = event.shop) }
                 initShopFunction(event = FunShop.COPY)
             }
-
-            ShopEvent.UpdateShops -> getDataShops()
-            ShopEvent.UpdateLocalShops -> {
-                val trip = _viewState.value.currentTrip.value
-                if (trip != null)
-                if (convertToTextDate(trip.date) == convertToTextDate(System.currentTimeMillis())) {
-                    updateTrip(trip)
-                }
-            }
         }
     }
 
@@ -195,8 +187,6 @@ class ShopViewModel @Inject constructor(
 
     fun initDate(trip: TripModel) {
         launchCoroutine {
-<<<<<<< HEAD
-<<<<<<< HEAD
             updateShops(trip)
             val localTrip = room.tripDao().getTripById(trip.id)
             val user = sharedViewModel.viewState.value.user.value
@@ -214,101 +204,85 @@ class ShopViewModel @Inject constructor(
                     }
                 } else {
                     room.tripDao().insertTrip(trip)
-                    updateViewState { it.copy(currentTrip = MutableStateFlow(trip)) }
                     getDataShops()
+                    updateViewState { it.copy(currentTrip = MutableStateFlow(trip)) }
                     if (user.id == trip.idCourier) {
                         val updatedTrip = trip.copy(isLoaded = true)
                         room.tripDao().updateTrip(updatedTrip)
                         updateViewState { it.copy(currentTrip = MutableStateFlow(updatedTrip)) }
                     }
                 }
-=======
-=======
->>>>>>> parent of 359f480 (fix)
-            updateViewState { it.copy(currentTrip = MutableStateFlow(trip)) }
-            getLocalData(idTrip = trip.id)
-            if (convertToTextDate(trip.date) == convertToTextDate(System.currentTimeMillis())) {
-                updateTrip(trip)
-<<<<<<< HEAD
->>>>>>> parent of 359f480 (fix)
-=======
->>>>>>> parent of 359f480 (fix)
             }
-            val user = sharedViewModel.viewState.value.user.value
-            if (user != null && trip.idCourier != user.id)
-                getDataShops()
+
         }
     }
 
-    private fun updateTrip(trip: TripModel) {
+    private fun updateShops(trip: TripModel) {
         launchCoroutine {
             val user = sharedViewModel.viewState.value.user.value
             if (user != null && user.id == trip.idCourier) {
-                val shops = _viewState.value.listShop.value
+                val shops = room.shopDao().getShops(idTrip = trip.id)
                 if (shops.isNotEmpty()) {
-                    shops.forEach { shop ->
-                        shop.apply {
-                            shopApi.update(
-                                UpdateShopRequest(
-                                    id = id,
-                                    idTrip = idTrip,
-                                    idFactory = idFactory,
-                                    arrears = arrears,
-                                    addSum = addSum,
-                                    status = status,
-                                    date = date,
-                                    typePay = typePay.getStringByTypePay(),
-                                    cash = cash,
-                                    counter = counter,
-                                    noCash = noCash,
-                                    isOldPrice = isOldPrice,
-                                    cord = cord,
-                                    nameShop = nameShop
-                                )
-                            )
+                    shops.forEach { it ->
+                        it?.toModel()?.let { shop ->
+                                if (shop.status) {
+                                    shop.apply {
+                                        shopApi.update(
+                                            UpdateShopRequest(
+                                                id = id,
+                                                idTrip = idTrip,
+                                                idFactory = idFactory,
+                                                arrears = arrears,
+                                                addSum = addSum,
+                                                status = true,
+                                                date = date,
+                                                typePay = typePay.getStringByTypePay(),
+                                                cash = cash,
+                                                counter = counter,
+                                                noCash = noCash,
+                                                isOldPrice = isOldPrice,
+                                                cord = cord,
+                                                nameShop = nameShop
+                                            )
+                                        )
 
-                            val client = clientApi.getClientById(id = shop.id).obj
-                            if (client != null) {
-                                val requests = room.requestDao().getRequests(shop.id, shop.idTrip)
-                                var order = 0.0
-                                if (requests.isNotEmpty()) {
-                                    requests.forEach { req ->
-                                        order += req.count * req.price - req.exchange * (if (isOldPrice) req.oldPrice else req.price)
-                                        requestApi.update(UpdateRequestShopRequest(
-                                            id = req.id,
-                                            idShop = req.idShop,
-                                            idTrip = req.idTrip,
-                                            idFactory = req.idFactory,
-                                            count = req.count,
-                                            exchange = req.exchange,
-                                            bonus = req.bonus,
-                                            status = req.status,
-                                            price = req.price,
-                                            oldPrice = req.oldPrice,
-                                            name = req.name,
-                                            counter = req.counter
-                                        ))
+                                    val requests =
+                                        room.requestDao().getRequests(shop.id, shop.idTrip)
+                                    if (requests.isNotEmpty()) {
+                                        requests.forEach { req ->
+                                            requestApi.update(
+                                                UpdateRequestShopRequest(
+                                                    id = req.id,
+                                                    idShop = req.idShop,
+                                                    idTrip = req.idTrip,
+                                                    idFactory = req.idFactory,
+                                                    count = req.count,
+                                                    exchange = req.exchange,
+                                                    bonus = req.bonus,
+                                                    status = req.status,
+                                                    price = req.price,
+                                                    oldPrice = req.oldPrice,
+                                                    name = req.name,
+                                                    counter = req.counter
+                                                )
+                                            )
+                                        }
+                                        val sum =
+                                            requests.sumOf { it.count * it.price - it.exchange * (if (isOldPrice) it.oldPrice else it.price) }
+                                        if (isSameDay(trip.date, System.currentTimeMillis()))
+                                            updateClient(shop.copy(arrears = (sum + shop.arrears + shop.addSum) - (shop.cash + shop.noCash)))
                                     }
-                                    val newArrear = (order + arrears + addSum) - (cash + noCash)
-                                    clientApi.update(ClientRequest(
-                                        id = client.id,
-                                        idRoute = client.idRoute,
-                                        idFactory = client.idFactory,
-                                        name = client.name,
-                                        phone = client.phone,
-                                        cord = client.cord,
-                                        counter = client.counter,
-                                        arrears = newArrear,
-                                        date = client.date
-                                    ))
+                                    }
                                 }
-                            }
                         }
                     }
+                } else {
+                    shops
                 }
             }
         }
     }
+
 
     private fun showHideDialogAnalitic() {
         updateViewState { it.copy(isShowAnaliticTrip = !it.isShowAnaliticTrip) }
@@ -1529,6 +1503,10 @@ class ShopViewModel @Inject constructor(
                 val response = shopApi.update(shopRequest)
                 if (!response.success) {
                     sharedViewModel.message(response.message)
+                }
+                val trip = viewState.value.currentTrip.value
+                if (trip != null && isSameDay(trip.date, System.currentTimeMillis())) {
+                    updateShops(trip)
                 }
             }
         }
