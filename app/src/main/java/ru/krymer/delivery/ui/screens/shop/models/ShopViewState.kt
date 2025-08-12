@@ -2,6 +2,7 @@ package ru.krymer.delivery.ui.screens.shop.models
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import ru.krymer.delivery.data.model.ClientModel
+import ru.krymer.delivery.data.model.LogShopModel
 import ru.krymer.delivery.data.model.MessageModel
 import ru.krymer.delivery.data.model.ProductModel
 import ru.krymer.delivery.data.model.RequestModel
@@ -84,4 +85,7 @@ data class ShopViewState(
 
     val isShowAnaliticTrip: Boolean = false,
     val lightVersion: Boolean = false,
+
+    val isShowInfoShop: Boolean = false,
+    val logShop: MutableStateFlow<List<LogShopModel>> = MutableStateFlow(emptyList())
     )

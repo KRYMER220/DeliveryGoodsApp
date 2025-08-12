@@ -16,7 +16,7 @@ fun ShopScreen(popBackStack: () -> Unit, user: UserModel?, trip: TripModel) {
     user?.let {
         val viewModel = hiltViewModel<ShopViewModel>()
         LaunchedEffect(Unit) {
-            viewModel.initDate(trip = trip)
+            viewModel.initData(trip = trip)
         }
         ShopView(
             state = viewModel.viewState.collectAsState().value,

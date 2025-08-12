@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import ru.krymer.delivery.AppDatabase
 import ru.krymer.delivery.common.EventHandler
 import ru.krymer.delivery.data.api.ClientApi
+import ru.krymer.delivery.data.api.LoggerApi
 import ru.krymer.delivery.data.api.MessageApi
 import ru.krymer.delivery.data.api.ProductApi
 import ru.krymer.delivery.data.api.RequestApi
@@ -49,6 +50,7 @@ import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.copyToClipboard
 import ru.krymer.delivery.utills.isSameDay
 import javax.inject.Inject
+import kotlin.math.log
 
 enum class FunShop {
     SAVE, UPDATE, COPY
@@ -64,6 +66,7 @@ class ShopViewModel @Inject constructor(
     private val requestApi: RequestApi,
     private val room: AppDatabase,
     private val messageApi: MessageApi,
+    private val loggerApi: LoggerApi
 ) : ViewModel(), EventHandler<ShopEvent> {
 
     private val _viewState = MutableStateFlow(ShopViewState())
@@ -172,7 +175,24 @@ class ShopViewModel @Inject constructor(
                 updateViewState { it.copy(currentShop = event.shop) }
                 initShopFunction(event = FunShop.COPY)
             }
+
+            is ShopEvent.ShowInfoShop -> isShowLogShopInfo(event.shop)
+            is ShopEvent.DismissLogShopDialog -> dismissLogShopDialog()
         }
+    }
+
+    private fun isShowLogShopInfo(shop: ShopModel) {
+        launchCoroutine {
+            updateViewState { it.copy(isShowInfoShop = true) }
+            val logs = loggerApi.getLogsShop(idShop = shop.id, idTrip = shop.idTrip, idFactory = shop.idFactory).obj
+            if (logs != null) {
+                updateViewState { it.copy(logShop = MutableStateFlow(logs)) }
+            }
+        }
+    }
+
+    private fun dismissLogShopDialog() {
+        updateViewState { it.copy(isShowInfoShop = false, logShop = MutableStateFlow(emptyList())) }
     }
 
     init {
@@ -185,9 +205,11 @@ class ShopViewModel @Inject constructor(
         updateViewState { it.copy(lightVersion = value) }
     }
 
-    fun initDate(trip: TripModel) {
+    fun initData(trip: TripModel) {
         launchCoroutine {
-            updateShops(trip)
+            if (isSameDay(trip.date, System.currentTimeMillis())) {
+                updateShops(trip)
+            }
             val localTrip = room.tripDao().getTripById(trip.id)
             val user = sharedViewModel.viewState.value.user.value
             user?.let {
@@ -200,7 +222,11 @@ class ShopViewModel @Inject constructor(
                             val updatedTrip = trip.copy(isLoaded = true)
                             room.tripDao().updateTrip(updatedTrip)
                             updateViewState { it.copy(currentTrip = MutableStateFlow(updatedTrip)) }
+                        } else {
+                            room.tripDao().updateTrip(trip)
                         }
+                    } else {
+                        getDataShops()
                     }
                 } else {
                     room.tripDao().insertTrip(trip)
@@ -242,7 +268,8 @@ class ShopViewModel @Inject constructor(
                                                 noCash = noCash,
                                                 isOldPrice = isOldPrice,
                                                 cord = cord,
-                                                nameShop = nameShop
+                                                nameShop = nameShop,
+                                                isChanged = isChanged
                                             )
                                         )
 
@@ -276,8 +303,6 @@ class ShopViewModel @Inject constructor(
                                 }
                         }
                     }
-                } else {
-                    shops
                 }
             }
         }
@@ -356,7 +381,8 @@ class ShopViewModel @Inject constructor(
                         listRequest = requests,
                         isOldPrice = s.isOldPrice,
                         cord = s.cord,
-                        isBonus = s.isBonus
+                        isBonus = s.isBonus,
+                        isChanged = s.isChanged
                     )
                     shops.add(shop)
                 }
@@ -590,7 +616,8 @@ class ShopViewModel @Inject constructor(
                         listRequest = requests,
                         isOldPrice = shop.isOldPrice,
                         cord = shop.cord,
-                        isBonus = shop.isBonus
+                        isBonus = shop.isBonus,
+                        isChanged = shop.isChanged
                     )
                 }
             }
@@ -707,7 +734,8 @@ class ShopViewModel @Inject constructor(
                     cord = client.cord,
                     addSum = viewState.value.add.value,
                     cash = viewState.value.dept.value,
-                    status = false
+                    status = false,
+                    isChanged = false
                 )
                 val response = shopApi.add(shop = shopRequest)
                 if (response.success) {
@@ -1109,8 +1137,9 @@ class ShopViewModel @Inject constructor(
 
     private fun changeArrears(arrears: String) {
         val shop = viewState.value.currentShop
-        if (shop != null) {
-            val newShop = shop.copy(arrears = if (arrears.isNotEmpty()) arrears.toDouble() else 0.0)
+        val user = sharedViewModel.viewState.value.user.value
+        if (shop != null && user != null) {
+            val newShop = shop.copy(arrears = if (arrears.isNotEmpty()) arrears.toDouble() else 0.0, isChanged = !user.isSysOrAdmin())
             updateViewState { it.copy(currentShop = newShop) }
         }
     }
@@ -1125,8 +1154,9 @@ class ShopViewModel @Inject constructor(
 
     private fun changeAddSum(add: String) {
         val shop = viewState.value.currentShop
-        if (shop != null) {
-            val newShop = shop.copy(addSum = if (add.isNotEmpty()) add.toDouble() else 0.0)
+        val user = sharedViewModel.viewState.value.user.value
+        if (shop != null && user != null) {
+            val newShop = shop.copy(addSum = if (add.isNotEmpty()) add.toDouble() else 0.0, isChanged = !user.isSysOrAdmin())
             updateViewState { it.copy(currentShop = newShop) }
         }
     }
@@ -1493,7 +1523,8 @@ class ShopViewModel @Inject constructor(
                     noCash = noCash,
                     isOldPrice = isOldPrice,
                     cord = cord,
-                    nameShop = nameShop
+                    nameShop = nameShop,
+                    isChanged = isChanged
                 )
                 room.shopDao().updateShop(newShop.toLocal())
                 val list = viewState.value.listShop.value.map { it.copy() }.toMutableList()

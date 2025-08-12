@@ -23,8 +23,15 @@ data class ShopModel(
     var listRequest: List<RequestModel>,
     var isOldPrice: Boolean,
     val cord: String,
-    var isBonus: Boolean
+    var isBonus: Boolean,
+    var isChanged: Boolean
 )
+
+fun ShopModel.hasArrearsChanged(savedShop: ShopModel?): Boolean {
+    return savedShop?.let {
+        this.arrears != it.arrears
+    } != false
+}
 
 @Entity(tableName = "shop", primaryKeys = ["id", "idTrip"])
 data class ShopLocalModel(
@@ -42,7 +49,8 @@ data class ShopLocalModel(
     val noCash: Double,
     val isOldPrice: Boolean,
     val cord: String,
-    var isBonus: Boolean
+    var isBonus: Boolean,
+    var isChanged: Boolean
 )
 
 fun ShopModel.toLocal() = ShopLocalModel(
@@ -60,7 +68,8 @@ fun ShopModel.toLocal() = ShopLocalModel(
     noCash = noCash,
     isOldPrice = isOldPrice,
     cord = cord,
-    isBonus = isBonus
+    isBonus = isBonus,
+    isChanged = isChanged
 )
 
 fun ShopLocalModel.toModel() = ShopModel(
@@ -79,5 +88,6 @@ fun ShopLocalModel.toModel() = ShopModel(
     isOldPrice = isOldPrice,
     cord = cord,
     isBonus = isBonus,
-    listRequest = emptyList()
+    listRequest = emptyList(),
+    isChanged = isChanged
 )

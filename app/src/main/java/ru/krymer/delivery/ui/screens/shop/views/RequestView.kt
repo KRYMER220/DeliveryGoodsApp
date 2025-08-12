@@ -639,7 +639,7 @@ fun ProductRequestItem(
             modifier = Modifier
                 .weight(0.4f)
                 .padding(end = 5.dp),
-            color = if (request.status && user.isSysOrAdmin()) AppTheme.colors.error else AppTheme.colors.onSecondary
+            color = AppTheme.colors.onSecondary
         )
         if (shop.isBonus) {
                 Box(

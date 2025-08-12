@@ -80,4 +80,6 @@ sealed class ShopEvent {
     data object SwitchBonusState: ShopEvent()
     data object ShowHideDialogAnalitic: ShopEvent()
     data class CopyAndSaveShop(val shop: ShopModel): ShopEvent()
+    data class ShowInfoShop(val shop: ShopModel): ShopEvent()
+    data object DismissLogShopDialog: ShopEvent()
 }

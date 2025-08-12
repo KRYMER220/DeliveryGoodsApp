@@ -55,6 +55,7 @@ import kotlinx.coroutines.launch
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.ShopModel
 import ru.krymer.delivery.data.model.user.UserModel
+import ru.krymer.delivery.data.model.utilModel.Loader
 import ru.krymer.delivery.ui.components.CommonAlertAddDialog
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
 import ru.krymer.delivery.ui.components.CommonInfoAlertDialog
@@ -64,6 +65,8 @@ import ru.krymer.delivery.ui.components.InfoDialog
 import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
 import ru.krymer.delivery.ui.theme.AppTheme
+import ru.krymer.delivery.utills.Constants
+import ru.krymer.delivery.utills.convertToTextDate
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -188,11 +191,59 @@ fun ShopView(
                         fadeOutSpec = null,
                         placementSpec = tween(durationMillis = 400)
                     ),
-                    index = index + 1
+                    index = index + 1,
+                    user = user,
+                    openInfoShop = {
+                        event(ShopEvent.ShowInfoShop(it))
+                    }
                 )
                 Spacer(modifier = Modifier.height(3.dp))
             }
         }
+    }
+
+    if (state.isShowInfoShop) {
+        CommonInfoAlertDialog(onDismissRequest = {
+            event(ShopEvent.DismissLogShopDialog)
+        }, content = {
+            val logs = state.logShop.collectAsState().value
+            LazyColumn(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                if (logs.isNotEmpty()) {
+                    itemsIndexed(logs) { i, log ->
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                style = AppTheme.typography.titleMedium,
+                                text = convertToTextDate(log.date, pattern = Constants.PatternDate.FULL),
+                                color = AppTheme.colors.onSecondary,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Text(
+                                style = AppTheme.typography.titleMedium,
+                                text = "${log.log} \nПользователь: ${log.nameCourier}",
+                                color = AppTheme.colors.onSecondary,
+                            )
+                            Spacer(modifier = Modifier.height(5.dp))
+                            Spacer(modifier = Modifier.fillMaxWidth().padding(start = 5.dp, end = 5.dp).background(
+                                AppTheme.colors.onSecondary).height(1.dp))
+                            Spacer(modifier = Modifier.height(5.dp))
+                        }
+                    }
+                } else {
+                    item {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .size(30.dp)
+                                    .align(Alignment.Center),
+                                strokeWidth = 2.dp,
+                                color = AppTheme.colors.onSecondary
+                            )
+                        }
+                    }
+                }
+            }
+        })
     }
 
     if (state.isShowMillageDialog) {
@@ -455,7 +506,9 @@ fun ShopsItem(
     openLocate: (ShopModel) -> Unit,
     openInfoCurrentShop: (ShopModel) -> Unit,
     modifier: Modifier,
-    index: Int
+    index: Int,
+    user: UserModel,
+    openInfoShop: (ShopModel) -> Unit
 ) {
     Box(modifier = modifier
         .heightIn(min = 60.dp, max = Dp.Unspecified)
@@ -487,6 +540,15 @@ fun ShopsItem(
                     .weight(1f),
                 color = AppTheme.colors.onSecondary,
             )
+            if (user.isSysOrAdmin() && shop.isChanged) {
+                Image(
+                    contentDescription = "info",
+                    modifier = Modifier.size(40.dp).clickable(onClick = {
+                        openInfoShop(shop)
+                    }),
+                    painter = painterResource(R.drawable.info_shop)
+                )
+            }
             Image(
                 contentDescription = "status",
                 painter = if (shop.status) painterResource(id = R.drawable.active_circle) else painterResource(id = R.drawable.inactive_circle),

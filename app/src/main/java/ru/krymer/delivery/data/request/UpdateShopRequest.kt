@@ -15,4 +15,5 @@ data class UpdateShopRequest(
     val isOldPrice: Boolean,
     val nameShop: String,
     val cord: String,
+    val isChanged: Boolean
 )
