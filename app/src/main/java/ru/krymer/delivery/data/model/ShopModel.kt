@@ -1,9 +1,7 @@
 package ru.krymer.delivery.data.model
 
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 import ru.krymer.delivery.data.model.utilModel.TypePayModel
-import ru.krymer.delivery.data.model.utilModel.getRuStringByTypePay
 import ru.krymer.delivery.data.model.utilModel.getStringByTypePay
 import ru.krymer.delivery.data.model.utilModel.getTypePayByString
 
@@ -26,12 +24,6 @@ data class ShopModel(
     var isBonus: Boolean,
     var isChanged: Boolean
 )
-
-fun ShopModel.hasArrearsChanged(savedShop: ShopModel?): Boolean {
-    return savedShop?.let {
-        this.arrears != it.arrears
-    } != false
-}
 
 @Entity(tableName = "shop", primaryKeys = ["id", "idTrip"])
 data class ShopLocalModel(

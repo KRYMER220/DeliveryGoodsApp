@@ -333,7 +333,7 @@ class TripViewModel @Inject constructor(
             val date = viewState.value.currentDate
             if (curRoute != null && curCourier != null && factory != null) {
                 val tripRequest = CreateTripRequest(
-                    factoryId = curRoute.idFactory,
+                    factoryId = factory.id,
                     date = date,
                     courierId = curCourier.id,
                     routeId = curRoute.id,
@@ -456,6 +456,7 @@ class TripViewModel @Inject constructor(
            if (trip != null) {
                val response = tripApi.delete(id = trip.id)
                if (response.success) {
+                   database.tripDao().deleteTrip(trip)
                    val list = viewState.value.trips.value.map { it.copy() }.toMutableList()
                    val item = list.first { it.id == trip.id }
                    val listNew = (list - item).sortedByDescending { it.date }

@@ -22,9 +22,9 @@ interface ShopDao {
     suspend fun updateShop(shop: ShopLocalModel)
 
     @Query("SELECT * FROM shop WHERE idTrip = :idTrip")
-    suspend fun getShops(idTrip: Long): List<ShopLocalModel?>
+    suspend fun getShops(idTrip: Long): List<ShopLocalModel>
 
     @Query("SELECT * FROM shop WHERE id = :id")
-    suspend fun getShopsById(id: Long): List<ShopLocalModel?>
+    suspend fun getShopsById(id: Long): List<ShopLocalModel>
 }
 

@@ -62,7 +62,7 @@ fun MenuView(
                 itemsIndexed(items = listMenu) { index, nameMenu ->
                     when(nameMenu) {
                         R.string.trip -> CustomButton(buttonName = stringResource(nameMenu), routeTo = onTripClick)
-                        R.string.route -> if (user.isSysOrAdmin()) {
+                        R.string.route -> if (user.isModOrAdminOrSys()) {
                             CustomButton(buttonName = stringResource(nameMenu), routeTo = onRouteClick)
                         }
 

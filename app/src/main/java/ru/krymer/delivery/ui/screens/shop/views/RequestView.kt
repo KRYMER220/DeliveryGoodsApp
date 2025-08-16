@@ -61,8 +61,8 @@ fun AlertDialogRequestShop(
     state: ShopViewState, event: (ShopEvent) -> Unit, user: UserModel
 ) {
     state.currentShop?.let { shop ->
-
-        val listMenu = listOf("Долг", "Доп.сумму", "Старая цена", "Добавить бонус", "Удалить магазин" ,"Отправить сообщение", "Добавить заявку")
+        val listMenu = if (user.isModOrAdminOrSys()) listOf("Долг", "Доп.сумму", "Старая цена", "Добавить бонус", "Удалить магазин" ,"Отправить сообщение", "Добавить заявку")
+        else  listOf("Долг", "Доп.сумму", "Старая цена", "Отправить сообщение")
         var isExpandedMenu by remember { mutableStateOf(false) }
         val requests = state.listDataRequests.collectAsState().value
         val orderMoney = state.orderMoney.collectAsState().value.toInt().toString()
@@ -141,9 +141,8 @@ fun AlertDialogRequestShop(
                                     "Добавить заявку" -> {
                                         event(ShopEvent.ShowDialogAddRequest)
                                     }
-
                                     "Удалить магазин" -> {
-                                        if (user.isModOrAdminOrSys()) event(ShopEvent.ShowDeleteDialog)
+                                        event(ShopEvent.ShowDeleteDialog)
                                     }
                                 }
                             }, text = {

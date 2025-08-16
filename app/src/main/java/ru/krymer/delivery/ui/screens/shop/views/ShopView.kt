@@ -454,9 +454,15 @@ fun ShopView(
                 event(ShopEvent.SendMessage)
             },
             content = {
-                MessageTextView(changeTextMessage = {
-                    event(ShopEvent.ChangeMessage(it))
-                })
+                MessageTextView(
+                    changeTextMessage = {
+                        event(ShopEvent.ChangeMessage(it))
+                    },
+                    deleteMessage = {
+                        event(ShopEvent.DeleteMessage(it))
+                    },
+                    state = state,
+                )
             }
         )
     }

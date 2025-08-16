@@ -217,8 +217,11 @@ fun MessageItem(messageModel: MessageModel, deleteMessage: (MessageModel) -> Uni
     Column(modifier = Modifier
         .fillMaxWidth()
         .background(AppTheme.colors.secondary, shape = RoundedCornerShape(5.dp))) {
-        Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Text(text = convertToTextDate(messageModel.date), color = AppTheme.colors.error, textAlign = TextAlign.Center)
+        Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(5.dp)) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = convertToTextDate(messageModel.date, pattern = Constants.PatternDate.FULL), color = AppTheme.colors.error, textAlign = TextAlign.Center)
+                Text(modifier = Modifier.fillMaxWidth(), text = messageModel.text, color = AppTheme.colors.onSecondary)
+            }
             Image(
                 contentDescription = "delete message",
                 painter = painterResource(id = R.drawable.delete),
@@ -227,7 +230,6 @@ fun MessageItem(messageModel: MessageModel, deleteMessage: (MessageModel) -> Uni
                     .clickable(onClick = { deleteMessage(messageModel) })
             )
         }
-        Text(modifier = Modifier.fillMaxWidth(), text = messageModel.text, color = AppTheme.colors.onSecondary)
     }
 }
 

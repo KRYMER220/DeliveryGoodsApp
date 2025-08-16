@@ -5,6 +5,7 @@ plugins {
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
     alias(libs.plugins.jetbrains.kotlin.serialization)
+    id("ru.ok.tracer").version("1.1.0")
 }
 
 android {
@@ -15,8 +16,8 @@ android {
         applicationId = "ru.krymer.delivery"
         minSdk = 26
         targetSdk = 36
-        versionCode = 23
-        versionName = "1.3.0.2"
+        versionCode = 28
+        versionName = "1.3.1.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -31,6 +32,15 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+    }
+
+    tracer {
+        create("defaultConfig") {
+            pluginToken = "lvbCFIvUR9aQhO0qz8YmG0SYeX5LF1M5kE9V70vEvKY2"
+            appToken = "fjPNzzrVeSgqHqHyOeWLWjUQE2AiuJcSNvVa1IHtUaw"
+            uploadMapping = true
+            uploadNativeSymbols = false
         }
     }
 
@@ -103,4 +113,12 @@ dependencies {
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     implementation(libs.sonner)
+
+    implementation(platform("ru.ok.tracer:tracer-platform:1.1.0"))
+    implementation("ru.ok.tracer:tracer-crash-report")
+    implementation("ru.ok.tracer:tracer-crash-report-native")
+    implementation("ru.ok.tracer:tracer-heap-dumps")
+    implementation("ru.ok.tracer:tracer-disk-usage")
+    implementation("ru.ok.tracer:tracer-profiler-sampling")
+    implementation("ru.ok.tracer:tracer-profiler-systrace")
 }
