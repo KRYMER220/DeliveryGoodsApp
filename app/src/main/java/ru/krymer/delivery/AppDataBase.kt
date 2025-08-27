@@ -12,11 +12,14 @@ import ru.krymer.delivery.data.model.FactoryModel
 import ru.krymer.delivery.data.model.FailedRequest
 import ru.krymer.delivery.data.model.RequestModel
 import ru.krymer.delivery.data.model.ShopLocalModel
-import ru.krymer.delivery.data.model.ShopModel
 import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.user.UserModel
 
-@Database(entities = [UserModel::class, TripModel::class, FactoryModel::class, ShopLocalModel::class, RequestModel::class, FailedRequest::class], version = 3, exportSchema = false)
+@Database(
+    entities = [UserModel::class, TripModel::class, FactoryModel::class, ShopLocalModel::class, RequestModel::class, FailedRequest::class],
+    version = 4,
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun tripDao(): TripDao

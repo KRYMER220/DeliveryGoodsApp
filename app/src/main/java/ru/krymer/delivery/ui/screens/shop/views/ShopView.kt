@@ -1,6 +1,5 @@
 package ru.krymer.delivery.ui.screens.shop.views
 
-import android.util.Log
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -32,7 +31,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,11 +41,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.delay
@@ -55,13 +51,12 @@ import kotlinx.coroutines.launch
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.ShopModel
 import ru.krymer.delivery.data.model.user.UserModel
-import ru.krymer.delivery.data.model.utilModel.Loader
 import ru.krymer.delivery.ui.components.CommonAlertAddDialog
+import ru.krymer.delivery.ui.components.CommonAlertDialog
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
 import ru.krymer.delivery.ui.components.CommonInfoAlertDialog
 import ru.krymer.delivery.ui.components.CommonSaveDialog
 import ru.krymer.delivery.ui.components.ConfirmView
-import ru.krymer.delivery.ui.components.InfoDialog
 import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
 import ru.krymer.delivery.ui.theme.AppTheme
@@ -75,7 +70,7 @@ fun ShopView(
 ) {
 
     val context = LocalContext.current
-    val shops = state.listShop.collectAsState().value
+    val shops = state.listUIShop
     var isFirstLoad by remember { mutableStateOf(true) }
 
     val lazyListState = rememberLazyListState()
@@ -194,7 +189,7 @@ fun ShopView(
                     index = index + 1,
                     user = user,
                     openInfoShop = {
-                        event(ShopEvent.ShowInfoShop(it))
+                        event(ShopEvent.ToggleLogsShopDialog(it))
                     }
                 )
                 Spacer(modifier = Modifier.height(3.dp))
@@ -204,9 +199,9 @@ fun ShopView(
 
     if (state.isShowInfoShop) {
         CommonInfoAlertDialog(onDismissRequest = {
-            event(ShopEvent.DismissLogShopDialog)
+            event(ShopEvent.ToggleLogsShopDialog(null))
         }, content = {
-            val logs = state.logShop.collectAsState().value
+            val logs = state.logShop
             LazyColumn(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 if (logs.isNotEmpty()) {
                     itemsIndexed(logs) { i, log ->
@@ -224,8 +219,13 @@ fun ShopView(
                                 color = AppTheme.colors.onSecondary,
                             )
                             Spacer(modifier = Modifier.height(5.dp))
-                            Spacer(modifier = Modifier.fillMaxWidth().padding(start = 5.dp, end = 5.dp).background(
-                                AppTheme.colors.onSecondary).height(1.dp))
+                            Spacer(modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 5.dp, end = 5.dp)
+                                .background(
+                                    AppTheme.colors.onSecondary
+                                )
+                                .height(1.dp))
                             Spacer(modifier = Modifier.height(5.dp))
                         }
                     }
@@ -250,9 +250,9 @@ fun ShopView(
         CommonInfoAlertDialog(onDismissRequest = {
             event(ShopEvent.DismissMillageDialog)
         }, content = {
-            val count = state.allCountRequestsInfo.collectAsState().value
-            val exchange = state.allExchangeRequestsInfo.collectAsState().value
-            val requests = state.listInfoRequests.collectAsState().value
+            val count = state.allCountRequestsInfo
+            val exchange = state.allExchangeRequestsInfo
+            val requests = state.listInfoRequests
             LazyColumn {
                 if (state.lightVersion) {
                     item {
@@ -351,7 +351,9 @@ fun ShopView(
                 }
 
                 item {
-                    Spacer(modifier = Modifier.fillMaxWidth().height(10.dp))
+                    Spacer(modifier = Modifier
+                        .fillMaxWidth()
+                        .height(10.dp))
                 }
                 item {
                     MillageAndInfoView(state = state, onMillageTFC = {
@@ -398,13 +400,27 @@ fun ShopView(
         })
     }
 
+    if (state.isCopyAndSave) {
+        CommonAlertDialog(
+            isVisible = true,
+            onDismiss = {
+                event(ShopEvent.ChangeStateIsCopyDialog)
+            }, onConfirm = {
+                event(ShopEvent.CopyAndSaveShop)
+            }
+        )
+    }
+
     if (state.showRequestDialog) {
         Dialog(onDismissRequest = { event(ShopEvent.DismissRequestDialog) }, properties = DialogProperties(
             usePlatformDefaultWidth = false,
             decorFitsSystemWindows = false
         )) {
             Card(
-                modifier = Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding(), colors = CardColors(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding(), colors = CardColors(
                     containerColor = AppTheme.colors.onPrimary,
                     contentColor = AppTheme.colors.onPrimary,
                     disabledContentColor = AppTheme.colors.onPrimary,
@@ -448,7 +464,7 @@ fun ShopView(
     if (state.isShowMessageDialog) {
         CommonSaveDialog(
             dismiss = {
-                event(ShopEvent.DismissMessageAddDialog)
+                event(ShopEvent.ToggleMessageDialog)
             },
             confirm = {
                 event(ShopEvent.SendMessage)
@@ -529,7 +545,9 @@ fun ShopsItem(
         contentAlignment = Alignment.Center
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(5.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(5.dp),
             horizontalArrangement = Arrangement.spacedBy(5.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -549,9 +567,11 @@ fun ShopsItem(
             if (user.isSysOrAdmin() && shop.isChanged) {
                 Image(
                     contentDescription = "info",
-                    modifier = Modifier.size(40.dp).clickable(onClick = {
-                        openInfoShop(shop)
-                    }),
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clickable(onClick = {
+                            openInfoShop(shop)
+                        }),
                     painter = painterResource(R.drawable.info_shop)
                 )
             }

@@ -70,7 +70,7 @@ class RouteViewModel @Inject constructor(
 
     private fun getDataRoutes() {
         launchCoroutine {
-            val user = sharedViewModel.viewState.value.user.value
+            val user = sharedViewModel.viewState.value.user
             if (user != null) {
                 val response = routeApi.getRoutes(idFactory = user.idFactory)
                 if (response.success) {
@@ -141,7 +141,7 @@ class RouteViewModel @Inject constructor(
 
     private fun saveRoute() {
         launchCoroutine {
-            val user = sharedViewModel.viewState.value.user.value
+            val user = sharedViewModel.viewState.value.user
             if (user != null) {
                 val name = if (viewState.value.nameRouteAdd == "") "Маршрут без имени" else viewState.value.nameRouteAdd
                 val routeRequest = RouteRequest(

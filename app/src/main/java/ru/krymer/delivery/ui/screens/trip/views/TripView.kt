@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -44,8 +43,6 @@ import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.ui.components.CommonAlertAddDialog
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
-import ru.krymer.delivery.ui.navigation.NavigationTree
-import ru.krymer.delivery.ui.screens.trip.models.TripAction
 import ru.krymer.delivery.ui.screens.trip.models.TripEvent
 import ru.krymer.delivery.ui.screens.trip.models.TripViewState
 import ru.krymer.delivery.ui.theme.AppTheme
@@ -60,7 +57,6 @@ fun TripView(
     user: UserModel,
     openTrip: (TripModel) -> Unit = {}
 ) {
-
     val lazyListState = rememberLazyListState()
     val trips = state.trips.collectAsState().value
     val coroutineScope = rememberCoroutineScope()
@@ -117,7 +113,6 @@ fun TripView(
                         contentDescription = "exit",
                         modifier = Modifier
                             .clickable(onClick = {
-                                event(TripEvent.TripActionDefault)
                                 popBackStack()
                             })
                             .size(60.dp)
@@ -191,8 +186,8 @@ fun TripView(
             event(TripEvent.OpenFilterTrip)
         }, content = {
             FilterView(changeFilterCourier = {
-                event(TripEvent.ChangerCheckBoxFilterCourier(it))
-            }, state = state)
+                event(TripEvent.IsFilter(it))
+            }, state = state, event = event)
         }, confirm = { event(TripEvent.SubmitFilter) })
     }
 

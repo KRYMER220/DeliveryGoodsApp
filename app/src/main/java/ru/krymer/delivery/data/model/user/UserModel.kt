@@ -2,7 +2,6 @@ package ru.krymer.delivery.data.model.user
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import ru.krymer.delivery.data.request.UpdateUserRequest
 import ru.krymer.delivery.utills.Constants
 
 @Entity(tableName = "users")
@@ -21,6 +20,7 @@ data class UserModel(
     val percentSalary: Double,
     val salary: Double
 ) {
+    fun isMod(): Boolean = role == RoleModel.MODERATOR
     fun isSysOrAdmin(): Boolean = role == RoleModel.ADMIN || role == RoleModel.SYSTEM
     fun isModOrAdminOrSys(): Boolean =
         role == RoleModel.MODERATOR || role == RoleModel.ADMIN || role == RoleModel.SYSTEM

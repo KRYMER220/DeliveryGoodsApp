@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import dagger.hilt.android.AndroidEntryPoint
@@ -18,6 +19,7 @@ import ru.krymer.delivery.ui.screens.ApplicationScreen
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.ui.theme.BoxTheme
 
+@Serializable
 sealed class Screens: NavKey {
     @Serializable
     data object Auth : Screens()
@@ -50,7 +52,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val sharedViewModel = viewModel<SharedViewModel>()
+            val sharedViewModel = hiltViewModel<SharedViewModel>()
             val state = sharedViewModel.viewState.collectAsState()
             val backStack = sharedViewModel.backStack
             BoxTheme(content = {

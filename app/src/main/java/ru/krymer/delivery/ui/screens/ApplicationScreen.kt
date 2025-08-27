@@ -1,12 +1,17 @@
+@file:OptIn(ExperimentalFoundationApi::class)
+
 package ru.krymer.delivery.ui.screens
 
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +23,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Checkbox
@@ -31,7 +36,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -41,9 +45,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entry
 import androidx.navigation3.runtime.entryProvider
@@ -55,15 +61,20 @@ import com.dokar.sonner.ToastType
 import com.dokar.sonner.Toaster
 import com.dokar.sonner.listenMany
 import com.dokar.sonner.rememberToasterState
+import ru.krymer.delivery.R
 import ru.krymer.delivery.Screens
+import ru.krymer.delivery.data.model.user.UserModel
+import ru.krymer.delivery.data.model.utilModel.Error
 import ru.krymer.delivery.data.model.utilModel.MessageModel
 import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
 import ru.krymer.delivery.ui.components.CommonInfoAlertDialog
+import ru.krymer.delivery.ui.components.CommonTextField
 import ru.krymer.delivery.ui.screens.analitic.AnaliticScreen
 import ru.krymer.delivery.ui.screens.client.ClientScreen
 import ru.krymer.delivery.ui.screens.courier.CourierScreen
 import ru.krymer.delivery.ui.screens.login.LoginScreen
 import ru.krymer.delivery.ui.screens.main.MenuScreen
+import ru.krymer.delivery.ui.screens.main.views.CustomButton
 import ru.krymer.delivery.ui.screens.product.ProductScreen
 import ru.krymer.delivery.ui.screens.route.RouteScreen
 import ru.krymer.delivery.ui.screens.shared.models.SharedEvents
@@ -84,8 +95,9 @@ fun ApplicationScreen(
     modifier: Modifier,
 ) {
 
-    val user = sharedState.value.user.collectAsState().value
-    val isShowSettings = sharedState.value.isShowSettings.collectAsState().value
+    val user = sharedState.value.user
+    val isShowSettings = sharedState.value.isShowSettings
+    val isShowPassChanger = sharedState.value.isShowPassChanger
 
     NavDisplay(
         modifier = modifier,
@@ -207,78 +219,194 @@ fun ApplicationScreen(
                 event(SharedEvents.OpenHideSettingsApp)
             },
             content = {
-                SettingsApp(event = event, state = sharedState)
+                SettingsApp(
+                    event = event, state = sharedState,
+                    onRouteClick = {
+                        backStack.add(Screens.Route)
+                        event(SharedEvents.OpenHideSettingsApp)
+                    },
+                    user = user
+                )
             },
             modifier = Modifier
+        )
+    }
+
+    if (isShowPassChanger) {
+        CommonInfoAlertDialog(
+            onDismissRequest = { event(SharedEvents.OpenHideChangerPass) },
+            content = {
+                ChangerPass(event = event)
+            }
         )
     }
 }
 
 @Composable
-fun SettingsApp(state: State<SharedViewState>, event: (SharedEvents) -> Unit) {
-    var isFilterByCourier by remember { mutableStateOf(state.value.lightVersion) }
-    val context = LocalContext.current
-    val versionName = try {
-        context.packageManager.getPackageInfo(context.packageName, 0).versionName
-    } catch (e: PackageManager.NameNotFoundException) {
-        "Unknown"
-    }
-    val animatedValue by animateFloatAsState(
-        targetValue = state.value.fontSizeIndex.toFloat(),
-        animationSpec = tween(durationMillis = 300),
-        label = "fontSizeSliderAnimation"
-    )
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Checkbox(
-                modifier = Modifier.size(60.dp),
-                checked = isFilterByCourier,
-                onCheckedChange = {
-                    isFilterByCourier = !isFilterByCourier
-                    event(SharedEvents.ChangeSettings)
-                },
-                colors = CheckboxColors(
-                    checkedCheckmarkColor = AppTheme.colors.onSecondary,
-                    uncheckedCheckmarkColor = AppTheme.colors.secondary,
-                    checkedBoxColor = Color.Transparent,
-                    uncheckedBoxColor = Color.Transparent,
-                    disabledCheckedBoxColor = Color.Transparent,
-                    disabledUncheckedBoxColor = Color.Transparent,
-                    disabledIndeterminateBoxColor = Color.Transparent,
-                    checkedBorderColor = AppTheme.colors.onSecondary,
-                    uncheckedBorderColor = AppTheme.colors.onSecondary,
-                    disabledBorderColor = Color.Transparent,
-                    disabledUncheckedBorderColor = Color.Transparent,
-                    disabledIndeterminateBorderColor = Color.Transparent
-                )
-            )
-            Text(text = if (isFilterByCourier) "Выключить режим" else "Включить режим", color = AppTheme.colors.onSecondary, style = AppTheme.typography.titleMedium)
-        }
-        Text(
-            text = "Размер шрифта",
-            style = AppTheme.typography.titleMedium,
-            color = AppTheme.colors.onSecondary
+fun ChangerPass(event: (SharedEvents) -> Unit) {
+    var newPass by remember { mutableStateOf(Constants.EMPTY.EMPTY_STRING) }
+    var oldPass by remember { mutableStateOf(Constants.EMPTY.EMPTY_STRING) }
+
+    var errorNewPass by remember { mutableStateOf(Error()) }
+    var errorOldPass by remember { mutableStateOf(Error()) }
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(5.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        CommonTextField(
+            value = oldPass,
+            placeholder = stringResource(
+                id = R.string.pass_old
+            ),
+            changerText = { str ->
+                oldPass = str
+                errorOldPass = when {
+                    str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
+                    str.length < 8 -> Error(visible = true, error = Constants.ERROR.PASS_INVALID)
+                    else -> {
+                        Error()
+                    }
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+            isError = errorOldPass.visible,
+            errorValue = errorOldPass.error
         )
 
-        Column(
-            modifier = Modifier.padding(horizontal = 16.dp)
-        ) {
-            Slider(
-                value = animatedValue,
-                onValueChange = { newValue ->
-                    event(SharedEvents.ChangeFontSizeIndex(newValue.toInt()))
-                },
-            valueRange = 0f..4f,
-                steps = 3,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Text(text = animatedValue.toString())
-        }
-        Text(
-            text = "Версия: $versionName",
-            style = AppTheme.typography.titleSmall,
-            color = AppTheme.colors.onSecondary
+        CommonTextField(
+            value = newPass,
+            placeholder = stringResource(
+                id = R.string.pass_new
+            ),
+            changerText = { str ->
+                newPass = str
+                errorNewPass = when {
+                    str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
+                    str.length < 8 -> Error(visible = true, error = Constants.ERROR.PASS_INVALID)
+                    else -> {
+                        Error()
+                    }
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+            isError = errorNewPass.visible,
+            errorValue = errorNewPass.error
         )
+
+        Image(
+            contentDescription = "submit",
+            painter = painterResource(id = R.drawable.submit),
+            modifier = Modifier
+                .size(60.dp)
+                .combinedClickable(onClick = {
+                    if (!errorNewPass.visible && !errorOldPass.visible) {
+                        event(SharedEvents.ChangePass(oldPass = oldPass, newPass = newPass))
+                    }
+                })
+        )
+
+    }
+}
+
+@Composable
+fun SettingsApp(
+    state: State<SharedViewState>,
+    event: (SharedEvents) -> Unit,
+    onRouteClick: () -> Unit,
+    user: UserModel?
+) {
+    user?.let {
+        val isVersion = state.value.lightVersion
+        val context = LocalContext.current
+        val versionName = try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.packageManager.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0)).versionName
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.getPackageInfo(context.packageName, 0).versionName
+            }        } catch (_: PackageManager.NameNotFoundException) {
+            "Unknown"
+        }
+        val animatedValue by animateFloatAsState(
+            targetValue = state.value.fontSizeIndex.toFloat(),
+            animationSpec = tween(durationMillis = 300),
+            label = "fontSizeSliderAnimation"
+        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Checkbox(
+                    modifier = Modifier.size(60.dp),
+                    checked = isVersion,
+                    onCheckedChange = {
+                        event(SharedEvents.ChangeSettings)
+                    },
+                    colors = CheckboxColors(
+                        checkedCheckmarkColor = AppTheme.colors.onSecondary,
+                        uncheckedCheckmarkColor = AppTheme.colors.secondary,
+                        checkedBoxColor = Color.Transparent,
+                        uncheckedBoxColor = Color.Transparent,
+                        disabledCheckedBoxColor = Color.Transparent,
+                        disabledUncheckedBoxColor = Color.Transparent,
+                        disabledIndeterminateBoxColor = Color.Transparent,
+                        checkedBorderColor = AppTheme.colors.onSecondary,
+                        uncheckedBorderColor = AppTheme.colors.onSecondary,
+                        disabledBorderColor = Color.Transparent,
+                        disabledUncheckedBorderColor = Color.Transparent,
+                        disabledIndeterminateBorderColor = Color.Transparent
+                    )
+                )
+                Text(
+                    text = if (isVersion) "Выключить режим" else "Включить режим",
+                    color = AppTheme.colors.onSecondary,
+                    style = AppTheme.typography.titleMedium
+                )
+            }
+            Text(
+                text = "Размер шрифта",
+                style = AppTheme.typography.titleMedium,
+                color = AppTheme.colors.onSecondary
+            )
+
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp)
+            ) {
+                Slider(
+                    value = animatedValue,
+                    onValueChange = { newValue ->
+                        event(SharedEvents.ChangeFontSizeIndex(newValue.toInt()))
+                    },
+                    valueRange = 0f..4f,
+                    steps = 3,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(text = animatedValue.toString())
+            }
+
+            if (user.isMod()) {
+                CustomButton(buttonName = stringResource(R.string.route), routeTo = onRouteClick)
+            }
+
+            CustomButton(buttonName = stringResource(R.string.change_pass_title), routeTo = {
+                event(SharedEvents.OpenHideChangerPass)
+            })
+
+            Text(
+                text = "Версия: $versionName",
+                style = AppTheme.typography.titleSmall,
+                color = AppTheme.colors.onSecondary
+            )
+        }
     }
 }
 
@@ -324,15 +452,13 @@ fun MessageModel.toToast(): Toast = when (this.type) {
 
 @Composable
 fun ToasterMessages(sharedViewState: SharedViewState, event: (SharedEvents) -> Unit) {
-    val messages = sharedViewState.listMessage.collectAsState()
+    val messages = sharedViewState.listMessage
     val toaster = rememberToasterState(
         onToastDismissed = { event(SharedEvents.DeleteMessage(it.id as Long)) },
     )
 
-    val currentMessages by rememberUpdatedState(messages)
-
     LaunchedEffect(toaster, messages) {
-        toaster.listenMany { currentMessages.value.map(MessageModel::toToast) }
+        toaster.listenMany { messages.map(MessageModel::toToast) }
     }
 
     Toaster(

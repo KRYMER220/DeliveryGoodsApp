@@ -13,8 +13,11 @@
     //auth
     <string name="sign_in_title">Авторизация</string>
     <string name="forgot_pass_title">Восстановить пароль</string>
+    <string name="change_pass_title">Изменить пароль</string>
     <string name="sign_in_subtitle">Забыли пароль?</string>
     <string name="pass_hint">Пароль</string>
+    <string name="pass_old">Старый пароль</string>
+    <string name="pass_new">Новый пароль</string>
     <string name="sign_in">Войти</string>
     <string name="restore">Восстановить</string>
 
@@ -46,7 +49,8 @@
     <string name="logs">Логи</string>
     <string name="email_hint">Ваша почта</string>
     //error
-    <string name="del_confirm">Вы уверены, что хотите удалить</string>
+    <string name="del_confirm">Вы уверены, что хотите удалить?</string>
+    <string name="copy_confirm">Вы уверены, что хотите скопировать заявки?</string>
     <string name="empty_data">Список пуст!</string>
     //Other
     <string name="yes">Да</string>

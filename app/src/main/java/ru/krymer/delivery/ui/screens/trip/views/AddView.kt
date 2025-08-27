@@ -116,7 +116,7 @@ fun AddTripView(
                         }, verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = state.currentRoute!!.name,
+                        text = state.currentRoute?.name ?: "Маршрут не выбран",
                         modifier = Modifier.padding(start = 15.dp),
                         color = AppTheme.colors.onSecondary,
                         style = AppTheme.typography.titleMedium
@@ -130,6 +130,12 @@ fun AddTripView(
                     DropdownMenu(expanded = state.dropDownStateRoutes, onDismissRequest = {
                         event(TripEvent.OpenHideDropDownMenuWithRoutes)
                     }) {
+                        DropdownMenuItem(text = {
+                            Text(text = "Не выбран", style = AppTheme.typography.titleSmall)
+                        }, onClick = {
+                            event(TripEvent.SelectRoute(null))
+                            event(TripEvent.OpenHideDropDownMenuWithRoutes)
+                        })
                         routes.forEach {
                             DropdownMenuItem(text = { Text(text = it.name,
                                 style = AppTheme.typography.titleSmall) }, onClick = {
@@ -157,7 +163,7 @@ fun AddTripView(
                         }, verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = state.currentCourier!!.name,
+                        text = state.currentCourier?.name ?: "Курьер не выбран",
                         modifier = Modifier.padding(start = 15.dp),
                         color = AppTheme.colors.onSecondary,
                         style = AppTheme.typography.titleMedium
@@ -172,6 +178,12 @@ fun AddTripView(
                         onDismissRequest = {
                             event(TripEvent.OpenHideDropDownMenuWithCouriers)
                         }) {
+                        DropdownMenuItem(text = {
+                            Text(text = "Не выбран", style = AppTheme.typography.titleSmall)
+                        }, onClick = {
+                            event(TripEvent.SelectCourier(null))
+                            event(TripEvent.OpenHideDropDownMenuWithCouriers)
+                        })
                         val list = state.listCourier.collectAsState().value
                         list.forEach {
                             DropdownMenuItem(text = { Text(text = it.name,

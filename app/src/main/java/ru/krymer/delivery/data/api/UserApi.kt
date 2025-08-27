@@ -21,6 +21,12 @@ interface UserApi {
     @POST("user/sign/in")
     suspend fun signIn(@Body request: SignInRequest): BaseResponse<TokenResponse>
 
+    @POST("user/password")
+    suspend fun changePass(
+        @Query("password") newPass: String,
+        @Query("oldPass") oldPass: String
+    ): BaseResponse<UserModel>
+
     @GET("token/refresh")
     suspend fun refreshToken(@Header(Constants.HttpRequestKeys.TOKEN_TITLE) token: String): BaseResponse<TokenResponse>
 

@@ -22,7 +22,6 @@ import ru.krymer.delivery.data.request.CreateTripRequest
 import ru.krymer.delivery.data.request.UpdateTripRequest
 import ru.krymer.delivery.di.AppPreferencesManager
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
-import ru.krymer.delivery.ui.screens.trip.models.TripAction
 import ru.krymer.delivery.ui.screens.trip.models.TripEvent
 import ru.krymer.delivery.ui.screens.trip.models.TripViewState
 import ru.krymer.delivery.utills.Constants
@@ -51,10 +50,11 @@ class TripViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 block()
-            } catch (e: CancellationException) {
-                sharedViewModel.message("Вызов операции отменен!", type = TypeMessageModel.ERROR)
+            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                throw e
+                sharedViewModel.message(Constants.ERROR.CANCEL_OPERATION, type = TypeMessageModel.ERROR)
             } catch (e: Exception) {
-                sharedViewModel.message(e.message, type = TypeMessageModel.ERROR)
+                sharedViewModel.message(e.message)
             }
         }
     }
@@ -72,22 +72,37 @@ class TripViewModel @Inject constructor(
             is TripEvent.OpenHideDatePickerForAddTrip -> changeStateDropMenuDatePicker()
             is TripEvent.ChangeDate -> changeDate(event.date)
             is TripEvent.UpdateTrip -> updateTrip()
-            is TripEvent.TripActionDefault -> tripActionInvoked()
             is TripEvent.DismissDeleteDialog -> dismissDeleteDialog()
             is TripEvent.DismissUpdateDialog -> dismissUpdateDialog()
             is TripEvent.DeleteTrip -> deleteTrip()
             is TripEvent.OpenFilterTrip -> switcherFilterDialog()
-            is TripEvent.ChangerCheckBoxFilterCourier -> changeFilterCourier()
+            is TripEvent.IsFilter -> changeFilter(event.boolean)
             is TripEvent.SubmitFilter -> submitFilter()
             is TripEvent.LoadMoreTrips -> {
                 val state = viewState.value
-                if (!state.checkBoxIsFilterCourier && state.hasMore && !state.isLoading) {
+                if (!state.isFilter && state.hasMore && !state.isLoading) {
                     loadPaginatedTrips(loadMore = true)
                 }
             }
 
             is TripEvent.ChangeSalaryTrip -> changeSalaryTrip(event.salary)
+            is TripEvent.ChangeCourierFilter -> changeCourier(event.courier)
+            is TripEvent.ChangeRouteFilter -> changeRoute(event.route)
+            is TripEvent.ChangeSort -> changeSort(event.boolean)
         }
+    }
+
+    private fun changeSort(boolean: Boolean) {
+        updateViewState { it.copy(sort = !boolean) }
+        manager.saveBoolean(Constants.KEYS.SORT, !boolean)
+    }
+
+    private fun changeCourier(user: UserModel?) {
+        updateViewState { it.copy(filterUid = user?.id, currentCourier = user) }
+    }
+
+    private fun changeRoute(route: RouteModel?) {
+        updateViewState { it.copy(filterRouteId = route?.id, currentRoute = route) }
     }
 
     private fun changeSalaryTrip(salaryTrip: String) {
@@ -108,31 +123,40 @@ class TripViewModel @Inject constructor(
 
     private fun submitFilter() {
         launchCoroutine {
-            val user = sharedViewModel.viewState.value.user.value
-            user?.let { u ->
-                val isFilterCourier = viewState.value.checkBoxIsFilterCourier
-                manager.saveBoolean(key = Constants.KEYS.COURIER_FILTER, isFilterCourier)
-                manager.getBooleanData(key = Constants.KEYS.COURIER_FILTER)
-                getLocalData()
+            val isFilter = viewState.value.isFilter
+            if (!isFilter) {
+                updateViewState { it.copy(filterRouteId = null, filterUid = null, sort = false) }
             }
+            getLocalData()
             switcherFilterDialog()
         }
     }
 
+    private fun changeFilter(boolean: Boolean) {
+        updateViewState { it.copy(isFilter = !boolean) }
+        manager.saveBoolean(key = Constants.KEYS.FILTER, !boolean)
+    }
+
     private fun getAllDataTrips() {
         launchCoroutine {
-            val user = sharedViewModel.viewState.value.user.value
+            val user = sharedViewModel.viewState.value.user
+            val uid = viewState.value.filterUid
+            val routeId = viewState.value.filterRouteId
+            val sort = viewState.value.sort
             if (user != null) {
-                val isFilterCourier = viewState.value.checkBoxIsFilterCourier
-                if (isFilterCourier) {
-                    val response = tripApi.getTrips(idFactory = user.idFactory)
+                val isFilter = viewState.value.isFilter
+                if (isFilter) {
+                    val response = tripApi.getTrips(
+                        idFactory = user.idFactory,
+                        uid = uid,
+                        routeId = routeId,
+                        sortBy = if (sort) Constants.SORT.ASC else Constants.SORT.DESC
+                    )
                     if (response.success) {
-                        val allTrips = response.obj ?: emptyList()
-                        val filteredTrips = allTrips.filter { it.idCourier == user.id }
+                        val trips = response.obj ?: emptyList()
                         updateViewState {
                             it.copy(
-                                trips = MutableStateFlow(filteredTrips.sortedByDescending { it.date }),
-                                unFilteredTrips = MutableStateFlow(allTrips.sortedByDescending { it.date }),
+                                trips = MutableStateFlow(trips),
                                 hasMore = false
                             )
                         }
@@ -152,7 +176,7 @@ class TripViewModel @Inject constructor(
             if (isLoading) return@launchCoroutine
 
             updateViewState { it.copy(isLoading = true) }
-            val user = sharedViewModel.viewState.value.user.value
+            val user = sharedViewModel.viewState.value.user
 
             if (user != null) {
                 val limit = 10
@@ -200,10 +224,7 @@ class TripViewModel @Inject constructor(
         }
     }
 
-    private fun changeFilterCourier() {
-        val bool = !viewState.value.checkBoxIsFilterCourier
-        updateViewState { it.copy(checkBoxIsFilterCourier = bool) }
-    }
+
 
     private fun switcherFilterDialog() {
         updateViewState { it.copy(isShowFilterDialog = !it.isShowFilterDialog) }
@@ -211,17 +232,18 @@ class TripViewModel @Inject constructor(
 
     private fun getLocalData() {
         launchCoroutine {
-            val isFilterCourier = manager.getBooleanData(Constants.KEYS.COURIER_FILTER) == true
-            val user = sharedViewModel.viewState.value.user.value
+            val isFilter = manager.getBooleanData(Constants.KEYS.FILTER) == true
+            val isSorted = manager.getBooleanData(Constants.KEYS.SORT) == true
+            updateViewState { it.copy(isFilter = isFilter, sort = isSorted) }
+            val user = sharedViewModel.viewState.value.user
             user?.let {
-                if (!isFilterCourier) {
+                if (!isFilter) {
                     val localTrips = database.tripDao().getTrips().sortedByDescending { it.date }
                     if (localTrips.isNotEmpty()) {
                         updateViewState {
                             it.copy(
                                 trips = MutableStateFlow(localTrips),
-                                unFilteredTrips = MutableStateFlow(localTrips),
-                                checkBoxIsFilterCourier = false
+                                unFilteredTrips = MutableStateFlow(localTrips)
                             )
                         }
                     }
@@ -233,8 +255,7 @@ class TripViewModel @Inject constructor(
                         updateViewState {
                             it.copy(
                                 trips = MutableStateFlow(localTrips),
-                                unFilteredTrips = MutableStateFlow(localTrips),
-                                checkBoxIsFilterCourier = true
+                                unFilteredTrips = MutableStateFlow(localTrips)
                             )
                         }
                     }
@@ -242,11 +263,6 @@ class TripViewModel @Inject constructor(
                 getAllDataTrips()
             }
         }
-    }
-
-
-    private fun tripActionInvoked() {
-        updateViewState { it.copy(tripAction = TripAction.None) }
     }
 
     private fun updateTrip() {
@@ -317,17 +333,17 @@ class TripViewModel @Inject constructor(
         updateViewState { it.copy(dropDownStateDatePicker = !it.dropDownStateDatePicker) }
     }
 
-    private fun changeCurrentRoute(route: RouteModel) {
+    private fun changeCurrentRoute(route: RouteModel?) {
         updateViewState { it.copy(currentRoute = route) }
     }
 
-    private fun changeCurrentCourier(courier: UserModel) {
+    private fun changeCurrentCourier(courier: UserModel?) {
         updateViewState { it.copy(currentCourier = courier) }
     }
 
     private fun saveTrip() {
         launchCoroutine {
-            val factory = sharedViewModel.viewState.value.factory.value
+            val factory = sharedViewModel.viewState.value.factory
             val curRoute = viewState.value.currentRoute
             val curCourier = viewState.value.currentCourier
             val date = viewState.value.currentDate
@@ -346,12 +362,7 @@ class TripViewModel @Inject constructor(
                 val response = tripApi.add(trip = tripRequest)
                 if (response.success) {
                     switchStateAddDialog()
-                    val trip = response.obj
-                    trip?.let {
-                        val list = viewState.value.trips.value.map { it.copy() }.toMutableList()
-                        list.add(trip)
-                        updateViewState { it.copy(trips = MutableStateFlow(list.sortedByDescending { t -> t.date })) }
-                    }
+                    getAllDataTrips()
                 } else {
                     sharedViewModel.message(response.message)
                 }
@@ -365,7 +376,9 @@ class TripViewModel @Inject constructor(
         updateViewState {
             it.copy(
                 stateAddDialog = !it.stateAddDialog,
-                currentDate = getStartOfNextDay()
+                currentDate = getStartOfNextDay(),
+                currentCourier = null,
+                currentRoute = null
             )
         }
     }
@@ -373,7 +386,7 @@ class TripViewModel @Inject constructor(
     private fun loadListDropMenuRoutes() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val user = sharedViewModel.viewState.value.user.value
+                val user = sharedViewModel.viewState.value.user
                 if (user != null) {
                     val responseRoute = routeApi.getRoutes(user.idFactory)
                     if (responseRoute.success) {
@@ -383,7 +396,6 @@ class TripViewModel @Inject constructor(
                             updateViewState {
                                 it.copy(
                                     listRoute = MutableStateFlow(list),
-                                    currentRoute = list[0]
                                 )
                             }
                         } else {
@@ -404,7 +416,7 @@ class TripViewModel @Inject constructor(
     private fun loadListDropMenuCouriers() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val user = sharedViewModel.viewState.value.user.value
+                val user = sharedViewModel.viewState.value.user
                 if (user != null) {
                     val responseUsers = userApi.getUsers(user.idFactory)
                     if (responseUsers.success) {
@@ -414,7 +426,6 @@ class TripViewModel @Inject constructor(
                             updateViewState {
                                 it.copy(
                                     listCourier = MutableStateFlow(list),
-                                    currentCourier = list[0]
                                 )
                             }
                         } else {

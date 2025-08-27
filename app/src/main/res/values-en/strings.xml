@@ -9,10 +9,12 @@
     <string name="price">Price</string>
     <string name="sign_in_title">Authorization</string>
     <string name="forgot_pass_title">Forgot password</string>
+    <string name="change_pass_title">Change your pass?</string>
     <string name="sign_in_subtitle">Forgot your password?</string>
     <string name="logs">Logs</string>
     <string name="email_hint">E-mail</string>
     <string name="pass_hint">Password</string>
+    <string name="pass_new">New password</string>
     <string name="sign_in">Sign In</string>
     <string name="restore">Restore</string>
     <string name="route">Routes</string>
@@ -33,8 +35,10 @@
     <string name="km_et">Mileage</string>
     <string name="all_info">All analitic of Factory</string>
     <string name="ok">Ok</string>
-    <string name="del_confirm">"Are you sure you want to delete "</string>
+    <string name="del_confirm">Are you sure you want to delete?</string>
+    <string name="copy_confirm">"Are you sure you want to copy requests? "</string>
     <string name="empty_data">List is empty!</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
+    <string name="pass_old">Old password</string>
 </resources>

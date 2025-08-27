@@ -16,8 +16,8 @@ android {
         applicationId = "ru.krymer.delivery"
         minSdk = 26
         targetSdk = 36
-        versionCode = 28
-        versionName = "1.3.1.5"
+        versionCode = 32
+        versionName = "1.3.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -65,55 +65,60 @@ android {
 }
 
 dependencies {
-
+    // --- Networking ---
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
     implementation(libs.gson)
     implementation(libs.okhttp)
     implementation(libs.logging.interceptor)
+    // --- Kotlin / Serialization / Coroutines ---
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.tink)
+    implementation(libs.kotlin.reflect)
+    implementation(libs.kotlinx.serialization.core)
+    implementation(libs.kotlinx.serialization.json)
+    // --- AndroidX core / lifecycle / appcompat / material ---
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.material)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.process)
-    implementation(libs.androidx.activity.compose)
+    // --- Compose ---
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.runtime.livedata)
-    implementation(libs.androidx.work.runtime.ktx)
-    implementation(libs.androidx.hilt.common)
-    implementation(libs.material)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.datastore.preferences)
-    implementation(libs.androidx.datastore.core)
-    implementation(libs.androidx.datastore)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    debugImplementation(libs.androidx.ui.tooling)
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.android.compiler)
-    implementation(libs.androidx.hilt.navigation.compose)
-
-    implementation (libs.compose.charts)
-
-
-    implementation(libs.androidx.room.runtime)
-    ksp(libs.androidx.room.compiler)
-    implementation (libs.androidx.room.ktx)
-    implementation(libs.kotlin.reflect)
-    implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.animation)
     implementation(libs.androidx.foundation)
-
-    implementation(libs.reorderable)
-    implementation(libs.kotlinx.serialization.core)
-    implementation(libs.kotlinx.serialization.json)
+    debugImplementation(libs.androidx.ui.tooling)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    // --- Hilt / DI ---
+    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.hilt.common)
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
+    // --- Room (DB) ---
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+    // --- WorkManager ---
+    implementation(libs.androidx.work.runtime.ktx)
+    // --- DataStore ---
+    implementation(libs.androidx.datastore)
+    implementation(libs.androidx.datastore.core)
+    implementation(libs.androidx.datastore.preferences)
+    // --- Navigation3 (альфа) ---
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+    // --- UI / 3rd-party helpers ---
+    implementation(libs.compose.charts)
+    implementation(libs.reorderable)
     implementation(libs.sonner)
-
+    // --- Security / Misc ---
+    implementation(libs.tink)
+    // --- Tracer (ok.tracer) ---
     implementation(platform("ru.ok.tracer:tracer-platform:1.1.0"))
     implementation("ru.ok.tracer:tracer-crash-report")
     implementation("ru.ok.tracer:tracer-crash-report-native")

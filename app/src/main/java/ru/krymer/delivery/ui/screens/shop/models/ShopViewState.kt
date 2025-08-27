@@ -18,65 +18,65 @@ sealed class ShopAction {
 data class ShopViewState(
     val shopAction: ShopAction = ShopAction.None,
 
-    val listShop: MutableStateFlow<List<ShopModel>> = MutableStateFlow(listOf()),
+    val listUIShop: List<ShopModel> = emptyList(),
 
-    val listProduct: MutableStateFlow<List<ProductModel>> = MutableStateFlow(listOf()),
-    val listProductRequest: MutableStateFlow<List<ProductModel>> = MutableStateFlow(listOf()),
+    val listProduct: List<ProductModel> = emptyList(),
+    val listProductRequest: List<ProductModel> = emptyList(),
 
 
-    val listClient: MutableStateFlow<List<ClientModel>> = MutableStateFlow(listOf()),
+    val listClient: List<ClientModel> = emptyList(),
     val isShowDialogWithListCurrentClients: Boolean = false,
     val isShowDialogWithListAllClients: Boolean = false,
     val stateAddDialog: Boolean = false,
     val currentClient: ClientModel? = null,
     val isShowSelectorClientInAddDialog: Boolean = false,
-    val arrear: MutableStateFlow<Double> = MutableStateFlow(0.0),
-    val dept: MutableStateFlow<Double> = MutableStateFlow(0.0),
-    val add: MutableStateFlow<Double> = MutableStateFlow(0.0),
+    val arrear: Double = 0.0,
+    val dept: Double = 0.0,
+    val add: Double = 0.0,
 
     val showDialogAddRequest: Boolean = false,
 
     val isShowMillageDialog: Boolean = false,
-    val millage: MutableStateFlow<Double> = MutableStateFlow(0.0),
-    val salaryFix: MutableStateFlow<Double> = MutableStateFlow(0.0),
-    val salary: MutableStateFlow<Double> = MutableStateFlow(0.0),
-    val cash: MutableStateFlow<Double> = MutableStateFlow(0.0),
-    val noCash: MutableStateFlow<Double> = MutableStateFlow(0.0),
-    val allMoney: MutableStateFlow<Double> = MutableStateFlow(0.0),
-    val remains: MutableStateFlow<Double> = MutableStateFlow(0.0),
+    val millage: Double = 0.0,
+    val salaryFix: Double = 0.0,
+    val salary: Double = 0.0,
+    val cash: Double = 0.0,
+    val noCash: Double = 0.0,
+    val allMoney: Double = 0.0,
+    val remains: Double = 0.0,
     val isDataShopForCourierLoad: Boolean = false,
 
-    val currentTrip: MutableStateFlow<TripModel?> = MutableStateFlow(null),
+    val currentTrip: TripModel? = null,
 
     val currentShop: ShopModel? = null,
     val showRequestDialog: Boolean = false,
-    val listDataRequests: MutableStateFlow<List<RequestModel>> = MutableStateFlow(listOf()),
-    val orderMoney: MutableStateFlow<Double> = MutableStateFlow(0.0),
-    val getCash: MutableStateFlow<String> = MutableStateFlow(""),
-    val getNoCash: MutableStateFlow<String> = MutableStateFlow(""),
+    val listDataRequests: List<RequestModel> = emptyList(),
+    val orderMoney: Double = 0.0,
+    val getCash: String = "",
+    val getNoCash: String = "",
 
     val stateInfoDialog: Boolean = false,
     val isLoadDataRequestsInfoDialog: Boolean = false,
-    val listInfoRequests: MutableStateFlow<List<RequestModel>> = MutableStateFlow(listOf()),
-    val allCountRequestsInfo: MutableStateFlow<Int> = MutableStateFlow(0),
-    val allExchangeRequestsInfo: MutableStateFlow<Int> = MutableStateFlow(0),
+    val listInfoRequests: List<RequestModel> = emptyList(),
+    val allCountRequestsInfo: Int = 0,
+    val allExchangeRequestsInfo: Int = 0,
 
     val isShowDialogArrears: Boolean = false,
     val isShowAddSumDialog: Boolean = false,
     val isShowAddSumView: Boolean = false,
 
     val showDeleteDialog: Boolean = false,
-    val typePay: MutableStateFlow<TypePayModel> = MutableStateFlow(TypePayModel.CASH),
+    val typePay: TypePayModel = TypePayModel.CASH,
     val isShowDropDownTypePay: Boolean = false,
 
     val stateConfirmRequestDialog: Boolean = false,
 
 
     val stateInfoShopDialog: Boolean = false,
-    val listInfoShop: MutableStateFlow<List<ShopModel>> = MutableStateFlow(listOf()),
-    val stateSwitchPrice: MutableStateFlow<Boolean> = MutableStateFlow(false),
+    val listInfoShop: List<ShopModel> = emptyList(),
+    val stateSwitchPrice: Boolean = false,
 
-    val messages: MutableStateFlow<List<MessageModel>> = MutableStateFlow(listOf()),
+    val messages: List<MessageModel> = emptyList(),
     val isShowMessageDialog: Boolean = false,
     val message: String = "",
     val messageDelete: MessageModel? =null,
@@ -87,5 +87,7 @@ data class ShopViewState(
     val lightVersion: Boolean = false,
 
     val isShowInfoShop: Boolean = false,
-    val logShop: MutableStateFlow<List<LogShopModel>> = MutableStateFlow(emptyList())
+    val logShop: List<LogShopModel> = emptyList(),
+
+    val isCopyAndSave: Boolean = false
     )

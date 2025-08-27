@@ -6,11 +6,6 @@ import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.utills.getStartOfNextDay
 
-sealed class TripAction {
-    data object OpenShops : TripAction()
-    data object None : TripAction()
-}
-
 data class TripViewState(
     val isError: Boolean = false,
     val errorValue: String = "",
@@ -35,10 +30,13 @@ data class TripViewState(
 
     var currentTrip: TripModel? = null,
 
-    val tripAction: TripAction = TripAction.None,
     val isShowFilterDialog: Boolean = false,
-    val checkBoxIsFilterCourier: Boolean = false,
+    val isFilter: Boolean = false,
     var hasMore: Boolean = true,
     var isLoading: Boolean = false,
     val lightVersion: Boolean = false,
+
+    val filterUid: Long? = null,
+    val filterRouteId: Long? = null,
+    val sort: Boolean = false
 )

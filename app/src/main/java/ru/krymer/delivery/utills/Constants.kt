@@ -12,7 +12,10 @@ class Constants {
     }
 
     object KEYS {
-        const val COURIER_FILTER = "courier"
+        const val FILTER = "filter"
+        const val UID = "uid"
+        const val RUI = "routeId"
+        const val SORT = "sort"
         const val SETTINGS = "settings"
         const val AUTH = "auth"
         const val FONT_SIZE = "fSize"
@@ -38,6 +41,12 @@ class Constants {
         const val LAST_DATE = "lastDate"
         const val LIMIT = "limit"
         const val TOKEN_TITLE = "Authorization"
+        const val SORT = "sortBy"
+    }
+
+    object SORT {
+        const val ASC = "asc"
+        const val DESC = "desc"
     }
 
     object PAY {
@@ -93,11 +102,13 @@ class Constants {
         const val EMAIL_INVALID = "Введен не корректный адрес электронной почты!"
         const val PASS_INVALID = "Пароль меньше 8 символов!"
         const val GENERAL_ERROR = "Что-то пошло не так!"
-        const val ETHERNET = "Отсутствует интернет соединение! \nПовторите запрос!"
         const val USER_BANNED = "Доступ ограничен! Ваш профиль заблокирован!"
         const val MISSING_CORDS = "Гео-точка отсутствует!"
         const val LIST_EMPTY = "Список пуст!"
         const val AUTH = "Требуется повторная авторизация!"
+        const val AUTH_SIGN = "Ошибка авторизации!"
+        const val NOT_FOUND = "Данные не найдены!"
+
         const val CANCEL_OPERATION = "Вызов операции отменен!"
     }
 

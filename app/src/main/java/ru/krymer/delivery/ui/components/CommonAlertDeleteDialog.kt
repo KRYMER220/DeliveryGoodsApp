@@ -28,7 +28,7 @@ fun CommonDeleteDialog(
             onDismissRequest = onDismiss,
             title = {
                 Text(
-                    text = "${stringResource(R.string.del_confirm)} $itemName ?",
+                    text = "${stringResource(R.string.del_confirm)} $itemName",
                     modifier = Modifier.fillMaxWidth(),
                     color = AppTheme.colors.textColor
                 )

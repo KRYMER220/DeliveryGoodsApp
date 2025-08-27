@@ -95,7 +95,7 @@ class ProductViewModel @Inject constructor(
     private fun getDataProducts() {
         launchCoroutine {
             updateViewState { it.copy(isLoadData = MutableStateFlow(false)) }
-            val user = sharedViewModel.viewState.value.user.value
+            val user = sharedViewModel.viewState.value.user
             if (user != null) {
                 val response = productApi.getProducts(idFactory = user.idFactory)
                 if (response.success) {
@@ -240,7 +240,7 @@ class ProductViewModel @Inject constructor(
         launchCoroutine {
             val name = viewState.value.itemName
             val price = if (viewState.value.itemPrice == "") 0.0 else viewState.value.itemPrice.toDouble()
-            val user = sharedViewModel.viewState.value.user.value
+            val user = sharedViewModel.viewState.value.user
             if (user != null) {
                 val productRequest = CreateProductRequest(
                     name = name,

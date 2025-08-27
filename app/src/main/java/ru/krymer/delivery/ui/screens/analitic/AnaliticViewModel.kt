@@ -63,7 +63,7 @@ class AnaliticViewModel @Inject constructor(
 
     private fun deleteLogs() {
         launchCoroutine {
-            val user = sharedViewModel.viewState.value.user.value
+            val user = sharedViewModel.viewState.value.user
             user?.let {
                 val response = logApi.deleteLogs(idFactory = user.idFactory)
                 if (response.success) {
@@ -112,7 +112,7 @@ class AnaliticViewModel @Inject constructor(
     }
 
     private suspend fun getTrips() {
-        val user = sharedViewModel.viewState.value.user.value
+        val user = sharedViewModel.viewState.value.user
         if (user != null) {
             val result = tripApi.getRoutesByTrip(idFactory = user.idFactory)
             if (result.success) {
@@ -172,7 +172,7 @@ class AnaliticViewModel @Inject constructor(
     }
 
     private suspend fun getClients() {
-        val user = sharedViewModel.viewState.value.user.value
+        val user = sharedViewModel.viewState.value.user
         if (user != null) {
             val result = clientApi.getClientsByFactory(idFactory = user.idFactory)
             if (result.success) {
@@ -231,7 +231,7 @@ class AnaliticViewModel @Inject constructor(
     private fun loadLogsOfDateRange() {
         launchCoroutine {
             val date = viewState.value.dateRangeForSearch
-            val user = sharedViewModel.viewState.value.user.value
+            val user = sharedViewModel.viewState.value.user
             user?.let {
                 val response = logApi.getLogsOfRange(dateRange = DateRequest(
                     dateStart = date.first, dateEnd = date.second, id = user.id

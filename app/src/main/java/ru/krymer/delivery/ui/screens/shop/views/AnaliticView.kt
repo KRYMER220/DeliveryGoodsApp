@@ -30,7 +30,7 @@ import ru.krymer.delivery.ui.theme.AppTheme
 
 @Composable
 fun AnaliticView(state: ShopViewState) {
-    val shops = state.listShop.collectAsState().value
+    val shops = state.listUIShop
     LazyColumn(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         itemsIndexed(shops, key = { _, item -> item.id }) { index, shop ->
             ShopAnaliticItem(shop)

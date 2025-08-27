@@ -35,14 +35,14 @@ import ru.krymer.delivery.ui.theme.AppTheme
 fun MillageAndInfoView(
     state: ShopViewState, onMillageTFC: (String) -> Unit, event: (ShopEvent) -> Unit
 ) {
-    val millage = state.millage.collectAsState().value.toInt().toString()
+    val millage = state.millage.toInt().toString()
     var millageInput by remember { mutableStateOf("") }
-    val cash = state.cash.collectAsState().value.toInt()
-    val noCash = state.noCash.collectAsState().value.toInt()
-    val remains = state.remains.collectAsState().value.toInt()
-    val allMoney = state.allMoney.collectAsState().value.toInt()
-    val salary = state.salary.collectAsState().value.toInt()
-    val salaryFix = state.salaryFix.collectAsState().value.toInt()
+    val cash = state.cash.toInt()
+    val noCash = state.noCash.toInt()
+    val remains = state.remains.toInt()
+    val allMoney = state.allMoney.toInt()
+    val salary = state.salary.toInt()
+    val salaryFix = state.salaryFix.toInt()
 
     LaunchedEffect(millage) {
         millageInput = if (millage == "0") "" else millage

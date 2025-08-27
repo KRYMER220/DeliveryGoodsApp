@@ -40,9 +40,9 @@ import ru.krymer.delivery.utills.convertToTextDate
 @Composable
 fun InfoContent(state: ShopViewState, onUpdate: () -> Unit) {
     if (state.isLoadDataRequestsInfoDialog) {
-        val count = state.allCountRequestsInfo.collectAsState().value
-        val exchange = state.allExchangeRequestsInfo.collectAsState().value
-        val requests = state.listInfoRequests.collectAsState().value
+        val count = state.allCountRequestsInfo
+        val exchange = state.allExchangeRequestsInfo
+        val requests = state.listInfoRequests
         Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
@@ -388,7 +388,7 @@ fun RequestInfoItem(requestModel: RequestModel) {
 
 @Composable
 fun InfoShopContent(state: ShopViewState, modifier: Modifier = Modifier.fillMaxWidth()) {
-    val listShop = state.listInfoShop.collectAsState().value
+    val listShop = state.listInfoShop
     if (listShop.isNotEmpty()) {
         LazyColumn(
             modifier =

@@ -28,7 +28,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,14 +63,14 @@ fun AlertDialogRequestShop(
         val listMenu = if (user.isModOrAdminOrSys()) listOf("Долг", "Доп.сумму", "Старая цена", "Добавить бонус", "Удалить магазин" ,"Отправить сообщение", "Добавить заявку")
         else  listOf("Долг", "Доп.сумму", "Старая цена", "Отправить сообщение")
         var isExpandedMenu by remember { mutableStateOf(false) }
-        val requests = state.listDataRequests.collectAsState().value
-        val orderMoney = state.orderMoney.collectAsState().value.toInt().toString()
-        val stateCash = state.getCash.collectAsState().value
-        val stateNoCash = state.getNoCash.collectAsState().value
+        val requests = state.listDataRequests
+        val orderMoney = state.orderMoney.toInt().toString()
+        val stateCash = state.getCash
+        val stateNoCash = state.getNoCash
         var cash by remember { mutableStateOf("") }
         var noCash by remember { mutableStateOf("") }
-        val typePayState = state.typePay.collectAsState().value
-        val switchOldPrice = state.stateSwitchPrice.collectAsState().value
+        val typePayState = state.typePay
+        val switchOldPrice = state.stateSwitchPrice
         var errorCash by remember { mutableStateOf(Error()) }
         var errorNoCash by remember { mutableStateOf(Error()) }
 
@@ -135,7 +134,7 @@ fun AlertDialogRequestShop(
                                     }
 
                                     "Отправить сообщение" -> {
-                                        event(ShopEvent.ShowMessageAddDialog)
+                                        event(ShopEvent.ToggleMessageDialog)
                                     }
 
                                     "Добавить заявку" -> {
@@ -253,12 +252,12 @@ fun AlertDialogRequestShop(
                                         .weight(0.333f)
                                         .combinedClickable(onClick = {
                                             event(
-                                                ShopEvent.SetArrearsInField
+                                                ShopEvent.SetArrearsInField(arrears = shop.arrears)
                                             )
                                         }, onLongClick = {
-                                            event(ShopEvent.SetArrearsAndAddInField)
+                                            event(ShopEvent.SetArrearsAndAddInField(sum = shop.arrears + shop.addSum))
                                         }, onDoubleClick = {
-                                            event(ShopEvent.SetOrderAndArrearsSumInField)
+                                            event(ShopEvent.SetOrderAndArrearsSumInField(arrears = shop.arrears))
                                         })
                                 ) {
                                     Text(
@@ -279,9 +278,9 @@ fun AlertDialogRequestShop(
                                         modifier = Modifier
                                             .weight(0.333f)
                                             .combinedClickable(onLongClick = {
-                                                event(ShopEvent.SetOrderAndArrearsAndAddSumInField)
+                                                event(ShopEvent.SetOrderAndArrearsAndAddSumInField(arrears = shop.arrears, addSum = shop.addSum))
                                             }, onClick = {
-                                                event(ShopEvent.SetAddInField)
+                                                event(ShopEvent.SetAddInField(addSum = shop.addSum))
                                             })
                                     ) {
                                         Text(
@@ -304,9 +303,9 @@ fun AlertDialogRequestShop(
                                         .combinedClickable(onClick = {
                                             event(ShopEvent.SetOrderInField)
                                         }, onLongClick = {
-                                            event(ShopEvent.SetOrderAndAddInField)
+                                            event(ShopEvent.SetOrderAndAddInField(addSum = shop.addSum))
                                         }, onDoubleClick = {
-                                            event(ShopEvent.SetOrderAndArrearsSumInField)
+                                            event(ShopEvent.SetOrderAndArrearsSumInField(arrears = shop.arrears))
                                         })
                                 ) {
                                     Text(

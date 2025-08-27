@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.dp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.ui.theme.AppTheme
-import ru.krymer.delivery.utills.Constants
 
 @Composable
 fun MenuView(
@@ -58,24 +57,29 @@ fun MenuView(
                 color = AppTheme.colors.onSecondary
             )
 
-            LazyColumn(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            LazyColumn(modifier = Modifier.fillMaxWidth()) {
                 itemsIndexed(items = listMenu) { index, nameMenu ->
                     when(nameMenu) {
                         R.string.trip -> CustomButton(buttonName = stringResource(nameMenu), routeTo = onTripClick)
-                        R.string.route -> if (user.isModOrAdminOrSys()) {
+
+                        R.string.route -> if (user.isSysOrAdmin()) {
                             CustomButton(buttonName = stringResource(nameMenu), routeTo = onRouteClick)
+                            Spacer(modifier = Modifier.height(10.dp))
                         }
 
                         R.string.couriers -> if (user.isSysOrAdmin()) {
                             CustomButton(buttonName = stringResource(nameMenu), routeTo = onCourierClick)
+                            Spacer(modifier = Modifier.height(10.dp))
                         }
 
                         R.string.analitic -> if (user.isSysOrAdmin()) {
                             CustomButton(buttonName = stringResource(nameMenu), routeTo = onAnaliticClick)
+                            Spacer(modifier = Modifier.height(10.dp))
                         }
 
                         R.string.products -> if (user.isSysOrAdmin()) {
                             CustomButton(buttonName = stringResource(nameMenu), routeTo = onProductClick)
+                            Spacer(modifier = Modifier.height(10.dp))
                         }
                     }
                 }
@@ -87,7 +91,8 @@ fun MenuView(
 @Composable
 fun CustomButton(routeTo: () -> Unit, buttonName: String) {
     Button(
-        onClick = routeTo, shape = RoundedCornerShape(10.dp), modifier = Modifier.fillMaxWidth()
+        onClick = routeTo, shape = RoundedCornerShape(10.dp), modifier = Modifier
+            .fillMaxWidth()
             .height(60.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = AppTheme.colors.secondary,

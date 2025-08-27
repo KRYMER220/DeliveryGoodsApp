@@ -53,9 +53,9 @@ import ru.krymer.delivery.utills.convertToTextDate
 fun AddShopAndRequestView(
     state: ShopViewState, event: (ShopEvent) -> Unit
 ) {
-    val clients = state.listClient.collectAsState().value
-    val listShop = state.listInfoShop.collectAsState().value
-    val products = state.listProduct.collectAsState().value
+    val clients = state.listClient
+    val listShop = state.listInfoShop
+    val products = state.listProduct
     if (clients.isNotEmpty() && products.isNotEmpty()) {
         LazyColumn(
             modifier = Modifier
@@ -152,7 +152,7 @@ fun AddShopAndRequestView(
                 }
             }
 
-            items(state.listProductRequest.value) { product ->
+            items(state.listProductRequest) { product ->
                 ProductAddShopWithOrderItem(product = product, onVCCount = {
                     event(
                         ShopEvent.ChangeCountProduct(
@@ -179,7 +179,10 @@ fun AddShopAndRequestView(
 
             if (listShop.isNotEmpty()) {
                 items(listShop) { shop ->
-                    ItemInfoShop(shop, copyInfoData = { event(ShopEvent.CopyAndSaveShop(it)) })
+                    ItemInfoShop(shop, copyInfoData = {
+                        event(ShopEvent.ChangeStateIsCopyDialog)
+                        event(ShopEvent.SelectShop(it))
+                    })
                     Spacer(modifier = Modifier.height(10.dp))
                 }
             }
@@ -200,7 +203,7 @@ fun AddShopAndRequestView(
 
 @Composable
 fun MessagesView(viewState: ShopViewState, deleteMessage: (MessageModel) -> Unit) {
-    val messages = viewState.messages.collectAsState().value
+    val messages = viewState.messages
     if (messages.isNotEmpty()) {
         LazyColumn(modifier = Modifier
             .fillMaxWidth()
@@ -217,7 +220,9 @@ fun MessageItem(messageModel: MessageModel, deleteMessage: (MessageModel) -> Uni
     Column(modifier = Modifier
         .fillMaxWidth()
         .background(AppTheme.colors.secondary, shape = RoundedCornerShape(5.dp))) {
-        Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(5.dp)) {
+        Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically, modifier = Modifier
+            .fillMaxWidth()
+            .padding(5.dp)) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = convertToTextDate(messageModel.date, pattern = Constants.PatternDate.FULL), color = AppTheme.colors.error, textAlign = TextAlign.Center)
                 Text(modifier = Modifier.fillMaxWidth(), text = messageModel.text, color = AppTheme.colors.onSecondary)
@@ -237,7 +242,7 @@ fun MessageItem(messageModel: MessageModel, deleteMessage: (MessageModel) -> Uni
 fun AddRequestView(
     state: ShopViewState, event: (ShopEvent) -> Unit
 ) {
-    val products = state.listProduct.collectAsState().value
+    val products = state.listProduct
     if (products.isNotEmpty()) {
         Column {
             Row(
@@ -272,7 +277,7 @@ fun AddRequestView(
             }
             Spacer(modifier = Modifier.height(5.dp))
             LazyColumn(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                items(state.listProductRequest.value) { product ->
+                items(state.listProductRequest) { product ->
                     ProductAddShopWithOrderItem(product = product, onVCCount = {
                         event(
                             ShopEvent.ChangeCountProduct(

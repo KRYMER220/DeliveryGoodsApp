@@ -94,7 +94,7 @@ class CourierViewModel @Inject constructor(
 
     private fun getDataUsers() {
         launchCoroutine {
-            val user = sharedViewModel.viewState.value.user.value
+            val user = sharedViewModel.viewState.value.user
             if (user != null) {
                 val response = userApi.getUsers(idFactory = user.idFactory)
                 if (response.success) {
@@ -136,7 +136,7 @@ class CourierViewModel @Inject constructor(
         launchCoroutine {
             val user = viewState.value.userDelete
             if (user != null) {
-                if (user.id != sharedViewModel.viewState.value.user.value?.id) {
+                if (user.id != sharedViewModel.viewState.value.user?.id) {
                     val response = userApi.delete(id = user.id)
                     if (response.success) {
                         val list =
@@ -162,7 +162,7 @@ class CourierViewModel @Inject constructor(
     }
 
     private fun showSettings() {
-        val factory = sharedViewModel.viewState.value.factory.value
+        val factory = sharedViewModel.viewState.value.factory
         if (factory != null) {
             updateViewState {
                 it.copy(
@@ -266,7 +266,7 @@ class CourierViewModel @Inject constructor(
            val email = viewState.value.userEmail
            val pass = viewState.value.userPass
            val name = viewState.value.userName
-           val user = sharedViewModel.viewState.value.user.value
+           val user = sharedViewModel.viewState.value.user
            if (user != null) {
                val registerRequest = SignUpRequest(
                    email = email,
@@ -349,7 +349,7 @@ class CourierViewModel @Inject constructor(
         launchCoroutine {
             val user = viewState.value.userBan
             if (user != null) {
-                if (user.id != sharedViewModel.viewState.value.user.value?.id) {
+                if (user.id != sharedViewModel.viewState.value.user?.id) {
                     val userRequest = UpdateUserRequest(
                         id = user.id,
                         login = user.login,

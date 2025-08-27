@@ -33,7 +33,10 @@ interface TripApi {
 
     @GET("trips")
     suspend fun getTrips(
-        @Query(Constants.HttpRequestKeys.ID_FACTORY) idFactory: Long
+        @Query(Constants.HttpRequestKeys.ID_FACTORY) idFactory: Long,
+        @Query("sortBy") sortBy: String? = null,
+        @Query("uid") uid: Long? = null,
+        @Query("routeId") routeId: Long? = null,
     ): BaseResponse<List<TripModel>>
 
     @GET("trips/paginated")
@@ -41,7 +44,7 @@ interface TripApi {
         @Query(Constants.HttpRequestKeys.ID_FACTORY) idFactory: Long,
         @Query(Constants.HttpRequestKeys.LIMIT) limit: Int = 10,
         @Query(Constants.HttpRequestKeys.LAST_DATE) lastDate: Long?,
-        @Query(Constants.HttpRequestKeys.ID) lastId: Long?
+        @Query(Constants.HttpRequestKeys.ID) lastId: Long?,
     ): BaseResponse<List<TripModel>>
 }
 

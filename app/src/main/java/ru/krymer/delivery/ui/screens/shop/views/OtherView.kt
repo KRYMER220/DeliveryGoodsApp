@@ -98,7 +98,7 @@ fun MessageTextView(
     changeTextMessage: (String) -> Unit, deleteMessage: (MessageModel) -> Unit, state: ShopViewState
 ) {
     var text by remember { mutableStateOf("") }
-    val messages = state.messages.collectAsState().value
+    val messages = state.messages
     LazyColumn(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         item {
             Spacer(modifier = Modifier.height(5.dp))
