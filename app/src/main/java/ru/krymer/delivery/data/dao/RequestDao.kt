@@ -21,4 +21,19 @@ interface RequestDao {
 
     @Query("SELECT * FROM request WHERE idShop = :idShop AND idTrip = :idTrip")
     suspend fun getRequests(idShop: Long, idTrip: Long): List<RequestModel>
+
+    @Query("SELECT * FROM request WHERE idTrip = :idTrip")
+    suspend fun getRequestsByTrip(idTrip: Long): List<RequestModel>
+
+    @Query("DELETE FROM request WHERE idTrip = :idTrip ")
+    suspend fun deleteRequestsByTrip(idTrip: Long)
+
+    @Query("DELETE FROM request WHERE idShop IN (:shopIds)")
+    suspend fun deleteRequestsByShopIds(shopIds: List<Long>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertRequests(requests: List<RequestModel>)
+
+    @Update
+    suspend fun updateRequests(requests: List<RequestModel>)
 }

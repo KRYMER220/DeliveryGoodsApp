@@ -1,6 +1,5 @@
 package ru.krymer.delivery.ui.screens.shop.models
 
-import kotlinx.coroutines.flow.MutableStateFlow
 import ru.krymer.delivery.data.model.ClientModel
 import ru.krymer.delivery.data.model.LogShopModel
 import ru.krymer.delivery.data.model.MessageModel
@@ -27,16 +26,15 @@ data class ShopViewState(
     val listClient: List<ClientModel> = emptyList(),
     val isShowDialogWithListCurrentClients: Boolean = false,
     val isShowDialogWithListAllClients: Boolean = false,
-    val stateAddDialog: Boolean = false,
+    val toggleAddDialog: Boolean = false,
     val currentClient: ClientModel? = null,
-    val isShowSelectorClientInAddDialog: Boolean = false,
     val arrear: Double = 0.0,
     val dept: Double = 0.0,
     val add: Double = 0.0,
 
-    val showDialogAddRequest: Boolean = false,
+    val toggleAddRequestDialog: Boolean = false,
 
-    val isShowMillageDialog: Boolean = false,
+    val toggleMillageDialog: Boolean = false,
     val millage: Double = 0.0,
     val salaryFix: Double = 0.0,
     val salary: Double = 0.0,
@@ -49,44 +47,43 @@ data class ShopViewState(
     val currentTrip: TripModel? = null,
 
     val currentShop: ShopModel? = null,
-    val showRequestDialog: Boolean = false,
+    val toggleRequestDialog: Boolean = false,
     val listDataRequests: List<RequestModel> = emptyList(),
     val orderMoney: Double = 0.0,
     val getCash: String = "",
     val getNoCash: String = "",
 
-    val stateInfoDialog: Boolean = false,
+    val toggleInfoTrip: Boolean = false,
     val isLoadDataRequestsInfoDialog: Boolean = false,
     val listInfoRequests: List<RequestModel> = emptyList(),
     val allCountRequestsInfo: Int = 0,
     val allExchangeRequestsInfo: Int = 0,
 
-    val isShowDialogArrears: Boolean = false,
-    val isShowAddSumDialog: Boolean = false,
-    val isShowAddSumView: Boolean = false,
+    val toggleArrearsDialog: Boolean = false,
+    val toggleAddSumDialog: Boolean = false,
 
-    val showDeleteDialog: Boolean = false,
+    val toggleDeleteDialog: Boolean = false,
     val typePay: TypePayModel = TypePayModel.CASH,
-    val isShowDropDownTypePay: Boolean = false,
+    val toggleTypePayDialog: Boolean = false,
 
-    val stateConfirmRequestDialog: Boolean = false,
+    val toggleConfirmRequestDialog: Boolean = false,
 
 
-    val stateInfoShopDialog: Boolean = false,
+    val toggleInfoShop: Boolean = false,
     val listInfoShop: List<ShopModel> = emptyList(),
     val stateSwitchPrice: Boolean = false,
 
     val messages: List<MessageModel> = emptyList(),
-    val isShowMessageDialog: Boolean = false,
+    val toggleMessageDialog: Boolean = false,
     val message: String = "",
     val messageDelete: MessageModel? =null,
     val isShowDeleteMessage: Boolean = false,
     val isBonusState: Boolean = false,
 
-    val isShowAnaliticTrip: Boolean = false,
+    val toggleAnaliticOfTrip: Boolean = false,
     val lightVersion: Boolean = false,
 
-    val isShowInfoShop: Boolean = false,
+    val toggleLogShop: Boolean = false,
     val logShop: List<LogShopModel> = emptyList(),
 
     val isCopyAndSave: Boolean = false

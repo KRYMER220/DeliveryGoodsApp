@@ -56,6 +56,7 @@ fun AddShopAndRequestView(
     val clients = state.listClient
     val listShop = state.listInfoShop
     val products = state.listProduct
+    var toggleSelectorClients by remember { mutableStateOf(false) }
     if (clients.isNotEmpty() && products.isNotEmpty()) {
         LazyColumn(
             modifier = Modifier
@@ -76,7 +77,7 @@ fun AddShopAndRequestView(
                             .fillMaxWidth()
                             .height(60.dp)
                             .clickable {
-                                event(ShopEvent.ShowSelectorClientInAddDialog)
+                                toggleSelectorClients = true
                             }, verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
@@ -93,9 +94,9 @@ fun AddShopAndRequestView(
                             tint = AppTheme.colors.onSecondary
                         )
                         DropdownMenu(
-                            expanded = state.isShowSelectorClientInAddDialog,
+                            expanded = toggleSelectorClients,
                             onDismissRequest = {
-                                event(ShopEvent.DismissSelectorClientInAddDialog)
+                                toggleSelectorClients = false
                             }) {
                             clients.forEach {
                                 DropdownMenuItem(text = {
@@ -107,9 +108,7 @@ fun AddShopAndRequestView(
                                     event(
                                         ShopEvent.DropDownSelectClient(it)
                                     )
-                                    event(
-                                        ShopEvent.DismissSelectorClientInAddDialog
-                                    )
+                                    toggleSelectorClients = false
                                 })
                             }
                         }

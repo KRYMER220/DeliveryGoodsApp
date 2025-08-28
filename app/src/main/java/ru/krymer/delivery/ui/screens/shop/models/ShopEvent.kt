@@ -8,9 +8,6 @@ import ru.krymer.delivery.data.model.RequestModel
 import ru.krymer.delivery.data.model.ShopModel
 
 sealed class ShopEvent {
-    data class ChangeArrear(val arrear: String): ShopEvent()
-    data class ChangeDept(val dept: String): ShopEvent()
-    data class ChangeAdd(val add: String): ShopEvent()
     data object ShowAddDialogShopCurrentRoute : ShopEvent()
     data object ShowAddDialogShopAllRoutes : ShopEvent()
     data class ChangeCountBonusProduct(val bonus: String, val product: ProductModel) : ShopEvent()
@@ -21,10 +18,7 @@ sealed class ShopEvent {
     data object DismissDeleteDialog : ShopEvent()
     data object DeleteShop : ShopEvent()
     data class OpenRequest(val shop: ShopModel) : ShopEvent()
-    data object ShopActionInvoked : ShopEvent()
     data class OpenGeoPoint(val context: Context, val cord: String) : ShopEvent()
-    data object DismissSelectorClientInAddDialog : ShopEvent()
-    data object ShowSelectorClientInAddDialog : ShopEvent()
     data class DropDownSelectClient(val shop: ClientModel) : ShopEvent()
     data object OpenMillageDialog : ShopEvent()
     data object MillageSaveAction : ShopEvent()
@@ -38,7 +32,7 @@ sealed class ShopEvent {
     data object RequestSaveAction : ShopEvent()
     data object ShowDialogChangeArrears : ShopEvent()
     data class ChangeArrears(val arrears: String) : ShopEvent()
-    data class ValueChangeMillage(val millage: String) : ShopEvent()
+    data class ValueChangeMillage(val millage: Double) : ShopEvent()
     data object SaveAddSum : ShopEvent()
     data object OpenAddSumDialog : ShopEvent()
     data object UpdateInfo : ShopEvent()
@@ -72,7 +66,7 @@ sealed class ShopEvent {
     data class CopyInfoData(val context: Context) : ShopEvent()
 
     data class ChangeAddStatusProduct(val product: ProductModel) : ShopEvent()
-    data object ToggleMessageDialog: ShopEvent()
+    data class ToggleMessageDialog(val state: Boolean): ShopEvent()
     data object SendMessage: ShopEvent()
     data class ChangeMessage(val message: String): ShopEvent()
     data class DeleteMessage(val message: MessageModel): ShopEvent()

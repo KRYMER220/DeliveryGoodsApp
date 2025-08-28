@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.room.withTransaction
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
@@ -45,7 +46,6 @@ import ru.krymer.delivery.data.request.UpdateRequestShopRequest
 import ru.krymer.delivery.data.request.UpdateShopRequest
 import ru.krymer.delivery.data.request.UpdateTripRequest
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
-import ru.krymer.delivery.ui.screens.shop.models.ShopAction
 import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
 import ru.krymer.delivery.utills.Constants
@@ -53,10 +53,12 @@ import ru.krymer.delivery.utills.copyToClipboard
 import ru.krymer.delivery.utills.isSameDay
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.text.isEmpty
+import kotlin.text.toDouble
 
-enum class FunShop {
-    SAVE, UPDATE, COPY
-}
+enum class FunShop { SAVE, UPDATE, COPY }
+enum class RequestUpdateType { COUNT, BONUS, EXCHANGE }
+private enum class ShopUpdateType { ARREARS, ADD_SUM }
 
 @HiltViewModel
 class ShopViewModel @Inject constructor(
@@ -84,9 +86,8 @@ class ShopViewModel @Inject constructor(
                 block()
             } catch (e: CancellationException) {
                 throw e
-                sharedViewModel.message(Constants.ERROR.CANCEL_OPERATION, type = TypeMessageModel.ERROR)
             } catch (e: Exception) {
-                    sharedViewModel.message(e.message)
+                sharedViewModel.message(e.message)
             }
         }
     }
@@ -95,42 +96,50 @@ class ShopViewModel @Inject constructor(
         when (event) {
             is ShopEvent.ShowAddDialogShopCurrentRoute -> openAddDialogCurrentClients()
             is ShopEvent.ShowAddDialogShopAllRoutes -> openAddDialogAllCurrentClients()
-            is ShopEvent.DismissSelectorClientInAddDialog -> dismissSelectorClientInAddDialog()
             is ShopEvent.DropDownSelectClient -> changeCurrentClient(event.shop)
             is ShopEvent.ChangeCountProduct -> changeRequestCountProduct(
                 count = event.count, editProduct = event.product
             )
-
             is ShopEvent.ChangeCountBonusProduct -> changeRequestCountBonusProduct(
                 bonus = event.bonus, editProduct = event.product
             )
-
             is ShopEvent.ShopAddAction -> initShopFunction(event = FunShop.SAVE)
-            is ShopEvent.ShowDeleteDialog -> showDeleteDialog()
-            is ShopEvent.DismissDeleteDialog -> dismissDeleteDialog()
+            is ShopEvent.ShowDeleteDialog -> setState(delete = true)
+            is ShopEvent.DismissDeleteDialog -> setState(delete = false)
             is ShopEvent.DeleteShop -> deleteShop()
             is ShopEvent.OpenGeoPoint -> openGeoPoint(event.context, event.cord)
-            is ShopEvent.ShopActionInvoked -> shopActionInvoked()
             is ShopEvent.OpenRequest -> openRequest(event.shop)
-            is ShopEvent.ShowSelectorClientInAddDialog -> showSelectorClientInAddDialog()
-            is ShopEvent.OpenMillageDialog -> showDialogMillage()
+            is ShopEvent.OpenMillageDialog -> {
+                setState(millage = true)
+                getDataForCourier()
+                getListRequestsInfo()
+            }
             is ShopEvent.MillageSaveAction -> saveMillage()
-            is ShopEvent.ValueChangeMillage -> changeMillage(event.millage)
-            is ShopEvent.DismissRequestDialog -> dismissRequestDialog()
+            is ShopEvent.ValueChangeMillage -> setValue(millage = event.millage)
+            is ShopEvent.DismissRequestDialog -> setState(request = false)
             is ShopEvent.InitSaveRequestDialog -> initRequest()
-            is ShopEvent.ShowRequestsInfoDialog -> showInfoRequestsDialog()
-            is ShopEvent.DismissRequestInfoDialog -> dismissInfoDialog()
-            is ShopEvent.DismissAddSumDialog -> dismissAddSumDialog()
-            is ShopEvent.OpenAddSumDialog -> openAddSumDialog()
-            is ShopEvent.DismissAddDialog -> dismissAddDialog()
-            is ShopEvent.ChangeAddSum -> changeAddSum(event.addSum)
-            is ShopEvent.ChangeArrears -> changeArrears(event.arrears)
-            is ShopEvent.SaveAddSum -> dismissAddSumDialog()
-            is ShopEvent.DismissMillageDialog -> dismissMillageDialog()
+            is ShopEvent.ShowRequestsInfoDialog -> {
+                launchCoroutine {
+                    setState(infoTrip = true)
+                    getListRequestsInfo()
+                    val trip = viewState.value.currentTrip
+                    if (trip != null && isSameDay(trip.date, System.currentTimeMillis())) {
+                        updateShops(trip)
+                    }
+                }
+            }
+            is ShopEvent.DismissRequestInfoDialog -> setState(infoTrip = false)
+            is ShopEvent.DismissAddSumDialog -> setState(addSum = false)
+            is ShopEvent.OpenAddSumDialog -> setState(addSum = true)
+            is ShopEvent.DismissAddDialog -> setState(add = false)
+            is ShopEvent.ChangeAddSum -> updateShopValue(value = event.addSum, type = ShopUpdateType.ADD_SUM)
+            is ShopEvent.ChangeArrears -> updateShopValue(value = event.arrears, type = ShopUpdateType.ARREARS)
+            is ShopEvent.SaveAddSum -> setState(addSum = false)
+            is ShopEvent.DismissMillageDialog -> setState(millage = false)
             is ShopEvent.UpdateInfo -> getListRequestsInfo()
-            is ShopEvent.ShowDialogChangeArrears -> showChangeArrearsDialog()
-            is ShopEvent.DismissDialogChangeArrears -> dismissChangeArrearsDialog()
-            is ShopEvent.SaveArrears -> dismissChangeArrearsDialog()
+            is ShopEvent.ShowDialogChangeArrears -> setState(arrears = true)
+            is ShopEvent.DismissDialogChangeArrears -> setState(arrears = false)
+            is ShopEvent.SaveArrears -> setState(arrears = false)
             is ShopEvent.SetArrearsInField -> updatePayment(amount = event.arrears)
             is ShopEvent.SetOrderInField -> updatePayment(amount = viewState.value.orderMoney)
             is ShopEvent.SetOrderAndArrearsSumInField -> updatePayment(amount = viewState.value.orderMoney + event.arrears)
@@ -138,61 +147,115 @@ class ShopViewModel @Inject constructor(
             is ShopEvent.SetOrderAndAddInField -> updatePayment(amount = viewState.value.orderMoney + event.addSum)
             is ShopEvent.SetAddInField -> updatePayment(amount = event.addSum)
             is ShopEvent.SetOrderAndArrearsAndAddSumInField -> updatePayment(viewState.value.orderMoney + event.addSum + event.arrears)
-            is ShopEvent.ValueChangeCash -> changeMoney(event.money)
+            is ShopEvent.ValueChangeCash -> setValue(cash = event.money)
             is ShopEvent.ChangeTypePay -> showTypePayDialog()
-            is ShopEvent.ChangeDropDownStateTypePayChanger -> changeStateDropDownTypePay(event.state)
-            is ShopEvent.ValueChangeNoCashMoney -> changeNoCashMoney(event.money)
-            is ShopEvent.ChangeExchangeRequest -> changeExchangeRequest(event.item, event.exchange)
-            is ShopEvent.ChangeBonusRequest -> changeBonusRequest(
-                item = event.item, bonus = event.bonus
+            is ShopEvent.ChangeDropDownStateTypePayChanger -> setState(typePay = event.state)
+            is ShopEvent.ValueChangeNoCashMoney -> setValue(noCash = event.money)
+            is ShopEvent.ChangeExchangeRequest -> updateRequestValue(
+                item = event.item,
+                value = event.exchange,
+                type = RequestUpdateType.EXCHANGE,
             )
-            is ShopEvent.ChangeCountRequest -> changeCountRequest(event.item, event.count)
+            is ShopEvent.ChangeBonusRequest -> updateRequestValue(
+                item = event.item,
+                value = event.bonus,
+                type = RequestUpdateType.BONUS,
+            )
+            is ShopEvent.ChangeCountRequest -> updateRequestValue(
+                item = event.item,
+                value = event.count,
+                type = RequestUpdateType.COUNT,
+            )
             is ShopEvent.RequestSaveAction -> {
                 confirmSaveRequest()
-                dismissConfirmDialog()
+                setState(confirmRequest = false)
             }
-            is ShopEvent.DismissConfirmRequestDialog -> dismissConfirmDialog()
-            is ShopEvent.DismissInfoShopDialog -> dismissInfoShopDialog()
+
+            is ShopEvent.DismissConfirmRequestDialog -> setState(confirmRequest = false)
+            is ShopEvent.DismissInfoShopDialog -> setState(infoShop = false)
             is ShopEvent.OpenInfoShopDialog -> openInfoShopDialog(event.shop)
-            is ShopEvent.DismissDialogAddRequest -> dismissAddRequestDialog()
+            is ShopEvent.DismissDialogAddRequest -> setState(addRequest = true)
             is ShopEvent.RequestAddAction -> initSaveOrUpdateRequest()
             is ShopEvent.ShowDialogAddRequest -> showAddRequestDialog()
             is ShopEvent.SwitchPrice -> switchStatePrice()
             is ShopEvent.CopyInfoData -> copyToClip(event.context)
-            is ShopEvent.ChangeAdd -> changeAdd(event.add)
-            is ShopEvent.ChangeArrear -> changeArrear(arrear = event.arrear)
-            is ShopEvent.ChangeDept -> changeDept(dept = event.dept)
             is ShopEvent.ChangeAddStatusProduct -> changeAddStatusProduct(event.product)
             is ShopEvent.SwitchBonus -> switchBonus()
-            is ShopEvent.ToggleMessageDialog -> toggleMessageDialog()
+            is ShopEvent.ToggleMessageDialog -> setState(message = event.state)
             is ShopEvent.SendMessage -> sendMessage()
             is ShopEvent.ChangeMessage -> changeMessage(event.message)
             is ShopEvent.DeleteMessage -> deleteMessage(event.message)
-            is ShopEvent.SwitchBonusState -> switchStateBonus()
-            ShopEvent.ShowHideDialogAnalitic -> showHideDialogAnalitic()
+            is ShopEvent.SwitchBonusState -> setState(bonus = !viewState.value.isBonusState)
+            ShopEvent.ShowHideDialogAnalitic -> setState(analiticTrip = !viewState.value.toggleAnaliticOfTrip)
             is ShopEvent.CopyAndSaveShop -> {
                 initShopFunction(event = FunShop.COPY)
             }
             is ShopEvent.ToggleLogsShopDialog -> toggleLogsShopDialog(shop = event.shop)
-            ShopEvent.ChangeStateIsCopyDialog -> changeStateCopyDialog()
+            ShopEvent.ChangeStateIsCopyDialog -> setState(copyAndSave = !viewState.value.isCopyAndSave)
             is ShopEvent.SelectShop -> {
                 updateViewState { it.copy(currentShop = event.shop) }
             }
         }
     }
 
-    private fun changeStateCopyDialog() {
-        updateViewState { it.copy(isCopyAndSave = !it.isCopyAndSave) }
+    private fun toggleLogsShopDialog(shop: ShopModel?) {
+        setState(log = !viewState.value.toggleLogShop)
+        if (viewState.value.toggleLogShop) shop?.let { getLogsShop(shop) }
+        else updateViewState { it.copy(logShop = emptyList()) }
     }
 
-    private fun toggleLogsShopDialog(shop: ShopModel?) {
-        updateViewState { it.copy(isShowInfoShop = !it.isShowInfoShop) }
-        if (viewState.value.isShowInfoShop)
-            shop?.let {
-                getLogsShop(shop)
-            }
-        else
-            updateViewState { it.copy(logShop = emptyList()) }
+    private fun setValue(
+        cash: String = viewState.value.getCash,
+        noCash: String = viewState.value.getNoCash,
+        millage: Double = viewState.value.millage,
+    ) {
+        updateViewState {
+            it.copy(
+                getNoCash = if (noCash.isNotEmpty()) noCash else "",
+                getCash = if (cash.isNotEmpty()) cash else "",
+                millage = millage
+            )
+        }
+    }
+
+    private fun setState(
+        add: Boolean = viewState.value.toggleAddDialog,
+        delete: Boolean = viewState.value.toggleDeleteDialog,
+        request: Boolean = viewState.value.toggleRequestDialog,
+        millage: Boolean = viewState.value.toggleMillageDialog,
+        infoShop: Boolean = viewState.value.toggleInfoShop,
+        confirmRequest: Boolean = viewState.value.toggleConfirmRequestDialog,
+        typePay: Boolean = viewState.value.toggleTypePayDialog,
+        addSum: Boolean = viewState.value.toggleAddSumDialog,
+        arrears: Boolean = viewState.value.toggleArrearsDialog,
+        infoTrip: Boolean = viewState.value.toggleInfoTrip,
+        addRequest: Boolean = viewState.value.toggleAddRequestDialog,
+        message: Boolean = viewState.value.toggleMessageDialog,
+        analiticTrip: Boolean = viewState.value.toggleAnaliticOfTrip,
+        bonus: Boolean = viewState.value.isBonusState,
+        log: Boolean = viewState.value.toggleLogShop,
+        copyAndSave: Boolean = viewState.value.isCopyAndSave
+    ) {
+        updateViewState {
+            it.copy(
+                toggleAddDialog = add,
+                toggleDeleteDialog = delete,
+                toggleRequestDialog = request,
+                toggleMillageDialog = millage,
+                toggleInfoShop = infoShop,
+                toggleConfirmRequestDialog = confirmRequest,
+                toggleTypePayDialog = typePay,
+                toggleAddSumDialog = addSum,
+                toggleArrearsDialog = arrears,
+                toggleInfoTrip = infoTrip,
+                toggleAddRequestDialog = addRequest,
+                toggleMessageDialog = message,
+                toggleAnaliticOfTrip = analiticTrip,
+                isBonusState = bonus,
+                toggleLogShop = log,
+                isCopyAndSave = copyAndSave
+            )
+        }
     }
 
     private fun getLogsShop(shop: ShopModel) {
@@ -331,15 +394,6 @@ class ShopViewModel @Inject constructor(
         }
     }
 
-
-    private fun showHideDialogAnalitic() {
-        updateViewState { it.copy(isShowAnaliticTrip = !it.isShowAnaliticTrip) }
-    }
-
-    private fun switchStateBonus() {
-        updateViewState { it.copy(isBonusState = !it.isBonusState) }
-    }
-
     private fun deleteMessage(message: MessageModel) {
         launchCoroutine {
             messageApi.delete(message.id)
@@ -360,15 +414,11 @@ class ShopViewModel @Inject constructor(
                     idClient = it.id, text = message, date = System.currentTimeMillis()
                 )
                 messageApi.add(message = obj)
-                toggleMessageDialog()
+                setState(message = false)
                 val messages = getMessages(it.id)
                 updateViewState { it.copy(messages = messages) }
             }
         }
-    }
-
-    private fun toggleMessageDialog() {
-        updateViewState { it.copy(isShowMessageDialog = !_viewState.value.isShowMessageDialog) }
     }
 
     private fun switchBonus() {
@@ -410,19 +460,6 @@ class ShopViewModel @Inject constructor(
         updateViewState { it.copy(listUIShop = shops.sortedBy { it.counter }) }
     }
 
-    private fun changeDept(dept: String) {
-        updateViewState { it.copy(dept = if (dept.isNotEmpty()) dept.toDouble() else 0.0) }
-    }
-
-    private fun changeAdd(add: String) {
-        updateViewState { it.copy(add = if (add.isNotEmpty()) add.toDouble() else 0.0) }
-    }
-
-    private fun changeArrear(arrear: String) {
-        updateViewState { it.copy(arrear = if (arrear.isNotEmpty()) arrear.toDouble() else 0.0) }
-    }
-
-
     private fun copyToClip(context: Context) {
         var text = ""
         var counter = 0
@@ -441,24 +478,18 @@ class ShopViewModel @Inject constructor(
         calculateOrder()
     }
 
-    private fun dismissAddRequestDialog() {
-        updateViewState { it.copy(showDialogAddRequest = false) }
-    }
-
     private fun showAddRequestDialog() {
         val list = viewState.value.listDataRequests.map { it.copy() }
+        setState(addRequest = true)
         updateViewState {
             it.copy(
                 listProductRequest = viewState.value.listProduct
                     .filter { p -> p.isActive }
                     .filterNot { p -> list.any { pr -> pr.id == p.id } }
-                    .map { p -> p.copy() },
-                showDialogAddRequest = true,
+                    .map { p -> p.copy() }
             )
         }
     }
-
-
 
     private fun initSaveOrUpdateRequest() {
         val shop = viewState.value.currentShop
@@ -575,56 +606,58 @@ class ShopViewModel @Inject constructor(
     }
 
     private suspend fun clearLocalShopsForTrip(idTrip: Long) {
-        val shopsToDelete = room.shopDao().getShops(idTrip = idTrip)
-        shopsToDelete.forEach { shop ->
-            room.shopDao().deleteShop(shop)
-            val requestToDelete = room.requestDao().getRequests(idShop = shop.id, idTrip = shop.idTrip)
-            requestToDelete.forEach { req ->
-                room.requestDao().deleteRequest(req)
-            }
+        room.withTransaction {
+            room.requestDao().deleteRequestsByTrip(idTrip)
+            room.shopDao().deleteShopsByTrip(idTrip)
         }
     }
 
     private suspend fun databaseInit(shops: List<ShopModel>, idTrip: Long) {
-        val localShops = room.shopDao().getShops(idTrip = idTrip)
-        val serverShopIds = shops.map { it.id }
-        val localShopIds = localShops.map { it.id }
+        room.withTransaction {
+            val localShops = room.shopDao().getShops(idTrip = idTrip)
+            val localIds = localShops.map { it.id }.toSet()
+            val serverIds = shops.map { it.id }.toSet()
 
-        localShops.forEach { localShop ->
-            if (!serverShopIds.contains(localShop.id)) {
-                room.shopDao().deleteShop(localShop)
-                val requestToDelete = room.requestDao().getRequests(idShop = localShop.id, idTrip = localShop.idTrip)
-                requestToDelete.forEach { req ->
-                    room.requestDao().deleteRequest(req)
+            val toDeleteIds = localIds - serverIds
+            if (toDeleteIds.isNotEmpty()) {
+                room.requestDao().deleteRequestsByShopIds(toDeleteIds.toList())
+                room.shopDao().deleteShopsByIds(toDeleteIds.toList())
+            }
+
+            val (toUpdate, toInsert) = shops.partition { it.id in localIds }
+
+            if (toUpdate.isNotEmpty()) {
+                room.shopDao().updateShops(toUpdate.map { it.toLocal() })
+            }
+            if (toInsert.isNotEmpty()) {
+                room.shopDao().insertShops(toInsert.map { it.toLocal() })
+            }
+
+            val localRequests = room.requestDao().getRequestsByTrip(idTrip)
+            val localRequestIds = localRequests.map { it.id }.toSet()
+
+            val requestsToInsert = mutableListOf<RequestModel>()
+            val requestsToUpdate = mutableListOf<RequestModel>()
+
+            for (s in shops) {
+                for (r in s.listRequest) {
+                    if (r.id in localRequestIds) requestsToUpdate.add(r) else requestsToInsert.add(r)
                 }
             }
-        }
 
-        shops.forEach { shop ->
-            shop.let {
-                if (localShopIds.contains(shop.id)) {
-                    room.shopDao().updateShop(shop.toLocal())
-                    shop.listRequest.forEach { request ->
-                        room.requestDao().updateRequest(request)
-                    }
-                } else {
-                    room.shopDao().insertShop(shop.toLocal())
-                    shop.listRequest.forEach { request ->
-                        room.requestDao().insertRequest(request)
-                    }
-                }
-            }
-        }
+            if (requestsToUpdate.isNotEmpty()) room.requestDao().updateRequests(requestsToUpdate)
+            if (requestsToInsert.isNotEmpty()) room.requestDao().insertRequests(requestsToInsert)
 
-        getLocalData(idTrip = idTrip)
+            getLocalData(idTrip)
+        }
     }
 
     private fun openAddDialogCurrentClients() {
         getDataClientCurrentRoute()
+        setState(add = true)
         updateViewState {
             it.copy(
                 isShowDialogWithListCurrentClients = true,
-                stateAddDialog = true,
                 listProductRequest = viewState.value.listProduct.filter { p -> p.isActive }
                     .map { p -> p.copy() },
             )
@@ -633,10 +666,10 @@ class ShopViewModel @Inject constructor(
 
     private fun openAddDialogAllCurrentClients() {
         getAllDataClient()
+        setState(add = true)
         updateViewState {
             it.copy(
                 isShowDialogWithListAllClients = true,
-                stateAddDialog = true,
                 listProductRequest = viewState.value.listProduct.filter { p -> p.isActive }
                     .map { p -> p.copy() },
             )
@@ -686,17 +719,6 @@ class ShopViewModel @Inject constructor(
         return messages ?: emptyList()
     }
 
-    private fun dismissAddDialog() {
-        updateViewState {
-            it.copy(
-                stateAddDialog = false,
-                isShowDialogWithListCurrentClients = false,
-                isShowDialogWithListAllClients = false,
-                currentClient = null,
-            )
-        }
-    }
-
     private fun updateProductRequest(
         editProduct: ProductModel,
         transform: (ProductModel) -> ProductModel
@@ -716,14 +738,6 @@ class ShopViewModel @Inject constructor(
 
     private fun changeRequestCountBonusProduct(bonus: String, editProduct: ProductModel) =
         updateProductRequest(editProduct) { it.copy(addCount = bonus.trim().toIntOrNull() ?: 0) }
-
-    private fun dismissSelectorClientInAddDialog() {
-        updateViewState { it.copy(isShowSelectorClientInAddDialog = false) }
-    }
-
-    private fun showSelectorClientInAddDialog() {
-        updateViewState { it.copy(isShowSelectorClientInAddDialog = true) }
-    }
 
     private fun initShopFunction(event: FunShop) {
         when(event) {
@@ -745,7 +759,7 @@ class ShopViewModel @Inject constructor(
                     if (shop != null) {
                         val client = clientApi.getClientById(shop.id).obj
                         if (client != null) {
-                            changeStateCopyDialog()
+                            setState(copyAndSave = false)
                             saveShop()
                             saveCopyRequest(shop = shop, client = client)
                         }
@@ -780,12 +794,90 @@ class ShopViewModel @Inject constructor(
                     val shop = response.obj
                     shop?.let {
                         shop.listRequest = emptyList<RequestModel>()
-                        dismissAddDialog()
+                        setState(add = false)
                         sendShop(shop)
-                        updateViewState { it.copy(listClient = it.listClient - client, isBonusState = false) }
+                        updateViewState {
+                            it.copy(
+                                listClient = it.listClient - client,
+                                isBonusState = false,
+                                isShowDialogWithListCurrentClients = false,
+                                isShowDialogWithListAllClients = false,
+                                currentClient = null,
+                            )
+                        }
                     }
                 } else {
                     sharedViewModel.message(message = response.message)
+                }
+            }
+        }
+    }
+
+    private fun saveCopyRequest(shop: ShopModel, client: ClientModel) {
+        launchCoroutine {
+            val trip = viewState.value.currentTrip
+            trip?.let { trip ->
+                val listRequest = shop.listRequest.map { it.copy(exchange = 0, status = false) }
+                val hasBonus = listRequest.any { it.bonus > 0 }
+                val shops = viewState.value.listUIShop.map { it.copy() }.toMutableList()
+                shop.listRequest = listRequest.sortedBy { it.counter }
+                shop.isBonus = hasBonus
+                shop.status = false
+                shop.date = trip.date
+                shop.arrears = client.arrears
+                shop.isOldPrice = false
+                shop.noCash = 0.0
+                shop.cash = 0.0
+                shop.addSum = 0.0
+                shop.typePay = CASH
+                shop.idTrip = trip.id
+                listRequest.forEach { product ->
+                    product.apply {
+                        val reqResponse = CreateRequestShopRequest(
+                            id = id,
+                            idShop = shop.id,
+                            idTrip = shop.idTrip,
+                            idFactory = product.idFactory,
+                            count = product.count,
+                            bonus = product.bonus,
+                            status = false,
+                            exchange = product.exchange,
+                            price = product.price,
+                            oldPrice = product.oldPrice,
+                            name = product.name,
+                            counter = product.counter
+                        )
+                        val response = requestApi.add(reqResponse)
+                        if (response.success) {
+                            val requestModel = RequestModel(
+                                id = product.id,
+                                idShop = shop.id,
+                                idTrip = shop.idTrip,
+                                idFactory = shop.idFactory,
+                                count = product.count,
+                                bonus = product.bonus,
+                                status = false,
+                                exchange = product.exchange,
+                                price = product.price,
+                                oldPrice = product.oldPrice,
+                                name = product.name,
+                                counter = product.counter
+                            )
+                            room.requestDao().insertRequest(requestModel)
+                        }
+                    }
+                }
+                val existingIndex = shops.indexOfFirst { it.id == shop.id }
+                if (existingIndex != -1) {
+                    shops[existingIndex] = shop
+                } else {
+                    shops.add(shop)
+                }
+                updateViewState {
+                    it.copy(
+                        listUIShop = shops.sortedBy { s -> s.counter },
+                        listDataRequests = listRequest.sortedBy { it.counter }
+                    )
                 }
             }
         }
@@ -847,85 +939,7 @@ class ShopViewModel @Inject constructor(
                 )
             }
             calculateOrder()
-            dismissAddRequestDialog()
-        }
-    }
-
-    private fun saveCopyRequest(shop: ShopModel, client: ClientModel) {
-        launchCoroutine {
-            val trip = viewState.value.currentTrip
-            trip?.let { trip ->
-                   val listRequest = shop.listRequest.map { it.copy(exchange = 0, status = false) }
-                   val hasBonus = listRequest.any { it.bonus > 0 }
-                   val shops = viewState.value.listUIShop.map { it.copy() }.toMutableList()
-                   shop.listRequest = listRequest.sortedBy { it.counter }
-                   shop.isBonus = hasBonus
-                   shop.status = false
-                   shop.date = trip.date
-                   shop.arrears = client.arrears
-                   shop.isOldPrice = false
-                   shop.noCash = 0.0
-                   shop.cash = 0.0
-                   shop.addSum = 0.0
-                   shop.typePay = CASH
-                   shop.idTrip = trip.id
-                   listRequest.forEach { product ->
-                      product.apply {
-                           val reqResponse = CreateRequestShopRequest(
-                               id = id,
-                               idShop = shop.id,
-                               idTrip = shop.idTrip,
-                               idFactory = product.idFactory,
-                               count = product.count,
-                               bonus = product.bonus,
-                               status = false,
-                               exchange = product.exchange,
-                               price = product.price,
-                               oldPrice = product.oldPrice,
-                               name = product.name,
-                               counter = product.counter
-                           )
-                           val response = requestApi.add(reqResponse)
-                            if (response.success) {
-                              val requestModel = RequestModel(
-                                  id = product.id,
-                                  idShop = shop.id,
-                                  idTrip = shop.idTrip,
-                                  idFactory = shop.idFactory,
-                                  count = product.count,
-                                  bonus = product.bonus,
-                                  status = false,
-                                  exchange = product.exchange,
-                                  price = product.price,
-                                  oldPrice = product.oldPrice,
-                                  name = product.name,
-                                  counter = product.counter
-                              )
-                              room.requestDao().insertRequest(requestModel)
-                          }
-                       }
-                   }
-                   val existingIndex = shops.indexOfFirst { it.id == shop.id }
-                   if (existingIndex != -1) {
-                       shops[existingIndex] = shop
-                   } else {
-                       shops.add(shop)
-                   }
-                   updateViewState {
-                       it.copy(
-                           listUIShop = shops.sortedBy { s -> s.counter },
-                           listDataRequests = listRequest.sortedBy { it.counter }
-                       )
-                   }
-            }
-        }
-    }
-
-    private fun showDeleteDialog() {
-        updateViewState {
-            it.copy(
-                showDeleteDialog = true
-            )
+            setState(addRequest = false)
         }
     }
 
@@ -943,22 +957,13 @@ class ShopViewModel @Inject constructor(
                     val item = list.first { it.id == shop.id }
                     val listNew = (list - item).sortedBy { it.counter }
                     updateViewState { it.copy(listUIShop = listNew) }
-                    dismissDeleteDialog()
-                    dismissRequestDialog()
+                    setState(request = false, delete = false)
                 } else {
                     sharedViewModel.message(response.message)
                 }
             } else {
                 sharedViewModel.message(Constants.ERROR.GENERAL_ERROR)
             }
-        }
-    }
-
-    private fun dismissDeleteDialog() {
-        updateViewState {
-            it.copy(
-                showDeleteDialog = false, currentShop = null
-            )
         }
     }
 
@@ -978,16 +983,12 @@ class ShopViewModel @Inject constructor(
         }
     }
 
-    private fun shopActionInvoked() {
-        updateViewState { it.copy(shopAction = ShopAction.None) }
-    }
-
     private fun openRequest(shop: ShopModel) {
         launchCoroutine {
+            setState(request = true)
             updateViewState {
                 it.copy(
                     currentShop = shop,
-                    showRequestDialog = true, isShowAddSumView = shop.addSum > 0.0,
                     typePay = shop.typePay,
                     getCash = if (shop.cash > 0.0) shop.cash.toInt().toString() else "",
                     getNoCash = if (shop.noCash > 0.0) shop.noCash.toInt().toString() else "",
@@ -999,13 +1000,6 @@ class ShopViewModel @Inject constructor(
             val messages = getMessages(shop.id)
             updateViewState { it.copy(messages = messages) }
         }
-    }
-
-
-    private fun showDialogMillage() {
-        updateViewState { it.copy(isShowMillageDialog = true) }
-        getDataForCourier()
-        getListRequestsInfo()
     }
 
     private fun getDataForCourier() {
@@ -1039,11 +1033,6 @@ class ShopViewModel @Inject constructor(
         }
     }
 
-    private fun dismissMillageDialog() {
-        updateViewState { it.copy(isShowMillageDialog = false) }
-    }
-
-
     private fun saveMillage() {
         launchCoroutine {
             val millage = viewState.value.millage
@@ -1076,30 +1065,9 @@ class ShopViewModel @Inject constructor(
                     }
                 } else {
                     sharedViewModel.message(Constants.ERROR.RESRTRAINT)
-                    dismissMillageDialog()
+                    setState(millage = false)
                 }
             }
-        }
-    }
-
-    private fun changeMillage(millage: String) {
-        updateViewState {
-            it.copy(
-                millage = if (millage.isEmpty()) 0.0 else millage.toDouble()
-            )
-        }
-    }
-
-    private fun dismissRequestDialog() {
-        updateViewState {
-            it.copy(
-                showRequestDialog = false,
-                currentShop = null,
-                listDataRequests = emptyList(),
-                orderMoney = 0.0,
-                getCash = "",
-                getNoCash = ""
-            )
         }
     }
 
@@ -1112,11 +1080,6 @@ class ShopViewModel @Inject constructor(
             money += it.count * it.price - it.exchange * (if (isOldPrice) it.oldPrice else it.price)
         }
         updateViewState { it.copy(orderMoney = money) }
-    }
-
-    private fun showInfoRequestsDialog() {
-        updateViewState { it.copy(stateInfoDialog = true) }
-        getListRequestsInfo()
     }
 
     private fun getListRequestsInfo() {
@@ -1154,65 +1117,16 @@ class ShopViewModel @Inject constructor(
         }
     }
 
-    private fun dismissInfoDialog() {
-        updateViewState { it.copy(stateInfoDialog = false) }
-    }
-
-    private fun changeArrears(arrears: String) {
+    private fun updateShopValue(value: String, type: ShopUpdateType) {
         val shop = viewState.value.currentShop
         val user = sharedViewModel.viewState.value.user
         if (shop != null && user != null) {
-            val newShop = shop.copy(arrears = if (arrears.isNotEmpty()) arrears.toDouble() else 0.0, isChanged = !user.isSysOrAdmin())
+            val num = value.toDoubleOrNull() ?: 0.0
+            val newShop = when (type) {
+                ShopUpdateType.ARREARS -> shop.copy(arrears = num, isChanged = !user.isSysOrAdmin())
+                ShopUpdateType.ADD_SUM -> shop.copy(addSum = num, isChanged = !user.isSysOrAdmin())
+            }
             updateViewState { it.copy(currentShop = newShop) }
-        }
-    }
-
-    private fun showChangeArrearsDialog() {
-        updateViewState { it.copy(isShowDialogArrears = true) }
-    }
-
-    private fun openAddSumDialog() {
-        updateViewState { it.copy(isShowAddSumDialog = true, isShowAddSumView = true) }
-    }
-
-    private fun changeAddSum(add: String) {
-        val shop = viewState.value.currentShop
-        val user = sharedViewModel.viewState.value.user
-        if (shop != null && user != null) {
-            val newShop = shop.copy(addSum = if (add.isNotEmpty()) add.toDouble() else 0.0, isChanged = !user.isSysOrAdmin())
-            updateViewState { it.copy(currentShop = newShop) }
-        }
-    }
-
-    private fun dismissAddSumDialog() {
-        updateViewState {
-            it.copy(
-                isShowAddSumDialog = false
-            )
-        }
-    }
-
-    private fun dismissChangeArrearsDialog() {
-        updateViewState {
-            it.copy(
-                isShowDialogArrears = false
-            )
-        }
-    }
-
-    private fun changeNoCashMoney(money: String) {
-        updateViewState {
-            it.copy(
-                getNoCash = if (money.isNotEmpty()) money else ""
-            )
-        }
-    }
-
-    private fun changeMoney(money: String) {
-        updateViewState {
-            it.copy(
-                getCash = if (money.isNotEmpty()) money else ""
-            )
         }
     }
 
@@ -1254,36 +1168,18 @@ class ShopViewModel @Inject constructor(
         }
     }
 
-
-    private fun changeCountRequest(item: RequestModel, count: String) {
+    private fun updateRequestValue(item: RequestModel, value: String, type: RequestUpdateType) {
         modifyRequestInCurrentShop(item) { req ->
+            val v = value.trim().toIntOrNull() ?: 0
             val user = sharedViewModel.viewState.value.user
-            val c = count.trim().toIntOrNull() ?: 0
             val status = if (user != null) (!user.isSysOrAdmin() || req.status == true) else req.status
-            req.copy(count = c, status = status)
+            when (type) {
+                RequestUpdateType.COUNT -> req.copy(count = v, status = status)
+                RequestUpdateType.BONUS -> req.copy(bonus = v, status = status)
+                RequestUpdateType.EXCHANGE -> req.copy(exchange = v)
+            }
         }
     }
-
-    private fun changeExchangeRequest(item: RequestModel, exchange: String) {
-        modifyRequestInCurrentShop(item) { req ->
-            val e = exchange.trim().toIntOrNull() ?: 0
-            req.copy(exchange = e)
-        }
-    }
-
-    private fun changeBonusRequest(item: RequestModel, bonus: String) {
-        modifyRequestInCurrentShop(item) { req ->
-            val user = sharedViewModel.viewState.value.user
-            val b = bonus.trim().toIntOrNull() ?: 0
-            val status = if (user != null) (!user.isSysOrAdmin() || req.status == true) else req.status
-            req.copy(bonus = b, status = status)
-        }
-    }
-
-    private fun changeStateDropDownTypePay(state: Boolean) {
-        updateViewState { it.copy(isShowDropDownTypePay = state) }
-    }
-
 
     private fun showTypePayDialog() {
         val currentType = _viewState.value.typePay
@@ -1303,14 +1199,10 @@ class ShopViewModel @Inject constructor(
     private fun initRequest() {
         val shop = viewState.value.currentShop
         if (shop != null) if (shop.status) {
-            _viewState.value = viewState.value.copy(stateConfirmRequestDialog = true)
+            _viewState.value = viewState.value.copy(toggleConfirmRequestDialog = true)
         } else {
             confirmSaveRequest()
         }
-    }
-
-    private fun dismissConfirmDialog() {
-        updateViewState { it.copy(stateConfirmRequestDialog = false) }
     }
 
     private fun confirmSaveRequest() {
@@ -1349,7 +1241,7 @@ class ShopViewModel @Inject constructor(
                             initShopFunction(event = FunShop.UPDATE)
                         }
                     } else {
-                        dismissRequestDialog()
+                        setState(request = false)
                         sharedViewModel.message(Constants.ERROR.RESRTRAINT)
                     }
                 }
@@ -1411,14 +1303,10 @@ class ShopViewModel @Inject constructor(
                 val index = list.indexOfFirst { it.id == newShop.id }
                 list[index] = newShop
                 updateViewState { it.copy(listUIShop = list) }
-                dismissRequestDialog()
+                setState(request = false)
                 val response = shopApi.update(shopRequest)
                 if (!response.success) {
                     sharedViewModel.message(response.message)
-                }
-                val trip = viewState.value.currentTrip
-                if (trip != null && isSameDay(trip.date, System.currentTimeMillis())) {
-                    updateShops(trip)
                 }
             }
         }
@@ -1458,19 +1346,16 @@ class ShopViewModel @Inject constructor(
                         }
                     } else {
                         sharedViewModel.message(Constants.ERROR.RESRTRAINT)
-                        dismissRequestDialog()
+                        setState(request = false)
                     }
                 }
             }
         }
     }
 
-    private fun dismissInfoShopDialog() {
-        updateViewState { it.copy(stateInfoShopDialog = false) }
-    }
-
     private fun openInfoShopDialog(shop: ShopModel) {
-        updateViewState { it.copy(stateInfoShopDialog = true, currentShop = shop) }
+        setState(infoShop = true)
+        updateViewState { it.copy(currentShop = shop) }
         getDataInfoShop(shop)
     }
 

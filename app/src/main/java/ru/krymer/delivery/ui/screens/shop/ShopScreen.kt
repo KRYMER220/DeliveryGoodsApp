@@ -11,8 +11,7 @@ import ru.krymer.delivery.ui.screens.shop.views.ShopView
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ShopScreen(popBackStack: () -> Unit, user: UserModel?, trip: TripModel) {
-
+fun ShopScreen(user: UserModel?, trip: TripModel) {
     user?.let {
         val viewModel = hiltViewModel<ShopViewModel>()
         LaunchedEffect(Unit) {
@@ -21,7 +20,6 @@ fun ShopScreen(popBackStack: () -> Unit, user: UserModel?, trip: TripModel) {
         ShopView(
             state = viewModel.viewState.collectAsState().value,
             event = viewModel::obtainEvent,
-            popBackStack = popBackStack,
             user = it
         )
     }

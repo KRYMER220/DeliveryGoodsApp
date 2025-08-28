@@ -80,9 +80,11 @@ fun TripView(
     LaunchedEffect(trips) {
         if (trips.isNotEmpty() && isFirstLoad) {
             isFirstLoad = false
-            coroutineScope.launch {
-                delay(300)
-                lazyListState.animateScrollToItem(1)
+            if (!state.lightVersion) {
+                coroutineScope.launch {
+                    delay(300)
+                    lazyListState.animateScrollToItem(1)
+                }
             }
         }
     }

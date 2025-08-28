@@ -26,5 +26,17 @@ interface ShopDao {
 
     @Query("SELECT * FROM shop WHERE id = :id")
     suspend fun getShopsById(id: Long): List<ShopLocalModel>
+
+    @Query("DELETE FROM shop WHERE idTrip = :idTrip")
+    suspend fun deleteShopsByTrip(idTrip: Long)
+
+    @Query("DELETE FROM shop WHERE id IN (:ids)")
+    suspend fun deleteShopsByIds(ids: List<Long>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertShops(shops: List<ShopLocalModel>)
+
+    @Update
+    suspend fun updateShops(shops: List<ShopLocalModel>)
 }
 

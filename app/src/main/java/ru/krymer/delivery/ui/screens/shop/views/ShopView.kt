@@ -66,7 +66,7 @@ import ru.krymer.delivery.utills.convertToTextDate
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ShopView(
-    state: ShopViewState, event: (ShopEvent) -> Unit, popBackStack: () -> Unit, user: UserModel
+    state: ShopViewState, event: (ShopEvent) -> Unit, user: UserModel
 ) {
 
     val context = LocalContext.current
@@ -76,12 +76,15 @@ fun ShopView(
     val lazyListState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
+
     LaunchedEffect(shops) {
         if (shops.isNotEmpty() && isFirstLoad) {
             isFirstLoad = false
-            coroutineScope.launch {
-                delay(500)
-                lazyListState.animateScrollToItem(1)
+            if (!state.lightVersion) {
+                coroutineScope.launch {
+                    delay(500)
+                    lazyListState.animateScrollToItem(1)
+                }
             }
         }
     }
@@ -197,7 +200,7 @@ fun ShopView(
         }
     }
 
-    if (state.isShowInfoShop) {
+    if (state.toggleLogShop) {
         CommonInfoAlertDialog(onDismissRequest = {
             event(ShopEvent.ToggleLogsShopDialog(null))
         }, content = {
@@ -246,7 +249,7 @@ fun ShopView(
         })
     }
 
-    if (state.isShowMillageDialog) {
+    if (state.toggleMillageDialog) {
         CommonInfoAlertDialog(onDismissRequest = {
             event(ShopEvent.DismissMillageDialog)
         }, content = {
@@ -357,14 +360,14 @@ fun ShopView(
                 }
                 item {
                     MillageAndInfoView(state = state, onMillageTFC = {
-                        event(ShopEvent.ValueChangeMillage(millage = it))
+                        event(ShopEvent.ValueChangeMillage(millage = if (it.isEmpty()) 0.0 else it.toDouble()))
                     }, event = event)
                 }
             }
         })
     }
 
-    if (state.isShowAnaliticTrip) {
+    if (state.toggleAnaliticOfTrip) {
         CommonInfoAlertDialog(
             content = {
                 AnaliticView(state = state)
@@ -376,7 +379,7 @@ fun ShopView(
         )
     }
 
-    if (state.stateAddDialog) {
+    if (state.toggleAddDialog) {
         CommonAlertAddDialog(onDismiss = {
             event(ShopEvent.DismissAddDialog)
         }, confirm = {
@@ -388,7 +391,7 @@ fun ShopView(
         })
     }
 
-    if (state.showDialogAddRequest) {
+    if (state.toggleAddRequestDialog) {
         CommonAlertAddDialog(onDismiss = {
             event(ShopEvent.DismissDialogAddRequest)
         }, confirm = {
@@ -411,7 +414,7 @@ fun ShopView(
         )
     }
 
-    if (state.showRequestDialog) {
+    if (state.toggleRequestDialog) {
         Dialog(onDismissRequest = { event(ShopEvent.DismissRequestDialog) }, properties = DialogProperties(
             usePlatformDefaultWidth = false,
             decorFitsSystemWindows = false
@@ -434,7 +437,7 @@ fun ShopView(
         }
     }
 
-    if (state.stateInfoDialog) {
+    if (state.toggleInfoTrip) {
         CommonInfoAlertDialog(
             onDismissRequest = { event(ShopEvent.DismissRequestInfoDialog) },
             content = {
@@ -444,13 +447,13 @@ fun ShopView(
             })
     }
 
-    if (state.stateInfoShopDialog) {
+    if (state.toggleInfoShop) {
         CommonInfoAlertDialog(
             onDismissRequest = { event(ShopEvent.DismissInfoShopDialog) },
             content = { InfoShopContent(state = state) })
     }
 
-    if (state.isShowAddSumDialog) {
+    if (state.toggleAddSumDialog) {
         CommonAlertAddDialog(
             onDismiss = { event(ShopEvent.DismissAddSumDialog) },
             confirm = { event(ShopEvent.SaveAddSum) },
@@ -461,10 +464,10 @@ fun ShopView(
             })
     }
 
-    if (state.isShowMessageDialog) {
+    if (state.toggleMessageDialog) {
         CommonSaveDialog(
             dismiss = {
-                event(ShopEvent.ToggleMessageDialog)
+                event(ShopEvent.ToggleMessageDialog(false))
             },
             confirm = {
                 event(ShopEvent.SendMessage)
@@ -484,7 +487,7 @@ fun ShopView(
     }
 
 
-    if (state.isShowDialogArrears) {
+    if (state.toggleArrearsDialog) {
         CommonAlertAddDialog(
             onDismiss = { event(ShopEvent.DismissDialogChangeArrears) },
             confirm = { event(ShopEvent.SaveArrears) },
@@ -496,7 +499,7 @@ fun ShopView(
             otherFun = {})
     }
 
-    if (state.showDeleteDialog) {
+    if (state.toggleDeleteDialog) {
         state.currentShop?.let {
             CommonDeleteDialog(
                 itemName = it.nameShop,
@@ -506,7 +509,7 @@ fun ShopView(
         }
     }
 
-    if (state.stateConfirmRequestDialog) {
+    if (state.toggleConfirmRequestDialog) {
         CommonInfoAlertDialog(
             onDismissRequest = { event(ShopEvent.DismissConfirmRequestDialog) },
             content = {
@@ -536,10 +539,10 @@ fun ShopsItem(
         .heightIn(min = 60.dp, max = Dp.Unspecified)
         .combinedClickable(
             onLongClick = { openLocate(shop) },
-            onClick = { openShop(shop) }, onDoubleClick = { openInfoCurrentShop(shop) })
+            onClick = { openShop(shop) },
+            onDoubleClick = { openInfoCurrentShop(shop) })
         .background(
-            color = AppTheme.colors.secondary,
-            shape = RoundedCornerShape(10.dp)
+            color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)
         )
         .padding(10.dp),
         contentAlignment = Alignment.Center

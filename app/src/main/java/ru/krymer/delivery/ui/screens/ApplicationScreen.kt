@@ -163,8 +163,7 @@ fun ApplicationScreen(
             }
 
             entry<Screens.Shop> { key ->
-                ShopScreen(
-                    popBackStack = { backStack.removeLastOrNull() }, user = user, trip = key.trip
+                ShopScreen(user = user, trip = key.trip
                 )
             }
 

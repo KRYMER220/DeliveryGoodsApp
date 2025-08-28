@@ -134,7 +134,7 @@ fun AlertDialogRequestShop(
                                     }
 
                                     "Отправить сообщение" -> {
-                                        event(ShopEvent.ToggleMessageDialog)
+                                        event(ShopEvent.ToggleMessageDialog(true))
                                     }
 
                                     "Добавить заявку" -> {
@@ -271,7 +271,7 @@ fun AlertDialogRequestShop(
                                         color = AppTheme.colors.onSecondary
                                     )
                                 }
-                                if (state.isShowAddSumView) {
+                                if (shop.addSum > 0.0) {
                                     Column(
                                         verticalArrangement = Arrangement.SpaceAround,
                                         horizontalAlignment = Alignment.CenterHorizontally,

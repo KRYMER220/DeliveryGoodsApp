@@ -16,8 +16,8 @@ android {
         applicationId = "ru.krymer.delivery"
         minSdk = 26
         targetSdk = 36
-        versionCode = 32
-        versionName = "1.3.3"
+        versionCode = 33
+        versionName = "1.3.3.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
