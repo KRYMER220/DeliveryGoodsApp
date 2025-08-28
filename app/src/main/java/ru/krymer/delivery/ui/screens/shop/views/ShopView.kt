@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -52,7 +53,7 @@ import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.ShopModel
 import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.ui.components.CommonAlertAddDialog
-import ru.krymer.delivery.ui.components.CommonAlertDialog
+import ru.krymer.delivery.ui.components.CommonConfirmDialog
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
 import ru.krymer.delivery.ui.components.CommonInfoAlertDialog
 import ru.krymer.delivery.ui.components.CommonSaveDialog
@@ -404,13 +405,13 @@ fun ShopView(
     }
 
     if (state.isCopyAndSave) {
-        CommonAlertDialog(
-            isVisible = true,
+        CommonConfirmDialog(
             onDismiss = {
                 event(ShopEvent.ChangeStateIsCopyDialog)
             }, onConfirm = {
                 event(ShopEvent.CopyAndSaveShop)
-            }
+            },
+            text = stringResource(R.string.copy_confirm)
         )
     }
 

@@ -145,4 +145,8 @@ fun colorChangerMonth(month: String): List<Color> {
     }
 }
 
+sealed class MyResult<out T> {
+    data class Success<T>(val data: T): MyResult<T>()
+    data class Error(val message: String?): MyResult<Nothing>()
+}
 

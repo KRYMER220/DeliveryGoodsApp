@@ -1,5 +1,7 @@
 package ru.krymer.delivery.utills
 
+import okio.Timeout
+
 class Constants {
 
 
@@ -108,7 +110,7 @@ class Constants {
         const val AUTH = "Требуется повторная авторизация!"
         const val AUTH_SIGN = "Ошибка авторизации!"
         const val NOT_FOUND = "Данные не найдены!"
-
+        const val TIMEOUT = "Время исполнения запроса истекло!"
         const val CANCEL_OPERATION = "Вызов операции отменен!"
     }
 

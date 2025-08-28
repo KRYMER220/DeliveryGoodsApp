@@ -8,7 +8,7 @@ import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.ui.screens.route.views.RouteView
 
 @Composable
-fun RouteScreen(user: UserModel?, openRoute: (RouteModel, List<RouteModel>) -> Unit, popBackStack: () -> Unit) {
+fun RouteScreen(user: UserModel?, openRoute: (RouteModel, List<RouteModel>) -> Unit) {
     user?.let {
         val viewModel = hiltViewModel<RouteViewModel>()
         RouteView(
@@ -17,8 +17,7 @@ fun RouteScreen(user: UserModel?, openRoute: (RouteModel, List<RouteModel>) -> U
             user = user,
             openRoute = { route, routes ->
                 openRoute(route, routes)
-            },
-            popBackStack = popBackStack
+            }
         )
     }
 }

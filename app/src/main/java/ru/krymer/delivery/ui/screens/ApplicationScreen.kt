@@ -146,9 +146,6 @@ fun ApplicationScreen(
                 RouteScreen(
                     user = user, openRoute = { route, routes ->
                         backStack.add(Screens.Client(route = route, routes = routes))
-                    },
-                    popBackStack = {
-                        backStack.removeLastOrNull()
                     })
             }
 

@@ -32,7 +32,8 @@ fun CommonSaveDialog(
     ModalBottomSheet(
             onDismissRequest = dismiss,
             sheetState = sheetState,
-            containerColor = AppTheme.colors.onPrimary
+            containerColor = AppTheme.colors.onPrimary,
+            dragHandle = null
     ) {
         Column(
             modifier = Modifier
@@ -50,6 +51,7 @@ fun CommonSaveDialog(
             )
             Spacer(modifier = Modifier.height(10.dp))
             content()
+            Spacer(modifier = Modifier.height(10.dp))
         }
     }
 }

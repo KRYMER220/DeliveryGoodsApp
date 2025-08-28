@@ -19,14 +19,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,11 +34,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.RouteModel
 import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.data.model.utilModel.Loader
-import ru.krymer.delivery.ui.components.CommonAddDialog
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
 import ru.krymer.delivery.ui.components.CommonSaveDialog
 import ru.krymer.delivery.ui.screens.route.models.RouteEvent
@@ -51,20 +50,13 @@ fun RouteView(
     event: (RouteEvent) -> Unit,
     state: RouteViewState,
     openRoute: (RouteModel, List<RouteModel>) -> Unit,
-    popBackStack: () -> Unit,
     user: UserModel
 ) {
-
-    val routes = state.listRoute.collectAsState().value
-    var loader by remember { mutableStateOf(Loader.LOADING) }
-
-    LaunchedEffect(key1 = state.isLoadingData, key2 = routes.size) {
-        delay(500)
-        loader = if (routes.isNotEmpty()) {
-            Loader.LOAD
-        } else {
-            Loader.EMPTY
-        }
+    val routes = state.routes
+    val loader = when {
+        state.isLoading -> Loader.LOADING
+        state.routes.isEmpty() -> Loader.EMPTY
+        else -> Loader.LOAD
     }
 
     Column(modifier = Modifier.padding(15.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -73,22 +65,14 @@ fun RouteView(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.back_stack),
-                contentDescription = "exit",
-                modifier = Modifier
-                    .clickable(onClick = {
-                        popBackStack()
-                    })
-                    .size(60.dp)
-            )
+            Spacer(modifier = Modifier)
             if (user.isSysOrAdmin()) {
                 Image(
                     painter = painterResource(id = R.drawable.add),
                     contentDescription = "add route",
                     modifier = Modifier
                         .clickable(onClick = {
-                            event(RouteEvent.ShowAddDialog)
+                            event(RouteEvent.ToggleAddDialog)
                         })
                         .size(60.dp)
                 )
@@ -106,16 +90,14 @@ fun RouteView(
                                     openRoute(it, routes)
                                 },
                                 deleteRoute = {
-                                    if (user.isSysOrAdmin())
-                                        event(
-                                            RouteEvent.ShowDeleteDialog(
-                                                route = it
-                                            )
-                                        )
+                                    if (user.isSysOrAdmin()) {
+                                        event(RouteEvent.ToggleDeleteDialog(it))
+                                    }
                                 },
                                 updateRoute = {
-                                    if (user.isSysOrAdmin())
-                                        event(RouteEvent.ShowUpdateDialog(it))
+                                    if (user.isSysOrAdmin()) {
+                                        event(RouteEvent.ToggleUpdateDialog(it))
+                                    }
                                 },
                                 user = user
                             )
@@ -137,33 +119,33 @@ fun RouteView(
         }
     }
 
-    if (state.isDialogDelete) {
-        state.routeDeleted?.let {
+    if (state.toggleDialogDelete) {
+        state.route?.let {
             CommonDeleteDialog(
                 itemName = it.name,
                 isVisible = true,
-                onDismiss = { event(RouteEvent.DismissDeleteDialog) },
+                onDismiss = { event(RouteEvent.ToggleDeleteDialog(null)) },
                 onConfirm = { event(RouteEvent.DeleteRoute) })
         }
     }
 
-    if (state.showDialogAdd) {
+    if (state.toggleDialogAdd) {
         CommonSaveDialog(dismiss = {
-            event(RouteEvent.DismissAddDialog)
+            event(RouteEvent.ToggleAddDialog)
         }, confirm = {
-            event(RouteEvent.RouteSaveAction)
+            event(RouteEvent.CreateRoute)
         }, content = {
-            AddRouteView(viewState = state, changeName = {
+            AddRouteView(changeName = {
                 event(RouteEvent.NameRouteChangedAdd(it))
             })
         })
     }
 
-    if (state.isDialogUpdate) {
+    if (state.toggleDialogUpdate) {
         CommonSaveDialog(dismiss = {
-            event(RouteEvent.DismissUpdateDialog)
+            event(RouteEvent.ToggleUpdateDialog(null))
         }, confirm = {
-            event(RouteEvent.RouteUpdateAction)
+            event(RouteEvent.UpdateRoute)
         }, content = {
             UpdateRouteView(viewState = state, changeName = {
                 event(RouteEvent.UpdateNameRoute(it))

@@ -23,7 +23,7 @@ import ru.krymer.delivery.utills.Constants
 
 @Composable
 fun AddRouteView(
-    viewState: RouteViewState, changeName: (String) -> Unit
+    changeName: (String) -> Unit
 ) {
 
     var name by remember { mutableStateOf(Constants.EMPTY.EMPTY_STRING) }
