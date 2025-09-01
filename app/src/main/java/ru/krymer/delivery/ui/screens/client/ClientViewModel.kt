@@ -128,7 +128,7 @@ class ClientViewModel @Inject constructor(
         updateState { it.copy(listRoute = list) }
     }
 
-    fun getDataClients(route: RouteModel) = launchCoroutine {
+    fun getClients(route: RouteModel) = launchCoroutine {
         updateState { it.copy(isLoading = true, route = route) }
 
         when (val res = repository.getClients(idRoute = route.id)) {
@@ -169,7 +169,7 @@ class ClientViewModel @Inject constructor(
 
         when (val res = repository.addClient(request)) {
             is MyResult.Success -> {
-                getDataClients(route = route)
+                getClients(route = route)
                 setState(add = false)
                 setValue(name = "", phone = "", route = null, cords = "", arrears = "")
             }
@@ -208,7 +208,7 @@ class ClientViewModel @Inject constructor(
 
         when (val res = repository.deleteClient(client.id)) {
             is MyResult.Success -> {
-                getDataClients(route = route)
+                getClients(route = route)
                 setState(delete = false, client = null)
             }
 
@@ -256,8 +256,9 @@ class ClientViewModel @Inject constructor(
 
         when (val res = repository.updateClient(request = request)) {
             is MyResult.Success -> {
-                getDataClients(route)
+                getClients(route)
                 setState(update = false, client = null)
+                setValue(name = "", phone = "", cords = "", arrears = "", route = null)
             }
             is MyResult.Error -> sharedViewModel.message(res.message, type = TypeMessageModel.ERROR)
         }

@@ -20,12 +20,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.colorResource
@@ -48,13 +44,15 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 @Composable
 fun ProductView(
     state: ProductViewState,
-    popBackStack: () -> Unit,
     event: (ProductEvent) -> Unit
 ) {
-    val list = state.listProduct.collectAsState().value
-    val isLoad = state.isLoadData.collectAsState().value
-    var loader by remember { mutableStateOf(Loader.LOADING) }
 
+    val list = state.products
+    val loader = when {
+        state.isLoading -> Loader.LOADING
+        state.products.isEmpty() -> Loader.EMPTY
+        else -> Loader.LOAD
+    }
     var products = remember { mutableStateListOf<ProductModel>() }
     val lazyListState = rememberLazyListState()
     val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
@@ -63,15 +61,7 @@ fun ProductView(
         }
     }
 
-    LaunchedEffect(key1 = isLoad, key2 = list.size) {
-        loader = if (list.isNotEmpty()) {
-            Loader.LOAD
-        } else {
-            Loader.EMPTY
-        }
-    }
-
-    LaunchedEffect(isLoad) {
+    LaunchedEffect(state.isLoading) {
         products.clear()
         products.addAll(list)
     }
@@ -82,21 +72,13 @@ fun ProductView(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.back_stack),
-                contentDescription = "exit",
-                modifier = Modifier
-                    .clickable(onClick = {
-                        popBackStack()
-                    })
-                    .size(60.dp)
-            )
+            Spacer(modifier = Modifier)
             Image(
                 painter = painterResource(id = R.drawable.add),
                 contentDescription = "add product",
                 modifier = Modifier
                     .clickable(onClick = {
-                        event(ProductEvent.ShowAddDialog)
+                        event(ProductEvent.ToggleAddDialog)
                     })
                     .size(60.dp)
             )
@@ -131,11 +113,11 @@ fun ProductView(
         }
     }
 
-    if (state.showAddSheetDialog) {
+    if (state.toggleAddDialog) {
         CommonSaveDialog(dismiss = {
-            event(ProductEvent.DismissAddDialog)
+            event(ProductEvent.ToggleAddDialog)
         }, confirm = {
-            event(ProductEvent.ProductSaveAction)
+            event(ProductEvent.CreateProduct)
         }, content = {
             AddProductView(changeName = {
                 event(ProductEvent.ChangedNameProduct(it))
@@ -146,28 +128,28 @@ fun ProductView(
     }
 
 
-    if (state.showUpdateSheetDialog) {
+    if (state.toggleUpdateDialog) {
         CommonSaveDialog(dismiss = {
-            event(ProductEvent.DismissUpdateDialog)
+            event(ProductEvent.ToggleUpdateDialog(null))
         }, confirm = {
-            event(ProductEvent.ProductUpdateAction)
+            event(ProductEvent.UpdateProduct)
         }, content = {
-            UpdateProductView(viewState = state, changeName = {
+            UpdateProductView(state = state, changeName = {
                 event(ProductEvent.ChangedNameProduct(it))
             }, changePrice = {
                 event(ProductEvent.ChangedPriceProduct(it))
             }, productAction = {
-                event(ProductEvent.ChangeIsActiveProduct)
+                event(ProductEvent.ChangeStatusProduct)
             })
         })
     }
 
-    if (state.showDeleteDialog) {
-        state.productDelete?.let {
+    if (state.toggleDeleteDialog) {
+        state.product?.let {
             CommonDeleteDialog(
                 itemName = it.name,
                 isVisible = true,
-                onDismiss = { event(ProductEvent.DismissDeleteDialog) },
+                onDismiss = { event(ProductEvent.ToggleDeleteDialog(null)) },
                 onConfirm = { event(ProductEvent.DeleteProduct) })
         }
     }
@@ -181,7 +163,7 @@ fun ProductItem(
 ) {
     Box(
         modifier = Modifier
-            .clickable { event(ProductEvent.ProductItemClicked(product = product)) }
+            .clickable { event(ProductEvent.ToggleUpdateDialog(product = product)) }
             .background(
                 color = if (product.isActive) AppTheme.colors.secondary else colorResource(R.color.changed),
                 shape = RoundedCornerShape(16.dp)
@@ -216,7 +198,7 @@ fun ProductItem(
                 painter = painterResource(id = R.drawable.delete),
                 modifier = Modifier
                     .size(40.dp)
-                    .clickable(onClick = { event(ProductEvent.ShowDeleteDialog(product = product)) })
+                    .clickable(onClick = { event(ProductEvent.ToggleDeleteDialog(product = product)) })
             )
         }
     }

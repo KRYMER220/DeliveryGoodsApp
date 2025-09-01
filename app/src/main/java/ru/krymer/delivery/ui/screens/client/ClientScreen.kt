@@ -15,7 +15,7 @@ fun ClientScreen(
     user?.let {
         val viewModel = hiltViewModel<ClientViewModel>()
         LaunchedEffect(Unit) {
-            viewModel.getDataClients(route = route)
+            viewModel.getClients(route = route)
             viewModel.saveListRoute(list = routes)
         }
         ClientView(

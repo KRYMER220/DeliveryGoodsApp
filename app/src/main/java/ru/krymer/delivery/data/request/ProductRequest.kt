@@ -1,6 +1,6 @@
 package ru.krymer.delivery.data.request
 
-data class CreateProductRequest(
+data class ProductRequest(
     val id: Long ?= null,
     val name: String,
     val idFactory: Long,

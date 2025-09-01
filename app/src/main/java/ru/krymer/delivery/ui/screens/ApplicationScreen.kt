@@ -181,11 +181,7 @@ fun ApplicationScreen(
             }
 
             entry<Screens.Product> {
-                ProductScreen(
-                    popBackStack = {
-                        backStack.removeLastOrNull()
-                    }
-                )
+                ProductScreen()
             }
 
             entry<Screens.Courier> {

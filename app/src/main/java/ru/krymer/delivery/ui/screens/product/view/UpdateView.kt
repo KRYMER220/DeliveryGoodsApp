@@ -30,16 +30,13 @@ import ru.krymer.delivery.utills.startsWithDigit
 
 @Composable
 fun UpdateProductView(
-    viewState: ProductViewState,
+    state: ProductViewState,
     changeName: (String) -> Unit,
     changePrice: (String) -> Unit,
     productAction: (Boolean) -> Unit
 ) {
 
-        val product = viewState.productUpdated.collectAsState().value
-
-
-    product?.let {
+    state.product?.let { product ->
         var name by remember { mutableStateOf(product.name) }
         var errorName by remember { mutableStateOf(Error()) }
         var price by remember { mutableStateOf("${product.price}") }

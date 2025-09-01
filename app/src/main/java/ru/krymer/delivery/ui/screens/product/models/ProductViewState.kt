@@ -1,21 +1,15 @@
 package ru.krymer.delivery.ui.screens.product.models
 
-import kotlinx.coroutines.flow.MutableStateFlow
 import ru.krymer.delivery.data.model.ProductModel
 
-sealed class ProductAction {
-    data object None : ProductAction()
-}
-
-
 data class ProductViewState(
-    val listProduct: MutableStateFlow<List<ProductModel>> = MutableStateFlow(listOf()),
-    val showAddSheetDialog: Boolean = false,
-    val showUpdateSheetDialog: Boolean = false,
-    val isLoadData: MutableStateFlow<Boolean> = MutableStateFlow(false),
+    val products: List<ProductModel> = emptyList(),
+    val toggleAddDialog: Boolean = false,
+    val toggleUpdateDialog: Boolean = false,
+    val isLoading: Boolean = false,
     val itemName: String = "",
     val itemPrice: String = "",
-    val productUpdated: MutableStateFlow<ProductModel?> = MutableStateFlow(null),
-    val productDelete: ProductModel? = null,
-    val showDeleteDialog: Boolean = false,
+    val itemStatus: Boolean = true,
+    val product: ProductModel? = null,
+    val toggleDeleteDialog: Boolean = false,
 )

@@ -6,13 +6,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import ru.krymer.delivery.ui.screens.product.view.ProductView
 
 @Composable
-fun ProductScreen(
-    popBackStack: () -> Unit
-) {
+fun ProductScreen() {
     val viewModel = hiltViewModel<ProductViewModel>()
     ProductView(
         state = viewModel.viewState.collectAsState().value,
-        event = viewModel::obtainEvent,
-        popBackStack = popBackStack,
+        event = viewModel::obtainEvent
     )
 }
