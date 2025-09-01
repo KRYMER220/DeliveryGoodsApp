@@ -176,9 +176,6 @@ fun ApplicationScreen(
                 ClientScreen(
                     route = key.route,
                     user = user,
-                    popBackStack = {
-                        backStack.removeLastOrNull()
-                    },
                     routes = key.routes
                 )
             }

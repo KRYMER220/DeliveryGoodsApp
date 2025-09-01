@@ -39,11 +39,17 @@ class RouteViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 block()
-            } catch (_: CancellationException) {
-                sharedViewModel.message(Constants.ERROR.CANCEL_OPERATION, type = TypeMessageModel.ERROR)
-            } catch (_: TimeoutCancellationException) {
+            } catch (e: CancellationException) {
+                throw e
+                sharedViewModel.message(
+                    Constants.ERROR.CANCEL_OPERATION,
+                    type = TypeMessageModel.ERROR
+                )
+            } catch (e: TimeoutCancellationException) {
+                throw e
                 sharedViewModel.message(Constants.ERROR.TIMEOUT, type = TypeMessageModel.ERROR)
             } catch (e: Exception) {
+                throw e
                 sharedViewModel.message(e.message, type = TypeMessageModel.ERROR)
             }
         }

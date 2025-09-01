@@ -1,38 +1,24 @@
 package ru.krymer.delivery.ui.screens.client.models
 
-import androidx.compose.runtime.mutableStateOf
-import kotlinx.coroutines.flow.MutableStateFlow
 import ru.krymer.delivery.data.model.ClientModel
 import ru.krymer.delivery.data.model.RouteModel
-import ru.krymer.delivery.ui.screens.analitic.models.AnaliticEvent
-
-sealed class ClientAction {
-    data object None : ClientAction()
-}
-
 
 data class ClientViewState(
-    val clientAction: ClientAction = ClientAction.None,
     val isError: Boolean = false,
-    val listClient: MutableStateFlow<List<ClientModel>> = MutableStateFlow(listOf()),
-    val currentRoute: MutableStateFlow<RouteModel?> = MutableStateFlow(null),
-    val listNewClient: MutableStateFlow<List<ClientModel>> = MutableStateFlow(listOf()),
-    val listRoute: MutableStateFlow<List<RouteModel>> = MutableStateFlow(listOf()),
-    val isLoadData: MutableStateFlow<Boolean> = MutableStateFlow(false),
-    val idRoute: String = "",
-    val isDialogAdd: Boolean = false,
-
-    val isDialogUpdate: Boolean = false,
-
-    val isDialogDelete: Boolean = false,
+    val clients: List<ClientModel> = emptyList(),
+    val route: RouteModel? = null,
+    val listNewClient: List<ClientModel> = emptyList(),
+    val listRoute: List<RouteModel> = emptyList(),
+    val isLoading: Boolean = false,
+    val toggleAddDialog: Boolean = false,
+    val toggleUpdateDialog: Boolean = false,
+    val toggleDeleteDialog: Boolean = false,
     val clientDelete: ClientModel? = null,
-
     val clientUpdate: ClientModel? = null,
     val name: String = "",
     val arrears: String = "",
     val phone: String = "",
     val cords: String = "",
-
-    val dropDownState: Boolean = false,
-    val selectedRoute: MutableStateFlow<RouteModel?> = MutableStateFlow(null),
+    val selectedRoute: RouteModel? = null,
+    val client: ClientModel? = null,
 )

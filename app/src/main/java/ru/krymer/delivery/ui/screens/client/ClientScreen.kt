@@ -10,7 +10,7 @@ import ru.krymer.delivery.ui.screens.client.view.ClientView
 
 @Composable
 fun ClientScreen(
-    user: UserModel?, popBackStack: () -> Unit, route: RouteModel, routes: List<RouteModel>
+    user: UserModel?, route: RouteModel, routes: List<RouteModel>
 ) {
     user?.let {
         val viewModel = hiltViewModel<ClientViewModel>()
@@ -21,7 +21,6 @@ fun ClientScreen(
         ClientView(
             user = user,
             event = viewModel::obtainEvent,
-            popBackStack = popBackStack,
             state = viewModel.viewState.collectAsState().value
         )
     }

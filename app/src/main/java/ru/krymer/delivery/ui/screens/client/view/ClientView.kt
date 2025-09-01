@@ -1,6 +1,5 @@
 package ru.krymer.delivery.ui.screens.client.view
 
-import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -21,16 +20,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -38,7 +32,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.ClientModel
 import ru.krymer.delivery.data.model.user.UserModel
@@ -53,11 +46,14 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Composable
 fun ClientView(
-    event: (ClientEvent) -> Unit, state: ClientViewState, popBackStack: () -> Unit, user: UserModel
+    event: (ClientEvent) -> Unit, state: ClientViewState, user: UserModel
 ) {
-    val list = state.listClient.collectAsState().value
-    val isLoad = state.isLoadData.collectAsState().value
-    var loader by remember { mutableStateOf(Loader.LOADING) }
+    val list = state.clients
+    val loader = when {
+        state.isLoading-> Loader.LOADING
+        state.clients.isEmpty() -> Loader.EMPTY
+        else -> Loader.LOAD
+    }
     var clients = remember { mutableStateListOf<ClientModel>() }
     val lazyListState = rememberLazyListState()
     val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
@@ -66,16 +62,7 @@ fun ClientView(
         }
     }
 
-    LaunchedEffect(key1 = isLoad, key2 = list.size) {
-        delay(500)
-        loader = if (list.isNotEmpty()) {
-            Loader.LOAD
-        } else {
-            Loader.EMPTY
-        }
-    }
-
-    LaunchedEffect(isLoad) {
+    LaunchedEffect(state.isLoading) {
         clients.clear()
         clients.addAll(list)
     }
@@ -86,15 +73,7 @@ fun ClientView(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.back_stack),
-                contentDescription = "exit",
-                modifier = Modifier
-                    .clickable(onClick = {
-                        popBackStack()
-                    })
-                    .size(60.dp)
-            )
+            Spacer(modifier = Modifier)
             Text(
                 style = AppTheme.typography.titleMedium,
                 text = "${clients.sumOf { it.arrears.toInt() }} руб",
@@ -108,10 +87,12 @@ fun ClientView(
                     contentDescription = "add route",
                     modifier = Modifier
                         .clickable(onClick = {
-                            event(ClientEvent.ShowAddDialog)
+                            event(ClientEvent.ToggleAddDialog)
                         })
                         .size(60.dp)
                 )
+            } else {
+                Spacer(modifier = Modifier)
             }
         }
         Spacer(modifier = Modifier.height(15.dp))
@@ -146,12 +127,12 @@ fun ClientView(
         }
     }
 
-    if (state.isDialogDelete) {
+    if (state.toggleDeleteDialog) {
         state.clientDelete?.let {
             CommonDeleteDialog(
                 itemName = it.name,
                 isVisible = true,
-                onDismiss = { event(ClientEvent.DismissDeleteDialog) },
+                onDismiss = { event(ClientEvent.ToggleDeleteDialog(null)) },
                 onConfirm = {
                     clients - it
                     event(ClientEvent.DeleteClient)
@@ -159,9 +140,9 @@ fun ClientView(
         }
     }
 
-    if (state.isDialogAdd) {
+    if (state.toggleAddDialog) {
         CommonSaveDialog(dismiss = {
-            event(ClientEvent.DismissAddDialog)
+            event(ClientEvent.ToggleAddDialog)
         }, confirm = {
             event(ClientEvent.ClientAddAction)
         }, content = {
@@ -178,16 +159,16 @@ fun ClientView(
     }
 
 
-    if (state.isDialogUpdate) {
+    if (state.toggleUpdateDialog) {
         CommonSaveDialog(dismiss = {
-            event(ClientEvent.DismissUpdateDialog)
+            event(ClientEvent.ToggleUpdateDialog(null))
         }, confirm = {
             if (user.isModOrAdminOrSys()) {
                 event(ClientEvent.ClientUpdateAction)
             }
         }, content = {
             UpdateClientView(
-                viewState = state, event = event, user = user
+                state = state, event = event, user = user
             )
         })
     }
@@ -203,7 +184,7 @@ fun ClientItem(
             .combinedClickable(
                 onClick = {
                     event(
-                        ClientEvent.ShowUpdateDialog(
+                        ClientEvent.ToggleUpdateDialog(
                             client = client
                         )
                     )
@@ -246,7 +227,7 @@ fun ClientItem(
                         .size(40.dp)
                         .clickable(onClick = {
                             event(
-                                ClientEvent.ShowDeleteDialog(client = client)
+                                ClientEvent.ToggleDeleteDialog(client = client)
                             )
                         })
                 )

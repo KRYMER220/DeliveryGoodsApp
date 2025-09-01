@@ -117,7 +117,7 @@ fun AddClientView(
                 errorCords = when {
                     !isValidCords(str) -> Error(visible = true, error = Constants.ERROR.CORD)
                     else -> {
-                        changePhone(str)
+                        changeCords(str)
                         Error()
                     }
                 }

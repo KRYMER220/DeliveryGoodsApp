@@ -12,13 +12,13 @@ import ru.krymer.delivery.utills.Constants
 
 interface ClientApi {
     @POST("client/create")
-    suspend fun add(@Body client: ClientRequest): BaseResponse<ClientModel>
+    suspend fun add(@Body request: ClientRequest): BaseResponse<ClientModel>
 
     @POST("client/update")
-    suspend fun update(@Body client: ClientRequest): BaseResponse<ClientModel>
+    suspend fun update(@Body request: ClientRequest): BaseResponse<ClientModel>
 
     @POST("client/move")
-    suspend fun moves(@Body clients: List<ClientRequest>): BaseResponse<ClientModel>
+    suspend fun moves(@Body requests: List<ClientRequest>): BaseResponse<ClientModel>
 
     @DELETE("client/delete")
     suspend fun delete(@Query(Constants.HttpRequestKeys.ID) id: Long): BaseResponse<ClientModel>
