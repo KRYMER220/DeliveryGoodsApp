@@ -5,41 +5,40 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.krymer.delivery.common.EventHandler
-import ru.krymer.delivery.data.api.FactoryApi
-import ru.krymer.delivery.data.api.UserApi
+import ru.krymer.delivery.data.model.FactoryModel
 import ru.krymer.delivery.data.model.user.RoleModel
 import ru.krymer.delivery.data.model.user.StatusModel
 import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.data.model.user.getStringByRole
 import ru.krymer.delivery.data.model.user.getStringByStatus
 import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
+import ru.krymer.delivery.data.repositoryImpl.CourierRepositoryImpl
+import ru.krymer.delivery.data.request.FactoryRequest
 import ru.krymer.delivery.data.request.SignUpRequest
-import ru.krymer.delivery.data.request.UpdateFactoryRequest
-import ru.krymer.delivery.data.request.UpdateUserRequest
+import ru.krymer.delivery.data.request.UserRequest
 import ru.krymer.delivery.ui.screens.courier.models.CourierEvent
 import ru.krymer.delivery.ui.screens.courier.models.CourierViewState
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.utills.Constants
-import ru.krymer.delivery.utills.startsWithDigit
+import ru.krymer.delivery.utills.MyResult
 import javax.inject.Inject
 
 @HiltViewModel
 class CourierViewModel @Inject constructor(
-    private val userApi: UserApi,
+    private val repository: CourierRepositoryImpl,
     private val sharedViewModel: SharedViewModel,
-    private val factoryApi: FactoryApi
 ) : ViewModel(), EventHandler<CourierEvent> {
 
     private val _viewState = MutableStateFlow(CourierViewState())
     val viewState = _viewState.asStateFlow()
 
-    private fun updateViewState(update: (CourierViewState) -> CourierViewState) {
+    private fun updateState(update: (CourierViewState) -> CourierViewState) {
         _viewState.update { update(it) }
     }
 
@@ -48,39 +47,53 @@ class CourierViewModel @Inject constructor(
             try {
                 block()
             } catch (e: CancellationException) {
-                sharedViewModel.message(Constants.ERROR.CANCEL_OPERATION, type = TypeMessageModel.ERROR)
+                throw e
+                sharedViewModel.message(
+                    Constants.ERROR.CANCEL_OPERATION,
+                    type = TypeMessageModel.ERROR
+                )
+            } catch (e: TimeoutCancellationException) {
+                throw e
+                sharedViewModel.message(Constants.ERROR.TIMEOUT, type = TypeMessageModel.ERROR)
             } catch (e: Exception) {
+                throw e
                 sharedViewModel.message(e.message, type = TypeMessageModel.ERROR)
             }
         }
     }
 
+
     override fun obtainEvent(event: CourierEvent) {
         when (event) {
-            is CourierEvent.ShowAddDialog -> showAddDialog()
-            is CourierEvent.ShowBanDialog -> showBanDialog(event.user)
-            is CourierEvent.UserItemClicked -> showDialogUpdate(event.user)
-            is CourierEvent.UserSaveAction -> saveUser()
-            is CourierEvent.ChangedEmailUser -> emailChanged(event.email)
-            is CourierEvent.ChangedPassUser -> passChanged(event.pass)
-            is CourierEvent.ChangeUsername -> changeName(event.name)
-            is CourierEvent.ChangeUserPercent -> percentUpdateChanged(event.percent)
-            is CourierEvent.UserUpdateAction -> updateUser()
-            is CourierEvent.ChangedPrice -> priceUpdateChanged(event.price)
-            is CourierEvent.ChangedSalary -> salaryUpdateChanged(event.salary)
-            is CourierEvent.SettingsUpdateAction -> updateSettings()
-            is CourierEvent.ShowUpdateSettingsDialog -> showSettings()
-            is CourierEvent.DismissBanDialog -> dismissBanDialog()
-            is CourierEvent.DismissUpdateSettingsDataDialog -> dismissUpdateSettingsDialog()
-            is CourierEvent.DismissUpdateUserDataDialog -> dismissUpdateUserDialog()
-            is CourierEvent.DismissAddDialog -> dismissAddDialog()
-            is CourierEvent.BanUser -> banUser()
-            is CourierEvent.ShowDeleteDialog -> showDeleteDialog(event.user)
-            is CourierEvent.DismissDeleteDialog -> dismissDeleteDialog()
+            is CourierEvent.ToggleAddDialog -> setState(add = !viewState.value.toggleAddCourier)
+            is CourierEvent.ToggleBanUser -> setState(ban = !viewState.value.toggleBanDialog, user = event.user)
+            is CourierEvent.ToggleUpdateDialog -> setState(user = event.user, updateCourier = !viewState.value.toggleUpdateCourier)
+            is CourierEvent.CreateUser -> createUser()
+            is CourierEvent.ChangedEmailUser -> setValue(email = event.email)
+            is CourierEvent.ChangedPassUser -> setValue(pass = event.pass)
+            is CourierEvent.ChangeUsername -> setValue(name = event.name)
+            is CourierEvent.ChangeUserPercent -> setValue(percent = event.percent)
+            is CourierEvent.UpdateUser -> updateUser()
+            is CourierEvent.ChangedPrice -> setValue(priceKm = event.price)
+            is CourierEvent.ChangedSalary -> setValue(salarySys = event.salary)
+            is CourierEvent.UpdateSettings -> updateSettings()
+            is CourierEvent.ToggleUpdateSettingsDialog -> {
+                val factory = sharedViewModel.viewState.value.factory
+                if (factory != null) {
+                    setState(factory = factory, updateSettings = !viewState.value.toggleSettingsFactory)
+                }
+            }
+
+            is CourierEvent.BanUser -> {
+                val user = viewState.value.user
+                if (user != null)
+                    updateState { it.copy(user = user.copy(isBan = !user.isBan)) }
+                setState(ban = false)
+            }
+            is CourierEvent.ToggleDeleteDialog -> setState(user = event.user, delete = !viewState.value.toggleDeleteCourier)
             is CourierEvent.DeleteUser -> deleteUser()
-            is CourierEvent.DropDownMenuState -> changeStateDropMenu(event.state)
-            is CourierEvent.SelectedItemMenu -> changeRole(event.role)
-            is CourierEvent.ChangeUserSalary -> changeUserSalary(event.salary)
+            is CourierEvent.SelectedItemMenu -> setValue(role = event.role)
+            is CourierEvent.ChangeUserSalary -> setValue(salary = event.salary)
         }
     }
 
@@ -88,330 +101,218 @@ class CourierViewModel @Inject constructor(
         getDataUsers()
     }
 
-    private fun changeUserSalary(salary: String) {
-        updateViewState { it.copy(userSalary = salary) }
-    }
-
-    private fun getDataUsers() {
-        launchCoroutine {
-            val user = sharedViewModel.viewState.value.user
-            if (user != null) {
-                val response = userApi.getUsers(idFactory = user.idFactory)
-                if (response.success) {
-                    val users = response.obj
-                    if (users != null) {
-                        updateViewState {
-                            it.copy(
-                                listUser = MutableStateFlow(users)
-                            )
-                        }
-                    } else {
-                        delay(5000)
-                        getDataUsers()
-                    }
-                } else {
-                    sharedViewModel.message(response.message)
-                }
-            }
-        }
-    }
-
-    private fun changeRole(role: RoleModel) {
-        updateViewState { it.copy(userRole = role) }
-    }
-
-    private fun changeStateDropMenu(state: Boolean) {
-        updateViewState { it.copy(stateDropMenu = state) }
-    }
-
-    private fun showDeleteDialog(user: UserModel) {
-        updateViewState {
+    private fun setValue(
+        name: String = viewState.value.userName,
+        role: RoleModel? = viewState.value.userRole,
+        percent: String = viewState.value.userPercent,
+        salary: String = viewState.value.userSalary,
+        email: String = viewState.value.userEmail,
+        pass: String = viewState.value.userPass,
+        priceKm: String = viewState.value.priceMillage,
+        salarySys: String = viewState.value.salaryChange,
+    ) {
+        updateState {
             it.copy(
-                isDeleteDialog = true, userDelete = user
+                userPass = pass,
+                userRole = role,
+                userSalary = salary,
+                userEmail = email,
+                userName = name,
+                userPercent = percent,
+                priceMillage = priceKm,
+                salaryChange = salarySys,
             )
         }
     }
 
-    private fun deleteUser() {
-        launchCoroutine {
-            val user = viewState.value.userDelete
-            if (user != null) {
-                if (user.id != sharedViewModel.viewState.value.user?.id) {
-                    val response = userApi.delete(id = user.id)
-                    if (response.success) {
-                        val list =
-                            viewState.value.listUser.value.map { it.copy() }.toMutableList()
-                        val item = list.first { it.id == user.id }
-                        val listNew = list - item
-                        updateViewState { it.copy(listUser = MutableStateFlow(listNew.sortedBy { r -> r.name })) }
-                        dismissDeleteDialog()
-                    } else {
-                        sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
-                    }
-                } else {
-                    sharedViewModel.message(Constants.ERROR.RESRTRAINT, type = TypeMessageModel.ERROR)
-                }
-            } else {
-                sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
+    private fun getDataUsers() = launchCoroutine {
+        updateState { it.copy(isLoading = true) }
+        val user = sharedViewModel.viewState.value.user
+        if (user == null) {
+            updateState { it.copy(isLoading = false) }
+            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
+            return@launchCoroutine
+        }
+
+        when (val res = repository.getUsers(idFactory = user.idFactory)) {
+            is MyResult.Success -> updateState { it.copy(couriers = res.data, isLoading = false) }
+            is MyResult.Error -> {
+                updateState { it.copy(isLoading = false) }
+                sharedViewModel.message(res.message, type = TypeMessageModel.ERROR)
             }
         }
     }
 
-    private fun dismissDeleteDialog() {
-        updateViewState { it.copy(isDeleteDialog = false) }
-    }
+    private fun deleteUser() = launchCoroutine {
+        val user = viewState.value.user
+        val userSignIn = sharedViewModel.viewState.value.user
 
-    private fun showSettings() {
-        val factory = sharedViewModel.viewState.value.factory
-        if (factory != null) {
-            updateViewState {
-                it.copy(
-                    showUpdateSettingsSheetDialog = true,
-                    factory = factory
+        if (user == null) {
+            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
+            return@launchCoroutine
+        }
+
+        if (userSignIn == null) {
+            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
+            return@launchCoroutine
+        }
+
+        if (user.id != userSignIn.id) {
+            when (val res = repository.delete(id = user.id)) {
+                is MyResult.Success -> {
+                    getDataUsers()
+                    setState(user = null, delete = false)
+                }
+
+                is MyResult.Error -> sharedViewModel.message(
+                    res.message,
+                    type = TypeMessageModel.ERROR
                 )
             }
+        } else {
+            sharedViewModel.message(Constants.ERROR.RESRTRAINT, type = TypeMessageModel.ERROR)
         }
     }
 
-    private fun updateSettings() {
-        launchCoroutine {
-            val factory = viewState.value.factory
-            if (factory != null) {
-                val newFactory = UpdateFactoryRequest(
-                    id = factory.id,
-                    name = factory.name,
-                    dateAdd = factory.dateAdd,
-                    salary = factory.salary,
-                    priceMillage = factory.priceMillage
-                )
-                val response = factoryApi.update(factory = newFactory)
-                if (response.success) {
-                    sharedViewModel.updateFactory(factory = factory)
-                    dismissUpdateSettingsDialog()
-                } else {
-                    sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
-                }
-            } else {
-                sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
-            }
-        }
-    }
-
-    private fun showDialogUpdate(user: UserModel) {
-        updateViewState {
+    private fun setState(
+        factory: FactoryModel? = viewState.value.factory,
+        user: UserModel? = viewState.value.user,
+        delete: Boolean = viewState.value.toggleDeleteCourier,
+        updateCourier: Boolean = viewState.value.toggleUpdateCourier,
+        updateSettings: Boolean = viewState.value.toggleSettingsFactory,
+        add: Boolean = viewState.value.toggleAddCourier,
+        ban: Boolean = viewState.value.toggleBanDialog,
+    ) {
+        updateState {
             it.copy(
-                showUpdateSheetDialog = true,
-                updatedUser = user,
-                userName = user.name,
-                userPercent = "${user.percentSalary}",
-                userSalary = "${user.salary}",
-                isUserBanned = user.isBan,
-                userPhone = user.phone,
-                userRole = user.role,
+                user = user,
+                factory = factory,
+                toggleAddCourier = add,
+                toggleUpdateCourier = updateCourier,
+                toggleDeleteCourier = delete,
+                toggleSettingsFactory = updateSettings,
+                toggleBanDialog = ban
             )
         }
-    }
 
-    private fun updateUser() {
-        launchCoroutine {
-            val name = viewState.value.userName
-            val percent = if (viewState.value.userPercent == "") 0.0 else viewState.value.userPercent.toDouble()
-            val salary = if (viewState.value.userSalary == "") 0.0 else viewState.value.userSalary.toDouble()
-            val phone = viewState.value.userPhone
-            val isBanned = viewState.value.isUserBanned
-            val userUpdated = viewState.value.updatedUser
-            val userRole = viewState.value.userRole
-            if (userUpdated != null && userRole != null) {
-                val userRequest = UpdateUserRequest(
-                    id = userUpdated.id,
-                    login = userUpdated.login,
-                    name = name,
-                    phone = phone,
-                    role = userRole.getStringByRole(),
-                    isBanned = isBanned,
-                    percentSalary = percent.toDouble(),
-                    status = userUpdated.status.getStringByStatus(),
-                    salary = salary.toDouble()
-                )
-                val response = userApi.update(userRequest)
-                if (response.success) {
-                    val list = viewState.value.listUser.value.map { it.copy() }.toMutableList()
-                    val index = list.indexOfFirst { it.id == userUpdated.id }
-                    list[index] = userUpdated.copy(
-                        name = name,
-                        isBan = isBanned,
-                        role = userRole,
-                        phone = phone,
-                        percentSalary = percent.toDouble(),
-                        salary = salary.toDouble()
-                    )
-                    updateViewState { it.copy(listUser = MutableStateFlow(list)) }
-                    sharedViewModel.message(
-                        response.message,
-                        type = TypeMessageModel.SUCCEED
-                    )
-                    dismissUpdateUserDialog()
-                } else {
-                    sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
-                }
-            } else {
-                sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
-            }
+        if (updateCourier && user != null) {
+            setValue(name = user.name, percent = user.percentSalary.toString(), salary = user.percentSalary.toString(), role = user.role)
+        }
+
+        if (updateSettings && factory != null) {
+            setValue(salarySys = factory.salary.toString(), priceKm = factory.priceMillage.toString())
         }
     }
 
 
-    private fun saveUser() {
-       launchCoroutine {
-           val email = viewState.value.userEmail
-           val pass = viewState.value.userPass
-           val name = viewState.value.userName
-           val user = sharedViewModel.viewState.value.user
-           if (user != null) {
-               val registerRequest = SignUpRequest(
-                   email = email,
-                   password = pass,
-                   role = Constants.Role.USER,
-                   idFactory = user.idFactory,
-                   name = name,
-                   status = StatusModel.OFFLINE.getStringByStatus()
-               )
-               val response = userApi.signUp(registerRequest)
-               if (response.success) {
-                   val userAdded = response.obj
-                   if (userAdded != null) {
-                       val list =
-                           viewState.value.listUser.value.map { it.copy() }.toMutableList()
-                       list.add(userAdded)
-                       updateViewState { it.copy(listUser = MutableStateFlow(list.sortedBy { u -> u.name })) }
-                       sharedViewModel.message(
-                           response.message,
-                           type = TypeMessageModel.SUCCEED
-                       )
-                       dismissAddDialog()
-                   }
-               } else {
-                   sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
-               }
-           } else {
-               sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
-           }
-       }
-    }
-
-    private fun changeName(name: String) {
-        updateViewState { it.copy(userName = name) }
-    }
-
-    private fun salaryUpdateChanged(salary: String) {
+    private fun updateSettings() = launchCoroutine {
         val factory = viewState.value.factory
-        if (salary.isNotEmpty() && factory != null && startsWithDigit(salary)) {
-            updateViewState { it.copy(factory = factory.copy(salary = salary.toDouble())) }
+
+        if (factory == null) {
+            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
+            return@launchCoroutine
         }
-    }
 
-    private fun priceUpdateChanged(price: String) {
-        val factory = viewState.value.factory
-        if (price.isNotEmpty() && factory != null && startsWithDigit(price)) {
-            updateViewState { it.copy(factory = factory.copy(priceMillage = price.toDouble())) }
-        }
-    }
+        val salary = viewState.value.salaryChange.toDouble()
+        val price = viewState.value.priceMillage.toDouble()
 
-    private fun percentUpdateChanged(percent: String) {
-        updateViewState { it.copy(userPercent = percent) }
-    }
+        val request = FactoryRequest(
+            id = factory.id,
+            name = factory.name,
+            dateAdd = factory.dateAdd,
+            salary = salary,
+            priceMillage = price
+        )
 
-    private fun emailChanged(email: String = Constants.EMPTY.EMPTY_STRING) {
-        updateViewState { it.copy(userEmail = email) }
-    }
-
-    private fun passChanged(pass: String = Constants.EMPTY.EMPTY_STRING) {
-        updateViewState { it.copy(userPass = pass) }
-    }
-
-    private fun showBanDialog(user: UserModel) {
-        updateViewState {
-            it.copy(
-                showBanDialog = true, userBan = user
-            )
-        }
-    }
-
-    private fun showAddDialog() {
-        updateViewState {
-            it.copy(
-                showAddSheetDialog = true
-            )
-        }
-    }
-
-    private fun banUser() {
-        launchCoroutine {
-            val user = viewState.value.userBan
-            if (user != null) {
-                if (user.id != sharedViewModel.viewState.value.user?.id) {
-                    val userRequest = UpdateUserRequest(
-                        id = user.id,
-                        login = user.login,
-                        name = user.name,
-                        phone = user.phone,
-                        role = user.role.getStringByRole(),
-                        isBanned = !user.isBan,
-                        percentSalary = user.percentSalary,
-                        status = user.status.getStringByStatus(),
-                        salary = user.salary
-                    )
-                    val response = userApi.update(userRequest)
-                    if (response.success) {
-                        val list =
-                            viewState.value.listUser.value.map { it.copy() }.toMutableList()
-                        val index = list.indexOfFirst { it.id == user.id }
-                        list[index] = user.copy(
-                            isBan = !user.isBan,
-                        )
-                        updateViewState { it.copy(listUser = MutableStateFlow(list)) }
-                        dismissBanDialog()
-                    } else {
-                        sharedViewModel.message(response.message, type = TypeMessageModel.ERROR)
-                    }
-                }
-            } else {
-                sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
+        when (val res = repository.updateFactory(factory = request)) {
+            is MyResult.Success -> {
+                sharedViewModel.updateFactory(factory = factory.copy(salary = salary, priceMillage = price))
+                setState(updateSettings = false)
             }
+
+            is MyResult.Error -> sharedViewModel.message(res.message, type = TypeMessageModel.ERROR)
         }
     }
 
-    private fun dismissBanDialog() {
-        updateViewState {
-            it.copy(
-                showBanDialog = false, userBan = null
-            )
+
+    private fun updateUser() = launchCoroutine {
+        var user = viewState.value.user
+        val userRole = viewState.value.userRole
+        val userSignIn = sharedViewModel.viewState.value.user
+
+        if (userSignIn == null) {
+            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
+            return@launchCoroutine
+        }
+
+        if (user == null) {
+            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
+            return@launchCoroutine
+        }
+
+        if (userRole == null) {
+            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
+            return@launchCoroutine
+        }
+
+        if (user.id == userSignIn.id) {
+            sharedViewModel.message(Constants.ERROR.RESRTRAINT, type = TypeMessageModel.ERROR)
+            return@launchCoroutine
+        }
+
+        val name = viewState.value.userName.ifBlank { user.name }
+        val salary = viewState.value.userSalary.toDouble()
+        val percent = viewState.value.userPercent.toDouble()
+        val role = viewState.value.userRole ?: RoleModel.USER
+
+        val request = UserRequest(
+            id = user.id,
+            login = user.login,
+            name = name,
+            phone = user.phone,
+            role = role.getStringByRole(),
+            isBanned = user.isBan,
+            percentSalary = percent,
+            status = user.status.getStringByStatus(),
+            salary = salary
+        )
+
+        when (val res = repository.update(request = request)) {
+            is MyResult.Success -> {
+                getDataUsers()
+                setState(updateCourier = false, user = null)
+            }
+            is MyResult.Error -> sharedViewModel.message(res.message, type = TypeMessageModel.ERROR)
         }
     }
 
-    private fun dismissAddDialog() {
-        updateViewState {
-            it.copy(
-                showAddSheetDialog = false, userName = ""
-            )
-        }
-    }
 
-    private fun dismissUpdateUserDialog() {
-        updateViewState {
-            it.copy(
-                showUpdateSheetDialog = false,
-                userName = "",
-                userPercent = "",
-            )
+    private fun createUser() = launchCoroutine {
+        val email = viewState.value.userEmail
+        val pass = viewState.value.userPass
+        val name = viewState.value.userName.ifBlank { "Пользователь #${viewState.value.couriers.size}" }
+        val user = sharedViewModel.viewState.value.user
+        if (user == null) {
+            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
+            return@launchCoroutine
         }
-    }
 
-    private fun dismissUpdateSettingsDialog() {
-        updateViewState {
-            it.copy(
-                showUpdateSettingsSheetDialog = false
-            )
+        val request = SignUpRequest(
+            email = email,
+            password = pass,
+            role = Constants.Role.USER,
+            idFactory = user.idFactory,
+            name = name,
+            status = StatusModel.OFFLINE.getStringByStatus()
+        )
+
+        when (val res = repository.signUp(request = request)) {
+            is MyResult.Success -> {
+                getDataUsers()
+                setState(add = false)
+            }
+
+            is MyResult.Error -> sharedViewModel.message(res.message, type = TypeMessageModel.ERROR)
         }
     }
 }

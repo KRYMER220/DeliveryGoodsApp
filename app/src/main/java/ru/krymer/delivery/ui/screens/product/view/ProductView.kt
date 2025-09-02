@@ -66,7 +66,7 @@ fun ProductView(
         products.addAll(list)
     }
 
-    Column(modifier = Modifier.padding(15.dp)) {
+    Column(modifier = Modifier.padding(15.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,

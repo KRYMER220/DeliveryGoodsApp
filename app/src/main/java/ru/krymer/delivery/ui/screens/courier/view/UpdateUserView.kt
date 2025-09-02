@@ -18,6 +18,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,14 +44,16 @@ fun UpdateCourierView(
     state: CourierViewState,
     event: (CourierEvent) -> Unit
 ) {
-    val user = state.updatedUser
-    user?.let {
+
+    state.user?.let { user ->
         var username by remember { mutableStateOf(user.name) }
         var percent by remember { mutableStateOf("${user.percentSalary}") }
         var salary by remember { mutableStateOf("${user.salary.toInt()}") }
+        var role by remember { mutableStateOf(user.role.name) }
         var errorSalary by remember { mutableStateOf(Error()) }
         var errorPercent by remember { mutableStateOf(Error()) }
         val roles = RoleModel.entries.toList() - RoleModel.SYSTEM
+        var toggleDropDownMenuRole by remember { mutableStateOf(false) }
 
         Column {
             CommonTextField(
@@ -85,7 +88,7 @@ fun UpdateCourierView(
                         )
 
                         else -> {
-                            event(CourierEvent.ChangeUsername(it))
+                            event(CourierEvent.ChangeUserPercent(it))
                             Error()
                         }
                     }
@@ -136,11 +139,11 @@ fun UpdateCourierView(
                         .fillMaxWidth()
                         .height(60.dp)
                         .clickable {
-                            event(CourierEvent.DropDownMenuState(true))
+                            toggleDropDownMenuRole = true
                         }, verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = user.role.name,
+                        text = role,
                         modifier = Modifier.padding(start = 15.dp),
                         color = AppTheme.colors.onSecondary,
                         style = AppTheme.typography.titleMedium
@@ -152,23 +155,20 @@ fun UpdateCourierView(
                         modifier = Modifier.padding(end = 15.dp),
                         tint = AppTheme.colors.onSecondary
                     )
-                    DropdownMenu(expanded = state.stateDropMenu, onDismissRequest = {
-                        event(CourierEvent.DropDownMenuState(false))
+                    DropdownMenu(expanded = toggleDropDownMenuRole, onDismissRequest = {
+                        toggleDropDownMenuRole = false
                     }) {
 
-                        roles.forEach { role ->
-                            DropdownMenuItem(text = { Text(text = role.name,
+                        roles.forEach { r ->
+                            DropdownMenuItem(text = { Text(text = r.name,
                                 style = AppTheme.typography.titleSmall) }, onClick = {
                                 event(
                                     CourierEvent.SelectedItemMenu(
-                                        role
+                                        r
                                     )
                                 )
-                                event(
-                                    CourierEvent.DropDownMenuState(
-                                        false
-                                    )
-                                )
+                                role = r.name
+                                toggleDropDownMenuRole = false
                             })
                         }
                     }
@@ -183,9 +183,10 @@ fun UpdateCourierView(
                         painterResource(id = R.drawable.block_negative)
                     }, modifier = Modifier
                         .size(40.dp)
-                        .clickable(onClick = { event(CourierEvent.ShowBanDialog(it)) })
+                        .clickable(onClick = { event(CourierEvent.ToggleBanUser(user = user)) })
                 )
             }
+            Spacer(modifier = Modifier.height(20.dp))
         }
     }
 }

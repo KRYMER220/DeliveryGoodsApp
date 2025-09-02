@@ -6,14 +6,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import ru.krymer.delivery.ui.screens.courier.view.CourierView
 
 @Composable
-fun CourierScreen(
-    popBackStack: () -> Unit
-) {
+fun CourierScreen() {
     val viewModel = hiltViewModel<CourierViewModel>()
     CourierView(
         state = viewModel.viewState.collectAsState().value,
         event = viewModel::obtainEvent,
-        popBackStack = popBackStack
     )
 }
 

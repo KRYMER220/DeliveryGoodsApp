@@ -5,9 +5,11 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import ru.krymer.delivery.data.repository.ClientRepository
+import ru.krymer.delivery.data.repository.CourierRepository
 import ru.krymer.delivery.data.repository.ProductRepository
 import ru.krymer.delivery.data.repository.RouteRepository
 import ru.krymer.delivery.data.repositoryImpl.ClientRepositoryImpl
+import ru.krymer.delivery.data.repositoryImpl.CourierRepositoryImpl
 import ru.krymer.delivery.data.repositoryImpl.ProductRepositoryImpl
 import ru.krymer.delivery.data.repositoryImpl.RouteRepositoryImpl
 import javax.inject.Singleton
@@ -33,4 +35,10 @@ abstract class RepositoryModule {
     abstract fun bindProductRepository(
         impl: ProductRepositoryImpl
     ): ProductRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCourierRepository(
+        impl: CourierRepositoryImpl
+    ): CourierRepository
 }

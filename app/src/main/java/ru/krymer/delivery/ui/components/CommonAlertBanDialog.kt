@@ -16,44 +16,40 @@ import ru.krymer.delivery.ui.theme.AppTheme
 @Composable
 fun BanDialog(
     itemName: String,
-    isVisible: Boolean,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
     isBanned: Boolean
 ) {
+    AlertDialog(onDismissRequest = onDismiss, title = {
+        Text(
+            text = "Вы уверены, что хотите " + if (isBanned) "разблокировать $itemName ?" else "заблокировать $itemName ?",
+            modifier = Modifier.fillMaxWidth(),
+            color = AppTheme.colors.textColor
+        )
+    }, confirmButton = {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.padding(start = 8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppTheme.colors.onSecondary
+                )
 
-    if (isVisible) {
-        AlertDialog(onDismissRequest = onDismiss, title = {
-            Text(
-                text = "Вы уверены, что хотите " + if (isBanned) "разблокировать $itemName ?" else "заблокировать $itemName ?",
-                modifier = Modifier.fillMaxWidth(),
-                color = AppTheme.colors.textColor
-            )
-        }, confirmButton = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Button(
-                    onClick = onDismiss,
-                    modifier = Modifier.padding(start = 8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AppTheme.colors.onSecondary
-                    )
-
-                ) {
-                    Text(text = "Нет", color = AppTheme.colors.onPrimary)
-                }
-                Button(
-                    onClick = onConfirm,
-                    modifier = Modifier.padding(end = 8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AppTheme.colors.onSecondary
-                    )
-                ) {
-                    Text(text = "Да", color = AppTheme.colors.onPrimary)
-                }
+                Text(text = "Нет", color = AppTheme.colors.onPrimary)
             }
-        }, containerColor = AppTheme.colors.onPrimary)
-    }
+            Button(
+                onClick = onConfirm,
+                modifier = Modifier.padding(end = 8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppTheme.colors.onSecondary
+                )
+            ) {
+                Text(text = "Да", color = AppTheme.colors.onPrimary)
+            }
+        }
+    }, containerColor = AppTheme.colors.onPrimary)
 }

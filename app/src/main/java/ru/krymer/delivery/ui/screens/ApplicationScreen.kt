@@ -34,11 +34,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
@@ -185,11 +183,7 @@ fun ApplicationScreen(
             }
 
             entry<Screens.Courier> {
-                CourierScreen(
-                    popBackStack = {
-                        backStack.removeLastOrNull()
-                    }
-                )
+                CourierScreen()
             }
 
             entry<Screens.Ban> {

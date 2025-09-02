@@ -18,20 +18,19 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.user.UserModel
+import ru.krymer.delivery.data.model.utilModel.Loader
 import ru.krymer.delivery.ui.components.BanDialog
-import ru.krymer.delivery.ui.components.CommonAddDialog
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
 import ru.krymer.delivery.ui.components.CommonSaveDialog
 import ru.krymer.delivery.ui.screens.courier.models.CourierEvent
@@ -41,105 +40,105 @@ import ru.krymer.delivery.ui.theme.AppTheme
 @Composable
 fun CourierView(
     event: (CourierEvent) -> Unit,
-    popBackStack: () -> Unit,
     state: CourierViewState
 ) {
-    val users = state.listUser.collectAsState().value
+    val users = state.couriers
+    val loader = when {
+        state.isLoading -> Loader.LOADING
+        state.couriers.isEmpty() -> Loader.EMPTY
+        else -> Loader.LOAD
+    }
 
-    Column(modifier = Modifier.padding(15.dp)) {
+    Column(modifier = Modifier.padding(15.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
-                painter = painterResource(id = R.drawable.back_stack),
-                contentDescription = "exit",
+                painter = painterResource(id = R.drawable.settings),
+                contentDescription = "settings",
                 modifier = Modifier
                     .clickable(onClick = {
-                        popBackStack()
+                        event(CourierEvent.ToggleUpdateSettingsDialog)
                     })
                     .size(60.dp)
             )
-            Row {
-                Image(
-                    painter = painterResource(id = R.drawable.settings),
-                    contentDescription = "settings",
-                    modifier = Modifier
-                        .clickable(onClick = {
-                            event(CourierEvent.ShowUpdateSettingsDialog)
-                        })
-                        .size(60.dp)
-                )
-                Spacer(modifier = Modifier.width(5.dp))
-                Image(
-                    painter = painterResource(id = R.drawable.add),
-                    contentDescription = "add user",
-                    modifier = Modifier
-                        .clickable(onClick = {
-                            event(CourierEvent.ShowAddDialog)
-                        })
-                        .size(60.dp)
+            Image(
+                painter = painterResource(id = R.drawable.add),
+                contentDescription = "add user",
+                modifier = Modifier
+                    .clickable(onClick = {
+                        event(CourierEvent.ToggleAddDialog)
+                    })
+                    .size(60.dp)
+            )
+
+        }
+        Spacer(modifier = Modifier.height(5.dp))
+        when (loader) {
+            Loader.LOAD -> {
+                LazyColumn {
+                    items(users) { courier ->
+                        CourierItem(
+                            courier = courier,
+                            onItemClicked = {
+                                event(CourierEvent.ToggleUpdateDialog(it))
+                            },
+                            onItemDelete = {
+                                event(CourierEvent.ToggleDeleteDialog(it))
+                            }
+                        )
+                        Spacer(modifier = Modifier.padding(bottom = 10.dp))
+                    }
+                }
+            }
+
+            Loader.EMPTY -> {
+                Text(
+                    text = stringResource(R.string.empty_data),
+                    color = AppTheme.colors.onSecondary,
+                    fontSize = 18.sp
                 )
             }
 
-        }
-        Spacer(modifier = Modifier.height(15.dp))
-        if (users.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize()) {
+            Loader.LOADING -> {
                 CircularProgressIndicator(
                     modifier = Modifier
-                        .size(60.dp)
-                        .align(Alignment.Center),
+                        .size(60.dp),
                     strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.primary
+                    color = AppTheme.colors.onSecondary
                 )
-            }
-        } else {
-            LazyColumn {
-                items(users) { courier ->
-                    CourierItem(
-                        courier = courier,
-                        onItemClicked = {
-                            event(CourierEvent.UserItemClicked(it))
-                        },
-                        onItemDelete = {
-                            event(CourierEvent.ShowDeleteDialog(it))
-                        }
-                    )
-                    Spacer(modifier = Modifier.padding(bottom = 10.dp))
-                }
             }
         }
     }
 
-    if (state.isDeleteDialog) {
-        state.userDelete?.let {
+    if (state.toggleDeleteCourier) {
+        state.user?.let {
             CommonDeleteDialog(itemName = it.name, onConfirm = {
                 event(CourierEvent.DeleteUser)
             }, onDismiss = {
-                event(CourierEvent.DismissDeleteDialog)
+                event(CourierEvent.ToggleDeleteDialog(null))
             }, isVisible = true)
         }
     }
 
-    if (state.showBanDialog) {
-        state.userBan?.let {
+    if (state.toggleBanDialog) {
+        state.user?.let {
             BanDialog(
                 itemName = it.name,
-                isVisible = true,
-                onDismiss = { event(CourierEvent.DismissBanDialog) },
+                onDismiss = { event(CourierEvent.ToggleBanUser(it)) },
                 onConfirm = { event(CourierEvent.BanUser) },
                 isBanned = it.isBan
             )
         }
     }
 
-    if (state.showAddSheetDialog) {
+    if (state.toggleAddCourier) {
         CommonSaveDialog(dismiss = {
-            event(CourierEvent.DismissAddDialog)
+            event(CourierEvent.ToggleAddDialog)
         }, confirm = {
-            event(CourierEvent.UserSaveAction)
+            event(CourierEvent.CreateUser)
         }, content = {
             BottomSheetDialogAddUser(viewState = state, changeName = {
                 event(CourierEvent.ChangeUsername(it))
@@ -151,11 +150,11 @@ fun CourierView(
         })
     }
 
-    if (state.showUpdateSheetDialog) {
+    if (state.toggleUpdateCourier) {
         CommonSaveDialog(dismiss = {
-            event(CourierEvent.DismissUpdateUserDataDialog)
+            event(CourierEvent.ToggleUpdateDialog(null))
         }, confirm = {
-            event(CourierEvent.UserUpdateAction)
+            event(CourierEvent.UpdateUser)
         }, content = {
             UpdateCourierView(
                 state = state,
@@ -164,11 +163,11 @@ fun CourierView(
         })
     }
 
-    if (state.showUpdateSettingsSheetDialog) {
+    if (state.toggleSettingsFactory) {
         CommonSaveDialog(dismiss = {
-            event(CourierEvent.DismissUpdateSettingsDataDialog)
+            event(CourierEvent.ToggleUpdateSettingsDialog)
         }, confirm = {
-            event(CourierEvent.SettingsUpdateAction)
+            event(CourierEvent.UpdateSettings)
         }, content = {
             UpdateSettingsView(
                 viewState = state,
