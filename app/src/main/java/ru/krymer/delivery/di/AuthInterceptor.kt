@@ -52,7 +52,6 @@ class AuthInterceptor @Inject constructor(
                             tokenManager.saveAccessToken(freshToken)
                             chain.proceed(originalRequest.withAuthToken(freshToken))
                         } else {
-                            tokenManager.deleteToken()
                             createUnauthorizedResponse(originalRequest)
                         }
                     }

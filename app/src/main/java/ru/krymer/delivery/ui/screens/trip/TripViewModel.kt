@@ -7,6 +7,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.krymer.delivery.AppDatabase
@@ -89,8 +90,24 @@ class TripViewModel @Inject constructor(
             is TripEvent.ChangeCourierFilter -> changeCourier(event.courier)
             is TripEvent.ChangeRouteFilter -> changeRoute(event.route)
             is TripEvent.ChangeSort -> changeSort(event.boolean)
+            is TripEvent.SyncTrip -> syncTrip(trip = event.trip)
         }
     }
+
+    private fun syncTrip(trip: TripModel) {
+        launchCoroutine {
+            val response = tripApi.getTrip(trip.id)
+            val tripResponse = response.obj
+            if (response.success && tripResponse != null) {
+                updateViewState { it.copy(currentTrip = tripResponse) }
+                val trips = viewState.value.trips.map { tripItem ->
+                    if (tripItem.id == tripResponse.id) tripResponse else tripItem
+                }
+                updateViewState { it.copy(trips = trips) }
+            }
+        }
+    }
+
 
     private fun changeSort(boolean: Boolean) {
         updateViewState { it.copy(sort = !boolean) }
@@ -156,7 +173,7 @@ class TripViewModel @Inject constructor(
                         val trips = response.obj ?: emptyList()
                         updateViewState {
                             it.copy(
-                                trips = MutableStateFlow(trips),
+                                trips = trips,
                                 hasMore = false
                             )
                         }
@@ -180,8 +197,8 @@ class TripViewModel @Inject constructor(
 
             if (user != null) {
                 val limit = 10
-                val lastTrip = if (loadMore && viewState.value.trips.value.isNotEmpty()) {
-                    viewState.value.trips.value.last()
+                val lastTrip = if (loadMore && viewState.value.trips.isNotEmpty()) {
+                    viewState.value.trips.last()
                 } else {
                     null
                 }
@@ -196,7 +213,7 @@ class TripViewModel @Inject constructor(
                 if (response.success) {
                     val newTrips = response.obj ?: emptyList()
                     val currentTrips = if (loadMore) {
-                        viewState.value.trips.value.toMutableList().apply { addAll(newTrips) }
+                        viewState.value.trips.toMutableList().apply { addAll(newTrips) }
                     } else {
                         newTrips.toMutableList()
                     }
@@ -204,8 +221,7 @@ class TripViewModel @Inject constructor(
                     val newHasMore = newTrips.size == limit
                     updateViewState {
                         it.copy(
-                            trips = MutableStateFlow(currentTrips),
-                            unFilteredTrips = MutableStateFlow(currentTrips),
+                            trips = currentTrips,
                             hasMore = newHasMore,
                             isLoading = false
                         )
@@ -242,8 +258,7 @@ class TripViewModel @Inject constructor(
                     if (localTrips.isNotEmpty()) {
                         updateViewState {
                             it.copy(
-                                trips = MutableStateFlow(localTrips),
-                                unFilteredTrips = MutableStateFlow(localTrips)
+                                trips = localTrips,
                             )
                         }
                     }
@@ -254,8 +269,7 @@ class TripViewModel @Inject constructor(
                     if (localTrips.isNotEmpty()) {
                         updateViewState {
                             it.copy(
-                                trips = MutableStateFlow(localTrips),
-                                unFilteredTrips = MutableStateFlow(localTrips)
+                                trips = localTrips,
                             )
                         }
                     }
@@ -288,7 +302,7 @@ class TripViewModel @Inject constructor(
                 )
                 val response = tripApi.update(trip = tripRequest)
                 if (response.success) {
-                    val list = viewState.value.trips.value.map { it.copy() }.toMutableList()
+                    val list = viewState.value.trips.map { it.copy() }.toMutableList()
                     val index = list.indexOfFirst { it.id == trip.id }
                     val newTrip = trip.copy(
                         nameRoute = tripRequest.nameRoute,
@@ -300,7 +314,7 @@ class TripViewModel @Inject constructor(
                         idCourier = tripRequest.courierId
                     )
                     list[index] = newTrip
-                    updateViewState { it.copy(trips = MutableStateFlow(list.sortedByDescending { l -> l.date })) }
+                    updateViewState { it.copy(trips = list.sortedByDescending { l -> l.date }) }
                     dismissUpdateDialog()
                 } else {
                     sharedViewModel.message(response.message)
@@ -317,8 +331,8 @@ class TripViewModel @Inject constructor(
                 salary = "${trip.salary.toInt()}",
                 currentTrip = trip,
                 currentDate = trip.date,
-                currentCourier = couriers.value.first { c -> c.id == trip.idCourier },
-                currentRoute = routes.value.first { r -> r.id == trip.idRoute },
+                currentCourier = couriers.first { c -> c.id == trip.idCourier },
+                currentRoute = routes.first { r -> r.id == trip.idRoute },
                 showUpdateSheetDialog = true
             )
 
@@ -395,7 +409,7 @@ class TripViewModel @Inject constructor(
                             val list = routes.sortedBy { r -> r.name }
                             updateViewState {
                                 it.copy(
-                                    listRoute = MutableStateFlow(list),
+                                    listRoute = list,
                                 )
                             }
                         } else {
@@ -425,7 +439,7 @@ class TripViewModel @Inject constructor(
                             val list = users.sortedBy { r -> r.name }
                             updateViewState {
                                 it.copy(
-                                    listCourier = MutableStateFlow(list),
+                                    listCourier = list,
                                 )
                             }
                         } else {
@@ -468,10 +482,10 @@ class TripViewModel @Inject constructor(
                val response = tripApi.delete(id = trip.id)
                if (response.success) {
                    database.tripDao().deleteTrip(trip)
-                   val list = viewState.value.trips.value.map { it.copy() }.toMutableList()
+                   val list = viewState.value.trips.map { it.copy() }.toMutableList()
                    val item = list.first { it.id == trip.id }
                    val listNew = (list - item).sortedByDescending { it.date }
-                   updateViewState { it.copy(trips = MutableStateFlow(listNew)) }
+                   updateViewState { it.copy(trips = listNew) }
                    dismissDeleteDialog()
                } else {
                    sharedViewModel.message(response.message)
@@ -494,8 +508,8 @@ class TripViewModel @Inject constructor(
         updateViewState {
             it.copy(
                 showUpdateSheetDialog = false,
-                currentRoute = viewState.value.listRoute.value[0],
-                currentCourier = viewState.value.listCourier.value[0],
+                currentRoute = viewState.value.listRoute[0],
+                currentCourier = viewState.value.listCourier[0],
             )
         }
     }

@@ -42,8 +42,8 @@ fun FilterView(
 
     var isFilter by remember { mutableStateOf(state.isFilter) }
     var isSorted by remember { mutableStateOf(state.sort) }
-    val routes = state.listRoute.collectAsState().value
-    val couriers = state.listCourier.collectAsState().value
+    val routes = state.listRoute
+    val couriers = state.listCourier
     val route = state.currentRoute
     val user = state.currentCourier
     Column(modifier = Modifier.fillMaxWidth()) {

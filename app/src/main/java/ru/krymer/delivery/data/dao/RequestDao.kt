@@ -11,13 +11,10 @@ import ru.krymer.delivery.data.model.RequestModel
 @Dao
 interface RequestDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertRequest(request: RequestModel)
+    suspend fun upsertRequest(request: RequestModel)
 
     @Delete
     suspend fun deleteRequest(request: RequestModel)
-
-    @Update
-    suspend fun updateRequest(request: RequestModel)
 
     @Query("SELECT * FROM request WHERE idShop = :idShop AND idTrip = :idTrip")
     suspend fun getRequests(idShop: Long, idTrip: Long): List<RequestModel>

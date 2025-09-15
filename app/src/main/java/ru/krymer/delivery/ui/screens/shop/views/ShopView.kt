@@ -72,23 +72,7 @@ fun ShopView(
 
     val context = LocalContext.current
     val shops = state.listUIShop
-    var isFirstLoad by remember { mutableStateOf(true) }
-
     val lazyListState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
-
-
-    LaunchedEffect(shops) {
-        if (shops.isNotEmpty() && isFirstLoad) {
-            isFirstLoad = false
-            if (!state.lightVersion) {
-                coroutineScope.launch {
-                    delay(500)
-                    lazyListState.animateScrollToItem(1)
-                }
-            }
-        }
-    }
 
     LazyColumn(
         state = lazyListState,

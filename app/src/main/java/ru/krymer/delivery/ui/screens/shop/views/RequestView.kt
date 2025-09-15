@@ -90,15 +90,17 @@ fun AlertDialogRequestShop(
                     .fillMaxWidth()
 
             ) {
-                Text(
-                    style = AppTheme.typography.titleLarge,
-                    text = shop.nameShop,
-                    textAlign = TextAlign.Center,
-                    color = AppTheme.colors.onSecondary,
-                    modifier = Modifier
-                        .weight(0.7f)
-                        .padding(5.dp)
-                )
+                Text(modifier = Modifier.fillMaxWidth().border(
+                    width = 1.dp,
+                    color = AppTheme.colors.secondary,
+                    shape = RoundedCornerShape(10.dp)
+                ).weight(0.3f).height(40.dp).clickable(onClick = {
+                    event(ShopEvent.ChangeTypePay)
+                }).wrapContentHeight(Alignment.CenterVertically), text = when(typePayState) {
+                    TypePayModel.CASH -> "Нал"
+                    TypePayModel.NO_CASH -> "Без/нал"
+                    TypePayModel.ANOTHER -> "Смешаный"
+                }, style = AppTheme.typography.titleSmall, textAlign = TextAlign.Center, color = AppTheme.colors.onSecondary)
                 Row(modifier = Modifier.weight(0.3f).padding(5.dp), horizontalArrangement = Arrangement.End) {
                     Row(
                         modifier = Modifier.clickable { isExpandedMenu = !isExpandedMenu },
@@ -159,6 +161,15 @@ fun AlertDialogRequestShop(
                     }
                 }
             }
+
+            Text(
+                style = AppTheme.typography.titleLarge,
+                text = shop.nameShop,
+                textAlign = TextAlign.Center,
+                color = AppTheme.colors.onSecondary,
+                modifier = Modifier
+                    .padding(5.dp)
+            )
 
             Spacer(modifier = Modifier.height(5.dp))
 
@@ -507,17 +518,6 @@ fun AlertDialogRequestShop(
                                 }
                             }
                             Spacer(modifier = Modifier.height(10.dp))
-                            Text(modifier = Modifier.fillMaxWidth().border(
-                                width = 1.dp,
-                                color = AppTheme.colors.secondary,
-                                shape = RoundedCornerShape(10.dp)
-                            ).height(40.dp).clickable(onClick = {
-                                event(ShopEvent.ChangeTypePay)
-                            }).wrapContentHeight(Alignment.CenterVertically), text = when(typePayState) {
-                                TypePayModel.CASH -> "Нал"
-                                TypePayModel.NO_CASH -> "Без/нал"
-                                TypePayModel.ANOTHER -> "Смешаный"
-                            }, style = AppTheme.typography.titleSmall, textAlign = TextAlign.Center, color = AppTheme.colors.onSecondary)
                         }
                     } else {
                         item {

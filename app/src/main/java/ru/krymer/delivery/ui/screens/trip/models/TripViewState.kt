@@ -9,8 +9,7 @@ import ru.krymer.delivery.utills.getStartOfNextDay
 data class TripViewState(
     val isError: Boolean = false,
     val errorValue: String = "",
-    val trips: MutableStateFlow<List<TripModel>> = MutableStateFlow(listOf()),
-    val unFilteredTrips: MutableStateFlow<List<TripModel>> = MutableStateFlow(listOf()),
+    val trips: List<TripModel> = emptyList(),
 
     val deleteTrip: TripModel? = null,
     val showDeleteDialog: Boolean = false,
@@ -24,8 +23,8 @@ data class TripViewState(
     var currentRoute: RouteModel? = null,
     var currentCourier: UserModel? = null,
     var salary: String = "",
-    val listRoute: MutableStateFlow<List<RouteModel>> = MutableStateFlow(listOf()),
-    val listCourier: MutableStateFlow<List<UserModel>> = MutableStateFlow(listOf()),
+    val listRoute: List<RouteModel> = emptyList(),
+    val listCourier: List<UserModel> = emptyList(),
     var currentDate: Long = getStartOfNextDay(),
 
     var currentTrip: TripModel? = null,

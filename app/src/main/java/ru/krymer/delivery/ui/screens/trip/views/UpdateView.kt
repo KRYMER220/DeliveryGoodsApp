@@ -48,8 +48,8 @@ fun UpdateTripView(
     state: TripViewState,
     event: (TripEvent) -> Unit
 ) {
-    val routes = state.listRoute.collectAsState().value
-    val couriers = state.listCourier.collectAsState().value
+    val routes = state.listRoute
+    val couriers = state.listCourier
     var salary by remember { mutableStateOf(state.salary) }
     if (routes.isNotEmpty() && couriers.isNotEmpty()) {
         state.currentRoute?.let { r ->

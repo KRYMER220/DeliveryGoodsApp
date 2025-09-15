@@ -12,12 +12,11 @@ import ru.krymer.delivery.ui.screens.trip.views.TripView
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TripScreen(
-    openTrip: (TripModel) -> Unit = {}, popBackStack: () -> Unit = {}, user: UserModel?
+    openTrip: (TripModel) -> Unit = {}, user: UserModel?
 ) {
     user?.let {
         val viewModel = hiltViewModel<TripViewModel>()
         TripView(
-            popBackStack = popBackStack,
             user = user,
             state = viewModel.viewState.collectAsState().value,
             event = viewModel::obtainEvent,

@@ -24,6 +24,7 @@ sealed class TripEvent {
     data object SubmitFilter: TripEvent()
     data object LoadMoreTrips : TripEvent()
     data class ChangeSalaryTrip(val salary: String) : TripEvent()
+    data class SyncTrip(val trip: TripModel): TripEvent()
 
     data class ChangeCourierFilter(val courier: UserModel?) : TripEvent()
     data class ChangeRouteFilter(val route: RouteModel?) : TripEvent()

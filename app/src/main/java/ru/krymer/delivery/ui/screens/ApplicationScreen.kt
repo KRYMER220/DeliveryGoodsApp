@@ -166,7 +166,7 @@ fun ApplicationScreen(
                 TripScreen(
                     openTrip = {
                         backStack.add(Screens.Shop(trip = it))
-                    }, popBackStack = { backStack.removeLastOrNull() }, user = user
+                    }, user = user
                 )
             }
 

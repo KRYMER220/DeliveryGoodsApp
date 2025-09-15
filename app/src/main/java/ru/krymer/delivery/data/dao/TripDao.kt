@@ -11,16 +11,13 @@ import ru.krymer.delivery.data.model.TripModel
 @Dao
 interface TripDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTrip(trip: TripModel)
+    suspend fun upsertTrip(trip: TripModel)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTrips(trips: List<TripModel>)
 
     @Delete
     suspend fun deleteTrip(trip: TripModel)
-
-    @Update
-    suspend fun updateTrip(trip: TripModel)
 
     @Query("SELECT * FROM trips WHERE id = :tripId LIMIT 1")
     suspend fun getTripById(tripId: Long): TripModel?

@@ -18,6 +18,7 @@ import ru.krymer.delivery.common.EventHandler
 import ru.krymer.delivery.data.api.FactoryApi
 import ru.krymer.delivery.data.api.UserApi
 import ru.krymer.delivery.data.model.FactoryModel
+import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.utilModel.MessageModel
 import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
 import ru.krymer.delivery.di.AppPreferencesManager

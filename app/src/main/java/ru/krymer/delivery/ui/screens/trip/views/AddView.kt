@@ -41,8 +41,8 @@ import ru.krymer.delivery.utills.convertToTextDate
 fun AddTripView(
     state: TripViewState, event: (TripEvent) -> Unit
 ) {
-    val routes = state.listRoute.collectAsState().value
-    val couriers = state.listCourier.collectAsState().value
+    val routes = state.listRoute
+    val couriers = state.listCourier
     if (routes.isNotEmpty() && couriers.isNotEmpty()) {
         Column(modifier = Modifier.padding(5.dp)) {
             Box(
@@ -184,7 +184,7 @@ fun AddTripView(
                             event(TripEvent.SelectCourier(null))
                             event(TripEvent.OpenHideDropDownMenuWithCouriers)
                         })
-                        val list = state.listCourier.collectAsState().value
+                        val list = state.listCourier
                         list.forEach {
                             DropdownMenuItem(text = { Text(text = it.name,
                                 style = AppTheme.typography.titleSmall) }, onClick = {

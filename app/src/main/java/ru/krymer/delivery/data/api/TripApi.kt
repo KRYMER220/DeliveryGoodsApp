@@ -25,6 +25,9 @@ interface TripApi {
     @DELETE("trip/delete")
     suspend fun delete(@Query(Constants.HttpRequestKeys.ID) id: Long): BaseResponse<TripModel>
 
+    @GET("trip/get")
+    suspend fun getTrip(@Query(Constants.HttpRequestKeys.ID_TRIP) idTrip: Long): BaseResponse<TripModel>
+
     @GET("trip/get/data")
     suspend fun getDataAboutTrip(
         @Query(Constants.HttpRequestKeys.ID_FACTORY) idFactory: Long,

@@ -22,22 +22,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.user.UserModel
@@ -51,17 +46,13 @@ import ru.krymer.delivery.utills.convertToTextDate
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TripView(
-    popBackStack: () -> Unit = {},
     event: (TripEvent) -> Unit = {},
     state: TripViewState,
     user: UserModel,
     openTrip: (TripModel) -> Unit = {}
 ) {
     val lazyListState = rememberLazyListState()
-    val trips = state.trips.collectAsState().value
-    val coroutineScope = rememberCoroutineScope()
-    var isFirstLoad by rememberSaveable { mutableStateOf(true) }
-
+    val trips = state.trips
     val shouldLoadMore by remember {
         derivedStateOf {
             val layoutInfo = lazyListState.layoutInfo
@@ -74,18 +65,6 @@ fun TripView(
     LaunchedEffect(shouldLoadMore) {
         if (shouldLoadMore) {
             event(TripEvent.LoadMoreTrips)
-        }
-    }
-
-    LaunchedEffect(trips) {
-        if (trips.isNotEmpty() && isFirstLoad) {
-            isFirstLoad = false
-            if (!state.lightVersion) {
-                coroutineScope.launch {
-                    delay(300)
-                    lazyListState.animateScrollToItem(1)
-                }
-            }
         }
     }
 
@@ -110,15 +89,6 @@ fun TripView(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (!state.lightVersion) {
-                    Image(
-                        painter = painterResource(id = R.drawable.back_stack),
-                        contentDescription = "exit",
-                        modifier = Modifier
-                            .clickable(onClick = {
-                                popBackStack()
-                            })
-                            .size(60.dp)
-                    )
                     Image(
                         painter = painterResource(id = R.drawable.filter),
                         contentDescription = "sort",
@@ -153,6 +123,7 @@ fun TripView(
                 }, deleteTrip = {
                     event(TripEvent.ShowDeleteDialog(trip = it))
                 }, openTrip = {
+                    event(TripEvent.SyncTrip(it))
                     openTrip(it)
                 }, user = user
                 )
