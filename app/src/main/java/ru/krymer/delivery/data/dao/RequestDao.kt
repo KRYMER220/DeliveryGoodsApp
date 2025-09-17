@@ -33,4 +33,13 @@ interface RequestDao {
 
     @Update
     suspend fun updateRequests(requests: List<RequestModel>)
+
+    @Query("SELECT * FROM request WHERE idShop = :idShop AND idTrip = :idTrip AND isSynced = 0")
+    suspend fun getUnsyncedRequests(idShop: Long, idTrip: Long): List<RequestModel>
+
+    @Query("UPDATE request SET isSynced = 1 WHERE id = :requestId")
+    suspend fun markRequestAsSynced(requestId: Long)
+
+    @Query("DELETE FROM request WHERE id IN (:requestIds)")
+    suspend fun deleteRequestsByIds(requestIds: List<Long>)
 }

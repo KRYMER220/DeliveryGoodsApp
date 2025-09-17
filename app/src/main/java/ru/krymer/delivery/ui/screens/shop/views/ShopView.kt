@@ -31,6 +31,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +52,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.ShopModel
+import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.ui.components.CommonAlertAddDialog
 import ru.krymer.delivery.ui.components.CommonConfirmDialog
@@ -60,6 +62,9 @@ import ru.krymer.delivery.ui.components.CommonSaveDialog
 import ru.krymer.delivery.ui.components.ConfirmView
 import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
+import ru.krymer.delivery.ui.screens.trip.models.TripEvent
+import ru.krymer.delivery.ui.screens.trip.models.TripViewState
+import ru.krymer.delivery.ui.screens.trip.views.HeaderContentTrip
 import ru.krymer.delivery.ui.theme.AppTheme
 import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.convertToTextDate
@@ -74,114 +79,98 @@ fun ShopView(
     val shops = state.listUIShop
     val lazyListState = rememberLazyListState()
 
-    LazyColumn(
-        state = lazyListState,
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(10.dp),
-        verticalArrangement = Arrangement.spacedBy(7.dp)
-    ) {
-
-        item {
-            Spacer(
-                modifier = Modifier
-                    .fillParentMaxHeight(0.7f)
-                    .fillMaxWidth()
-            )
+    val showStickyHeader by remember {
+        derivedStateOf {
+            lazyListState.firstVisibleItemIndex > 1 ||
+                    (lazyListState.firstVisibleItemIndex == 1 && lazyListState.firstVisibleItemScrollOffset > 0)
         }
+    }
 
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.car_info),
-                    contentDescription = "courier millage",
-                    modifier = Modifier
-                        .combinedClickable(onClick = {
-                            event(ShopEvent.OpenMillageDialog)
-                        }, onLongClick = {
-                            if (state.lightVersion) {
-                                event(ShopEvent.ShowHideDialogAnalitic)
-                            }
-                        })
-                        .size(60.dp)
-                )
-                if (!state.lightVersion) {
-                    Image(
-                        painter = painterResource(id = R.drawable.count),
-                        contentDescription = "product quantity",
-                        modifier = Modifier
-                            .padding(start = 10.dp, end = 10.dp)
-                            .combinedClickable(onClick = {
-                                event(ShopEvent.ShowRequestsInfoDialog)
-                            }, onLongClick = {
-                                event(ShopEvent.ShowHideDialogAnalitic)
-                            })
-                            .size(60.dp)
-                    )
-                }
-                if (user.isModOrAdminOrSys()) {
-                    Image(
-                        painter = painterResource(id = R.drawable.add),
-                        contentDescription = "add shop",
-                        modifier = Modifier
-                            .combinedClickable(onClick = {
-                                event(ShopEvent.ShowAddDialogShopCurrentRoute)
-                            }, onLongClick = {
-                                event(ShopEvent.ShowAddDialogShopAllRoutes)
-                            })
-                            .size(60.dp)
-                    )
-                }
-            }
-        }
-
-        if (shops.isEmpty()) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            state = lazyListState,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(7.dp)
+        ) {
             item {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .size(30.dp)
-                            .align(Alignment.Center),
-                        strokeWidth = 2.dp,
-                        color = Color.White
-                    )
+                Spacer(
+                    modifier = Modifier
+                        .fillParentMaxHeight(0.5f)
+                        .fillMaxWidth()
+                )
+            }
+
+            item {
+                HeaderContentShop(
+                    state = state,
+                    user = user,
+                    event = event,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter)
+                )
+            }
+
+            if (shops.isEmpty()) {
+                item {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(30.dp)
+                                .align(Alignment.Center),
+                            strokeWidth = 2.dp,
+                            color = Color.White
+                        )
+                    }
+                }
+            } else {
+                itemsIndexed(shops, key = { _, item -> item.id }) { index, shop ->
+                    state.currentTrip?.let { trip ->
+                        ShopsItem(
+                            shop = shop,
+                            openShop = {
+                                event(ShopEvent.OpenRequest(shop = it))
+                            },
+                            openLocate = {
+                                event(
+                                    ShopEvent.OpenGeoPoint(
+                                        context = context,
+                                        cord = it.cord
+                                    )
+                                )
+                            },
+                            openInfoCurrentShop = {
+                                event(ShopEvent.OpenInfoShopDialog(shop = it))
+                            },
+                            modifier = Modifier.animateItem(
+                                fadeInSpec = null,
+                                fadeOutSpec = null,
+                                placementSpec = tween(durationMillis = 400)
+                            ),
+                            index = index + 1,
+                            user = user,
+                            openInfoShop = {
+                                event(ShopEvent.ToggleLogsShopDialog(it))
+                            },
+                            trip = trip
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(3.dp))
                 }
             }
-        } else {
-            itemsIndexed(shops, key = { _, item -> item.id }) { index, shop ->
-                ShopsItem(
-                    shop = shop,
-                    openShop = {
-                        event(ShopEvent.OpenRequest(shop = it))
-                    },
-                    openLocate = {
-                        event(
-                            ShopEvent.OpenGeoPoint(
-                                context = context,
-                                cord = it.cord
-                            )
-                        )
-                    },
-                    openInfoCurrentShop = {
-                        event(ShopEvent.OpenInfoShopDialog(shop = it))
-                    },
-                    modifier = Modifier.animateItem(
-                        fadeInSpec = null,
-                        fadeOutSpec = null,
-                        placementSpec = tween(durationMillis = 400)
-                    ),
-                    index = index + 1,
-                    user = user,
-                    openInfoShop = {
-                        event(ShopEvent.ToggleLogsShopDialog(it))
-                    }
-                )
-                Spacer(modifier = Modifier.height(3.dp))
-            }
+        }
+        if (showStickyHeader) {
+            HeaderContentShop(
+                state = state,
+                user = user,
+                event = event,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+                    .padding(10.dp)
+            )
         }
     }
 
@@ -232,6 +221,7 @@ fun ShopView(
                 }
             }
         })
+
     }
 
     if (state.toggleMillageDialog) {
@@ -507,6 +497,58 @@ fun ShopView(
     }
 }
 
+@Composable
+fun HeaderContentShop(
+    state: ShopViewState, user: UserModel, event: (ShopEvent) -> Unit, modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.car_info),
+            contentDescription = "courier millage",
+            modifier = Modifier
+                .combinedClickable(onClick = {
+                    event(ShopEvent.OpenMillageDialog)
+                }, onLongClick = {
+                    if (state.lightVersion) {
+                        event(ShopEvent.ShowHideDialogAnalitic)
+                    }
+                })
+                .size(60.dp)
+        )
+        if (!state.lightVersion) {
+            Image(
+                painter = painterResource(id = R.drawable.count),
+                contentDescription = "product quantity",
+                modifier = Modifier
+                    .padding(start = 10.dp, end = 10.dp)
+                    .combinedClickable(onClick = {
+                        event(ShopEvent.ShowRequestsInfoDialog)
+                    }, onLongClick = {
+                        event(ShopEvent.ShowHideDialogAnalitic)
+                    })
+                    .size(60.dp)
+            )
+        }
+        if (user.isModOrAdminOrSys()) {
+            Image(
+                painter = painterResource(id = R.drawable.add),
+                contentDescription = "add shop",
+                modifier = Modifier
+                    .combinedClickable(onClick = {
+                        event(ShopEvent.ShowAddDialogShopCurrentRoute)
+                    }, onLongClick = {
+                        event(ShopEvent.ShowAddDialogShopAllRoutes)
+                    })
+                    .size(60.dp)
+            )
+        }
+    }
+}
+
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -518,7 +560,8 @@ fun ShopsItem(
     modifier: Modifier,
     index: Int,
     user: UserModel,
-    openInfoShop: (ShopModel) -> Unit
+    openInfoShop: (ShopModel) -> Unit,
+    trip: TripModel
 ) {
     Box(modifier = modifier
         .heightIn(min = 60.dp, max = Dp.Unspecified)
@@ -552,7 +595,7 @@ fun ShopsItem(
                     .weight(1f),
                 color = AppTheme.colors.onSecondary,
             )
-            if (user.isSysOrAdmin() && shop.isChanged) {
+            if (user.isModOrAdminOrSys() && shop.isChanged) {
                 Image(
                     contentDescription = "info",
                     modifier = Modifier
@@ -565,7 +608,11 @@ fun ShopsItem(
             }
             Image(
                 contentDescription = "status",
-                painter = if (shop.status) painterResource(id = R.drawable.active_circle) else painterResource(id = R.drawable.inactive_circle),
+                painter = when {
+                    !shop.status -> painterResource(id = R.drawable.inactive_circle)
+                    !shop.isSynced && shop.status && trip.idCourier == user.id -> painterResource(id = R.drawable.unsync_circle)
+                    else -> painterResource(id = R.drawable.active_circle)
+                },
                 modifier = Modifier
                     .size(15.dp)
             )

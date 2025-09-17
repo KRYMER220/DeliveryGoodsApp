@@ -38,5 +38,15 @@ interface ShopDao {
 
     @Update
     suspend fun updateShops(shops: List<ShopLocalModel>)
+
+    @Query("SELECT * FROM shop WHERE idTrip = :idTrip AND isSynced = 0")
+    suspend fun getUnsyncedShops(idTrip: Long): List<ShopLocalModel>
+
+    @Query("UPDATE shop SET isSynced = 1 WHERE id = :shopId")
+    suspend fun markShopAsSynced(shopId: Long)
+
+    @Query("SELECT isSynced FROM shop WHERE id = :shopId")
+    suspend fun isShopSynced(shopId: Long): Boolean
+
 }
 

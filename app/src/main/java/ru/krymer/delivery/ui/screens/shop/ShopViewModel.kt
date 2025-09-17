@@ -27,6 +27,7 @@ import ru.krymer.delivery.data.model.ClientModel
 import ru.krymer.delivery.data.model.MessageModel
 import ru.krymer.delivery.data.model.ProductModel
 import ru.krymer.delivery.data.model.RequestModel
+import ru.krymer.delivery.data.model.ShopLocalModel
 import ru.krymer.delivery.data.model.ShopModel
 import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.toLocal
@@ -353,14 +354,14 @@ class ShopViewModel @Inject constructor(
             ensureActive()
             val user = sharedViewModel.viewState.value.user ?: return@coroutineScope
             if (user.id != trip.idCourier) return@coroutineScope
-            val shopsLocal = room.shopDao().getShops(idTrip = trip.id)
-            if (shopsLocal.isEmpty()) return@coroutineScope
+            val unSyncedShops = room.shopDao().getUnsyncedShops(idTrip = trip.id)
+            if (unSyncedShops.isEmpty()) return@coroutineScope
 
-            for (local in shopsLocal) {
+            for (local in unSyncedShops) {
                 ensureActive()
 
                 val shop = local.toModel()
-                if (!shop.status) continue
+                if (!shop.status && shop.isSynced) continue
 
                 try {
                     val shopReq = UpdateShopRequest(
@@ -381,44 +382,50 @@ class ShopViewModel @Inject constructor(
                         isChanged = shop.isChanged
                     )
                     val shopResp = shopApi.update(shopReq)
-                    if (!shopResp.success) {
+                    if (shopResp.success) {
+                        room.shopDao().markShopAsSynced(shop.id)
+                    } else {
                         sharedViewModel.message(shopResp.message)
                     }
 
-                    val requests = room.requestDao().getRequests(idShop = shop.id, idTrip = shop.idTrip)
-                    if (requests.isNotEmpty()) {
-                        for (req in requests) {
-                            ensureActive()
-                            try {
-                                val reqReq = UpdateRequestShopRequest(
-                                    id = req.id,
-                                    idShop = req.idShop,
-                                    idTrip = req.idTrip,
-                                    idFactory = req.idFactory,
-                                    count = req.count,
-                                    exchange = req.exchange,
-                                    bonus = req.bonus,
-                                    status = req.status,
-                                    price = req.price,
-                                    oldPrice = req.oldPrice,
-                                    name = req.name,
-                                    counter = req.counter
-                                )
-                                val reqResp = requestApi.update(reqReq)
-                                if (!reqResp.success) {
-                                    sharedViewModel.message(reqResp.message)
-                                }
-                            } catch (ex: CancellationException) {
-                                throw ex
-                            } catch (ex: Exception) {
-                                sharedViewModel.message(ex.message ?: Constants.ERROR.ERROR)
-                            }
-                        }
+                    val unSyncedRequests = room.requestDao().getUnsyncedRequests(
+                        idShop = shop.id,
+                        idTrip = shop.idTrip
+                    )
 
-                        val sum = requests.sumOf { it.count * it.price - it.exchange * (if (shop.isOldPrice) it.oldPrice else it.price) }
-                        if (isSameDay(trip.date, System.currentTimeMillis())) {
-                            updateClient(shop.copy(arrears = (sum + shop.arrears + shop.addSum) - (shop.cash + shop.noCash)))
+                    for (req in unSyncedRequests) {
+                        ensureActive()
+                        try {
+                            val reqReq = UpdateRequestShopRequest(
+                                id = req.id,
+                                idShop = req.idShop,
+                                idTrip = req.idTrip,
+                                idFactory = req.idFactory,
+                                count = req.count,
+                                exchange = req.exchange,
+                                bonus = req.bonus,
+                                status = req.status,
+                                price = req.price,
+                                oldPrice = req.oldPrice,
+                                name = req.name,
+                                counter = req.counter
+                            )
+                            val reqResp = requestApi.update(reqReq)
+                            if (reqResp.success) {
+                                room.requestDao().markRequestAsSynced(req.id)
+                            } else {
+                                sharedViewModel.message(reqResp.message)
+                            }
+                        } catch (ex: CancellationException) {
+                            throw ex
+                        } catch (ex: Exception) {
+                            sharedViewModel.message(ex.message ?: Constants.ERROR.ERROR)
                         }
+                    }
+
+                    val sum = unSyncedRequests.sumOf { it.count * it.price - it.exchange * (if (shop.isOldPrice) it.oldPrice else it.price) }
+                    if (isSameDay(trip.date, System.currentTimeMillis())) {
+                        updateClient(shop.copy(arrears = (sum + shop.arrears + shop.addSum) - (shop.cash + shop.noCash)))
                     }
                 } catch (ex: CancellationException) {
                     throw ex
@@ -467,32 +474,36 @@ class ShopViewModel @Inject constructor(
         val shopsLocal = room.shopDao().getShops(idTrip = idTrip)
         val shops = mutableListOf<ShopModel>()
         shopsLocal.forEach { s ->
-            s.let {
-                val requests =
-                    room.requestDao().getRequests(idTrip = s.idTrip, idShop = s.id).sortedBy { it.counter }
-                val shop = ShopModel(
-                    id = s.id,
-                    idTrip = s.idTrip,
-                    idFactory = s.idFactory,
-                    nameShop = s.nameShop,
-                    arrears = s.arrears,
-                    addSum = s.addSum,
-                    status = s.status,
-                    date = s.date,
-                    typePay = s.typePay.getTypePayByString(),
-                    cash = s.cash,
-                    counter = s.counter,
-                    noCash = s.noCash,
-                    listRequest = requests,
-                    isOldPrice = s.isOldPrice,
-                    cord = s.cord,
-                    isBonus = s.isBonus,
-                    isChanged = s.isChanged
-                )
-                shops.add(shop)
-            }
+            val requests = room.requestDao().getRequests(idTrip = s.idTrip, idShop = s.id).sortedBy { it.counter }
+
+            val shop = ShopModel(
+                id = s.id,
+                idTrip = s.idTrip,
+                idFactory = s.idFactory,
+                nameShop = s.nameShop,
+                arrears = s.arrears,
+                addSum = s.addSum,
+                status = s.status,
+                date = s.date,
+                typePay = s.typePay.getTypePayByString(),
+                cash = s.cash,
+                counter = s.counter,
+                noCash = s.noCash,
+                listRequest = requests,
+                isOldPrice = s.isOldPrice,
+                cord = s.cord,
+                isBonus = s.isBonus,
+                isChanged = s.isChanged,
+                isSynced = s.isSynced,
+                lastModified = s.lastModified
+            )
+            shops.add(shop)
         }
-        updateViewState { it.copy(listUIShop = shops.sortedBy { it.counter }) }
+        updateViewState {
+            it.copy(
+                listUIShop = shops.sortedBy { it.counter },
+            )
+        }
     }
 
     private fun copyToClip(context: Context) {
@@ -653,35 +664,99 @@ class ShopViewModel @Inject constructor(
             val localIds = localShops.map { it.id }.toSet()
             val serverIds = shops.map { it.id }.toSet()
 
-            val toDeleteIds = localIds - serverIds
+            // Удаляем только те магазины, которых нет на сервере и которые синхронизированы
+            val toDeleteIds = (localIds - serverIds)
+                .filter { room.shopDao().isShopSynced(it) }
+
             if (toDeleteIds.isNotEmpty()) {
-                room.requestDao().deleteRequestsByShopIds(toDeleteIds.toList())
-                room.shopDao().deleteShopsByIds(toDeleteIds.toList())
+                room.requestDao().deleteRequestsByShopIds(toDeleteIds)
+                room.shopDao().deleteShopsByIds(toDeleteIds)
             }
 
-            val (toUpdate, toInsert) = shops.partition { it.id in localIds }
+            val shopsToUpdate = mutableListOf<ShopLocalModel>()
+            val shopsToInsert = mutableListOf<ShopLocalModel>()
 
-            if (toUpdate.isNotEmpty()) {
-                room.shopDao().updateShops(toUpdate.map { it.toLocal() })
-            }
-            if (toInsert.isNotEmpty()) {
-                room.shopDao().insertShops(toInsert.map { it.toLocal() })
-            }
+            for (serverShop in shops) {
+                val localShop = localShops.find { it.id == serverShop.id }
 
-            val localRequests = room.requestDao().getRequestsByTrip(idTrip)
-            val localRequestIds = localRequests.map { it.id }.toSet()
-
-            val requestsToInsert = mutableListOf<RequestModel>()
-            val requestsToUpdate = mutableListOf<RequestModel>()
-
-            for (s in shops) {
-                for (r in s.listRequest) {
-                    if (r.id in localRequestIds) requestsToUpdate.add(r) else requestsToInsert.add(r)
+                if (localShop != null) {
+                    // Если локальные данные синхронизированы - обновляем из сервера
+                    if (localShop.isSynced) {
+                        shopsToUpdate.add(serverShop.toLocal().copy(
+                            isSynced = true, // сохраняем статус синхронизации
+                            lastModified = System.currentTimeMillis()
+                        ))
+                    }
+                    // Если не синхронизированы - оставляем локальную версию (приоритет локальным изменениям)
+                } else {
+                    // Добавляем новый магазин как синхронизированный
+                    shopsToInsert.add(serverShop.toLocal().copy(
+                        isSynced = true,
+                        lastModified = System.currentTimeMillis()
+                    ))
                 }
             }
 
-            if (requestsToUpdate.isNotEmpty()) room.requestDao().updateRequests(requestsToUpdate)
-            if (requestsToInsert.isNotEmpty()) room.requestDao().insertRequests(requestsToInsert)
+            // Выполняем массовые операции
+            if (shopsToUpdate.isNotEmpty()) {
+                room.shopDao().updateShops(shopsToUpdate)
+            }
+            if (shopsToInsert.isNotEmpty()) {
+                room.shopDao().insertShops(shopsToInsert)
+            }
+
+            // Обрабатываем запросы для каждого магазина
+            val requestsToInsert = mutableListOf<RequestModel>()
+            val requestsToUpdate = mutableListOf<RequestModel>()
+
+            for (serverShop in shops) {
+                val localRequests = room.requestDao().getRequests(
+                    idShop = serverShop.id,
+                    idTrip = serverShop.idTrip
+                )
+                val localRequestIds = localRequests.map { it.id }.toSet()
+                val serverRequestIds = serverShop.listRequest.map { it.id }.toSet()
+
+                // Удаляем синхронизированные запросы, которых нет на сервере
+                val requestsToDelete = (localRequestIds - serverRequestIds)
+                    .filter { requestId ->
+                        localRequests.find { it.id == requestId }?.isSynced == true
+                    }
+
+                if (requestsToDelete.isNotEmpty()) {
+                    room.requestDao().deleteRequestsByIds(requestsToDelete.toList())
+                }
+
+                // Обрабатываем запросы магазина
+                for (serverRequest in serverShop.listRequest) {
+                    val localRequest = localRequests.find { it.id == serverRequest.id }
+
+                    if (localRequest != null) {
+                        // Если локальный запрос синхронизирован - обновляем из сервера
+                        if (localRequest.isSynced) {
+                            requestsToUpdate.add(serverRequest.copy(
+                                isSynced = true,
+                                lastModified = System.currentTimeMillis()
+                            ))
+                        }
+                        // Если не синхронизирован - оставляем локальную версию
+                    } else {
+                        // Добавляем новый запрос как синхронизированный
+                        requestsToInsert.add(serverRequest.copy(
+                            isSynced = true,
+                            lastModified = System.currentTimeMillis()
+                        ))
+                    }
+                }
+            }
+
+            // Выполняем массовые операции с запросами
+            if (requestsToUpdate.isNotEmpty()) {
+                room.requestDao().updateRequests(requestsToUpdate)
+            }
+            if (requestsToInsert.isNotEmpty()) {
+                room.requestDao().insertRequests(requestsToInsert)
+            }
 
             getLocalData(idTrip)
         }
@@ -1247,13 +1322,13 @@ class ShopViewModel @Inject constructor(
                     if (isSameDay(trip.date, System.currentTimeMillis()) || user.isModOrAdminOrSys()) {
                         val shop = viewState.value.currentShop
                         if (shop != null) {
+                            val typePay = viewState.value.typePay
                             val getCash = viewState.value.getCash
                             val getNoCash = viewState.value.getNoCash
-                            val cash = if (getCash.isEmpty()) 0.0 else getCash.toDouble()
-                            val noCash = if (getNoCash.isEmpty()) 0.0 else getNoCash.toDouble()
+                            val cash = if (getCash.isEmpty() && typePay == NO_CASH) 0.0 else getCash.toDouble()
+                            val noCash = if (getNoCash.isEmpty() && typePay == CASH) 0.0 else getNoCash.toDouble()
                             val arrear = shop.arrears
                             val addSum = shop.addSum
-                            val typePay = viewState.value.typePay
                             val order = viewState.value.orderMoney
                             val newArrear = (order + arrear + addSum) - (cash + noCash)
                             if (isSameDay(
@@ -1269,6 +1344,7 @@ class ShopViewModel @Inject constructor(
                                 typePay = typePay,
                                 status = true,
                                 isOldPrice = viewState.value.stateSwitchPrice,
+                                isSynced = false,
                             )
                             updateViewState { it.copy(currentShop = dataShop) }
                             initShopFunction(event = FunShop.UPDATE)
@@ -1340,6 +1416,8 @@ class ShopViewModel @Inject constructor(
                 val response = shopApi.update(shopRequest)
                 if (!response.success) {
                     sharedViewModel.message(response.message)
+                } else {
+                    room.shopDao().markShopAsSynced(shopId = id)
                 }
             }
         }
@@ -1369,6 +1447,8 @@ class ShopViewModel @Inject constructor(
                     val response = requestApi.update(reqResponse)
                     if (!response.success) {
                         sharedViewModel.message(response.message)
+                    } else {
+                        room.requestDao().markRequestAsSynced(request.id)
                     }
                 }
             } else {

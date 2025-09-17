@@ -91,10 +91,14 @@ fun AlertDialogRequestShop(
 
             ) {
                 Text(modifier = Modifier.fillMaxWidth().border(
-                    width = 1.dp,
-                    color = AppTheme.colors.secondary,
+                    width = 2.dp,
+                    color = when(typePayState) {
+                        TypePayModel.CASH -> AppTheme.colors.onSecondary
+                        TypePayModel.NO_CASH -> Color.Magenta
+                        TypePayModel.ANOTHER -> Color.Green
+                    },
                     shape = RoundedCornerShape(10.dp)
-                ).weight(0.3f).height(40.dp).clickable(onClick = {
+                ).weight(0.2f).height(40.dp).clickable(onClick = {
                     event(ShopEvent.ChangeTypePay)
                 }).wrapContentHeight(Alignment.CenterVertically), text = when(typePayState) {
                     TypePayModel.CASH -> "Нал"
@@ -142,6 +146,7 @@ fun AlertDialogRequestShop(
                                     "Добавить заявку" -> {
                                         event(ShopEvent.ShowDialogAddRequest)
                                     }
+
                                     "Удалить магазин" -> {
                                         event(ShopEvent.ShowDeleteDialog)
                                     }

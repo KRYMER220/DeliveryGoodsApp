@@ -16,5 +16,7 @@ data class RequestModel(
     val price: Double,
     val oldPrice: Double,
     val name: String,
-    val counter: Int
+    val counter: Int,
+    val isSynced: Boolean = true,
+    val lastModified: Long = System.currentTimeMillis()
 )

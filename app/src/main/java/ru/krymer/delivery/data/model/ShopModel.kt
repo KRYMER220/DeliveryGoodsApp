@@ -22,7 +22,9 @@ data class ShopModel(
     var isOldPrice: Boolean,
     val cord: String,
     var isBonus: Boolean,
-    var isChanged: Boolean
+    var isChanged: Boolean,
+    val isSynced: Boolean = false,
+    val lastModified: Long = System.currentTimeMillis()
 )
 
 @Entity(tableName = "shop", primaryKeys = ["id", "idTrip"])
@@ -42,12 +44,14 @@ data class ShopLocalModel(
     val isOldPrice: Boolean,
     val cord: String,
     var isBonus: Boolean,
-    var isChanged: Boolean
+    var isChanged: Boolean,
+    val isSynced: Boolean = false,
+    val lastModified: Long = System.currentTimeMillis()
 )
 
 fun ShopModel.toLocal() = ShopLocalModel(
     id = id,
-    idTrip =idTrip,
+    idTrip = idTrip,
     idFactory = idFactory,
     nameShop = nameShop,
     arrears = arrears,
@@ -61,7 +65,9 @@ fun ShopModel.toLocal() = ShopLocalModel(
     isOldPrice = isOldPrice,
     cord = cord,
     isBonus = isBonus,
-    isChanged = isChanged
+    isChanged = isChanged,
+    isSynced = isSynced,
+    lastModified = lastModified
 )
 
 fun ShopLocalModel.toModel() = ShopModel(
@@ -81,5 +87,7 @@ fun ShopLocalModel.toModel() = ShopModel(
     cord = cord,
     isBonus = isBonus,
     listRequest = emptyList(),
-    isChanged = isChanged
+    isChanged = isChanged,
+    isSynced = isSynced,
+    lastModified = lastModified
 )

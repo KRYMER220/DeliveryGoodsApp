@@ -58,7 +58,7 @@ class ClientViewModel @Inject constructor(
     override fun obtainEvent(event: ClientEvent) {
         when (event) {
 
-            is ClientEvent.ToggleAddDialog -> setState(delete = !viewState.value.toggleAddDialog)
+            is ClientEvent.ToggleAddDialog -> setState(add = !viewState.value.toggleAddDialog)
             is ClientEvent.ToggleDeleteDialog -> setState(
                 delete = !viewState.value.toggleDeleteDialog,
                 client = event.client

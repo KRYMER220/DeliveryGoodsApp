@@ -17,6 +17,8 @@ import ru.krymer.delivery.data.api.TripApi
 import ru.krymer.delivery.data.api.UserApi
 import ru.krymer.delivery.data.model.RouteModel
 import ru.krymer.delivery.data.model.TripModel
+import ru.krymer.delivery.data.model.user.RoleModel
+import ru.krymer.delivery.data.model.user.StatusModel
 import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
 import ru.krymer.delivery.data.request.CreateTripRequest
@@ -324,16 +326,40 @@ class TripViewModel @Inject constructor(
     }
 
     private fun showUpdateDialog(trip: TripModel) {
-        val routes = viewState.value.listRoute
-        val couriers = viewState.value.listCourier
+        var courier = viewState.value.listCourier.firstOrNull() { it.id == trip.idCourier }
+        var route = viewState.value.listRoute.firstOrNull() { it.id == trip.idRoute }
+        if (courier == null) {
+            courier = UserModel(
+                id = trip.idCourier,
+                email = "",
+                login = "",
+                password = "",
+                idFactory = trip.idFactory,
+                name = trip.nameCourier,
+                phone = "",
+                status = StatusModel.OFFLINE,
+                isBan = false,
+                role = RoleModel.USER,
+                percentSalary = trip.percentCourier,
+                salary = trip.salaryCourier
+            )
+        }
+        if (route == null) {
+            route = RouteModel(
+                id = trip.idRoute,
+                name = trip.nameRoute,
+                date = trip.date,
+                idFactory = trip.idFactory
+            )
+        }
         updateViewState {
             it.copy(
                 salary = "${trip.salary.toInt()}",
                 currentTrip = trip,
                 currentDate = trip.date,
-                currentCourier = couriers.first { c -> c.id == trip.idCourier },
-                currentRoute = routes.first { r -> r.id == trip.idRoute },
-                showUpdateSheetDialog = true
+                showUpdateSheetDialog = true,
+                currentCourier = courier,
+                currentRoute = route
             )
 
         }
@@ -352,7 +378,7 @@ class TripViewModel @Inject constructor(
     }
 
     private fun changeCurrentCourier(courier: UserModel?) {
-        updateViewState { it.copy(currentCourier = courier) }
+        updateViewState { it.copy(currentCourier = courier, salary = courier?.salary.toString()) }
     }
 
     private fun saveTrip() {
@@ -398,61 +424,53 @@ class TripViewModel @Inject constructor(
     }
 
     private fun loadListDropMenuRoutes() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val user = sharedViewModel.viewState.value.user
-                if (user != null) {
-                    val responseRoute = routeApi.getRoutes(user.idFactory)
-                    if (responseRoute.success) {
-                        val routes = responseRoute.obj
-                        if (!routes.isNullOrEmpty()) {
-                            val list = routes.sortedBy { r -> r.name }
-                            updateViewState {
-                                it.copy(
-                                    listRoute = list,
-                                )
-                            }
-                        } else {
-                            sharedViewModel.message(Constants.EMPTY.EMPTY_LIST + Constants.ADD.ROUTE)
+        launchCoroutine {
+            val user = sharedViewModel.viewState.value.user
+            if (user != null) {
+                val responseRoute = routeApi.getRoutes(user.idFactory)
+                if (responseRoute.success) {
+                    val routes = responseRoute.obj
+                    if (!routes.isNullOrEmpty()) {
+                        val list = routes.sortedBy { r -> r.name }
+                        updateViewState {
+                            it.copy(
+                                listRoute = list,
+                            )
                         }
                     } else {
-                        sharedViewModel.message(responseRoute.message)
+                        sharedViewModel.message(Constants.EMPTY.EMPTY_LIST + Constants.ADD.ROUTE)
                     }
                 } else {
-                    sharedViewModel.message(Constants.ERROR.GENERAL_ERROR)
+                    sharedViewModel.message(responseRoute.message)
                 }
-            } catch (e: Exception) {
-                sharedViewModel.message(message = e.message)
+            } else {
+                sharedViewModel.message(Constants.ERROR.GENERAL_ERROR)
             }
         }
     }
 
     private fun loadListDropMenuCouriers() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val user = sharedViewModel.viewState.value.user
-                if (user != null) {
-                    val responseUsers = userApi.getUsers(user.idFactory)
-                    if (responseUsers.success) {
-                        val users = responseUsers.obj
-                        if (!users.isNullOrEmpty()) {
-                            val list = users.sortedBy { r -> r.name }
-                            updateViewState {
-                                it.copy(
-                                    listCourier = list,
-                                )
-                            }
-                        } else {
-                            sharedViewModel.message(Constants.EMPTY.EMPTY_LIST + Constants.ADD.COURIER)
+        launchCoroutine {
+            val user = sharedViewModel.viewState.value.user
+            if (user != null) {
+                val responseUsers = userApi.getUsers(user.idFactory)
+                if (responseUsers.success) {
+                    val users = responseUsers.obj
+                    if (!users.isNullOrEmpty()) {
+                        val list = users.sortedBy { r -> r.name }
+                        updateViewState {
+                            it.copy(
+                                listCourier = list,
+                            )
                         }
                     } else {
-                        sharedViewModel.message(responseUsers.message)
+                        sharedViewModel.message(Constants.EMPTY.EMPTY_LIST + Constants.ADD.COURIER)
                     }
                 } else {
-                    sharedViewModel.message(Constants.ERROR.GENERAL_ERROR)
+                    sharedViewModel.message(responseUsers.message)
                 }
-            } catch (e: Exception) {
-                sharedViewModel.message(message = e.message)
+            } else {
+                sharedViewModel.message(Constants.ERROR.GENERAL_ERROR)
             }
         }
     }

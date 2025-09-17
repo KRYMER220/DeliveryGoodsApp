@@ -22,9 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -62,87 +60,87 @@ fun TripView(
         }
     }
 
+    val showStickyHeader by remember {
+        derivedStateOf {
+            lazyListState.firstVisibleItemIndex > 1 || (lazyListState.firstVisibleItemIndex == 1 && lazyListState.firstVisibleItemScrollOffset > 0)
+        }
+    }
+
     LaunchedEffect(shouldLoadMore) {
         if (shouldLoadMore) {
             event(TripEvent.LoadMoreTrips)
         }
     }
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            state = lazyListState,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(7.dp)
+        ) {
+            item {
+                Spacer(
+                    modifier = Modifier
+                        .fillParentMaxHeight(0.5f)
+                        .fillMaxWidth()
+                )
+            }
 
-    LazyColumn(
-        state = lazyListState,
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(10.dp),
-        verticalArrangement = Arrangement.spacedBy(7.dp)
-    ) {
-        item {
-            Spacer(
+            item {
+                HeaderContentTrip(
+                    state = state,
+                    user = user,
+                    event = event,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter)
+                        .padding(10.dp)
+                )
+            }
+
+            if (trips.isNotEmpty()) {
+                items(items = trips) { trip ->
+                    TripItem(
+                        trip = trip, updateTrip = {
+                            if (user.isSysOrAdmin()) event(TripEvent.ShowUpdateDialog(it))
+                        }, deleteTrip = {
+                            event(TripEvent.ShowDeleteDialog(trip = it))
+                        }, openTrip = {
+                            event(TripEvent.SyncTrip(it))
+                            openTrip(it)
+                        }, user = user
+                    )
+                    Spacer(modifier = Modifier.height(3.dp))
+                }
+            } else {
+                item {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(30.dp)
+                                .align(Alignment.Center),
+                            strokeWidth = 2.dp,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+
+        }
+        if (showStickyHeader) {
+            HeaderContentTrip(
+                state = state,
+                user = user,
+                event = event,
                 modifier = Modifier
-                    .fillParentMaxHeight(0.7f)
                     .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+                    .padding(10.dp)
             )
         }
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (!state.lightVersion) {
-                    Image(
-                        painter = painterResource(id = R.drawable.filter),
-                        contentDescription = "sort",
-                        modifier = Modifier
-                            .clickable(onClick = {
-                                event(TripEvent.OpenFilterTrip)
-                            })
-                            .size(60.dp)
-                    )
-                } else {
-                    Spacer(modifier = Modifier)
-                }
-                if (user.isSysOrAdmin()) {
-                    Image(
-                        painter = painterResource(id = R.drawable.add),
-                        contentDescription = "add trip",
-                        modifier = Modifier
-                            .clickable(onClick = {
-                                event(TripEvent.ShowHideAddDialog)
-                            })
-                            .size(60.dp)
-                    )
-                }
-            }
-        }
-
-        if (trips.isNotEmpty()) {
-            items(items = trips) { trip ->
-                TripItem(
-                    trip = trip, updateTrip = {
-                    if (user.isSysOrAdmin()) event(TripEvent.ShowUpdateDialog(it))
-                }, deleteTrip = {
-                    event(TripEvent.ShowDeleteDialog(trip = it))
-                }, openTrip = {
-                    event(TripEvent.SyncTrip(it))
-                    openTrip(it)
-                }, user = user
-                )
-                Spacer(modifier = Modifier.height(3.dp))
-            }
-        } else {
-            item {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .size(30.dp)
-                            .align(Alignment.Center),
-                        strokeWidth = 2.dp,
-                        color = Color.White
-                    )
-                }
-            }
-        }
     }
+
 
     if (state.showDeleteDialog) {
         state.deleteTrip?.let {
@@ -184,6 +182,40 @@ fun TripView(
                 state = state, event = event
             )
         })
+    }
+}
+
+@Composable
+fun HeaderContentTrip(
+    state: TripViewState, user: UserModel, event: (TripEvent) -> Unit, modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (!state.lightVersion) {
+            Image(
+                painter = painterResource(id = R.drawable.filter),
+                contentDescription = "sort",
+                modifier = Modifier
+                    .clickable(onClick = {
+                        event(TripEvent.OpenFilterTrip)
+                    })
+                    .size(60.dp)
+            )
+        }
+        if (user.isSysOrAdmin()) {
+            Image(
+                painter = painterResource(id = R.drawable.add),
+                contentDescription = "add trip",
+                modifier = Modifier
+                    .clickable(onClick = {
+                        event(TripEvent.ShowHideAddDialog)
+                    })
+                    .size(60.dp)
+            )
+        }
     }
 }
 

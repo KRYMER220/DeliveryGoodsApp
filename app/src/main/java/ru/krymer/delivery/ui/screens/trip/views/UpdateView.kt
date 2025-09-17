@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +52,11 @@ fun UpdateTripView(
     val routes = state.listRoute
     val couriers = state.listCourier
     var salary by remember { mutableStateOf(state.salary) }
+
+    LaunchedEffect(state.salary) {
+        salary = state.salary
+    }
+
     if (routes.isNotEmpty() && couriers.isNotEmpty()) {
         state.currentRoute?.let { r ->
             state.currentCourier?.let { c ->
