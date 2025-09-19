@@ -98,7 +98,7 @@ fun InfoContent(state: ShopViewState, onUpdate: () -> Unit) {
                 )
             }
 
-            LazyColumn(horizontalAlignment = Alignment.CenterHorizontally) {
+            LazyColumn(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 items(requests) { product ->
                     InfoContentProductItem(product = product, state = state)
                 }
@@ -136,7 +136,6 @@ fun InfoContentProductItem(product: RequestModel, state: ShopViewState) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(5.dp)
             .background(color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -145,7 +144,7 @@ fun InfoContentProductItem(product: RequestModel, state: ShopViewState) {
             text = product.name,
             modifier = Modifier
                 .padding(5.dp)
-                .weight(0.2f),
+                .weight(0.4f),
             color = AppTheme.colors.onSecondary
         )
         Text(
@@ -153,7 +152,7 @@ fun InfoContentProductItem(product: RequestModel, state: ShopViewState) {
             text = "${product.price.toInt()}",
             textAlign = TextAlign.Center,
             color = AppTheme.colors.onSecondary,
-            modifier = Modifier.weight(0.2f)
+            modifier = Modifier.weight(0.15f)
         )
         if (!state.lightVersion) {
             Text(
@@ -161,7 +160,7 @@ fun InfoContentProductItem(product: RequestModel, state: ShopViewState) {
                 text = "${product.bonus}",
                 textAlign = TextAlign.Center,
                 color = AppTheme.colors.onSecondary,
-                modifier = Modifier.weight(0.2f)
+                modifier = Modifier.weight(0.15f)
             )
         }
         Text(
@@ -169,14 +168,14 @@ fun InfoContentProductItem(product: RequestModel, state: ShopViewState) {
             text = "${product.count}",
             textAlign = TextAlign.Center,
             color = AppTheme.colors.onSecondary,
-            modifier = Modifier.weight(0.2f)
+            modifier = Modifier.weight(0.15f)
         )
         Text(
             style = AppTheme.typography.bodySmall,
             text = "${product.exchange}",
             textAlign = TextAlign.Center,
             color = AppTheme.colors.onSecondary,
-            modifier = Modifier.weight(0.2f)
+            modifier = Modifier.weight(0.15f)
         )
     }
 }
@@ -200,56 +199,48 @@ fun ItemInfoShop(shop: ShopModel, copyInfoData: (ShopModel) -> Unit = {}) {
             textAlign = TextAlign.Center,
             color = AppTheme.colors.onSecondary
         )
-
         Text(
             style = AppTheme.typography.bodySmall,
             text = shop.nameShop,
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
-
         Text(
             style = AppTheme.typography.bodySmall,
             text = "Пред. реал: " + shop.arrears.toInt(),
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
-
         Text(
             style = AppTheme.typography.bodySmall,
             text = "Заявка: " + sumDept.toInt(),
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
-
-        Text(
-            style = AppTheme.typography.bodySmall,
-            text = "Доп. сумма: " + shop.addSum.toInt(),
-            modifier = Modifier.fillMaxWidth(),
-            color = AppTheme.colors.onSecondary
-        )
-
-        Text(
-            style = AppTheme.typography.bodySmall,
-            text = "Нал: " + shop.cash.toInt(),
-            modifier = Modifier.fillMaxWidth(),
-            color = AppTheme.colors.onSecondary
-        )
-
-        Text(
-            style = AppTheme.typography.bodySmall,
-            text = "Без/Нал: " + shop.noCash.toInt(),
-            modifier = Modifier.fillMaxWidth(),
-            color = AppTheme.colors.onSecondary
-        )
-
         Text(
             style = AppTheme.typography.bodySmall,
             text = "Получено: " + (shop.cash + shop.noCash).toInt(),
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
-
+        Text(
+            style = AppTheme.typography.bodySmall,
+            text = "Нал: " + shop.cash.toInt(),
+            modifier = Modifier.fillMaxWidth(),
+            color = AppTheme.colors.onSecondary
+        )
+        Text(
+            style = AppTheme.typography.bodySmall,
+            text = "Без/Нал: " + shop.noCash.toInt(),
+            modifier = Modifier.fillMaxWidth(),
+            color = AppTheme.colors.onSecondary
+        )
+        Text(
+            style = AppTheme.typography.bodySmall,
+            text = "Доп. сумма: " + shop.addSum.toInt(),
+            modifier = Modifier.fillMaxWidth(),
+            color = AppTheme.colors.onSecondary
+        )
         Text(
             style = AppTheme.typography.bodySmall,
             text = "Новый долг: " + (shop.arrears - (shop.cash + shop.noCash) + sumDept + shop.addSum).toInt(),
@@ -310,7 +301,6 @@ fun ItemInfoShop(shop: ShopModel, copyInfoData: (ShopModel) -> Unit = {}) {
                 )
             }
         }
-        Spacer(modifier = Modifier.height(5.dp))
         LazyColumn(
             modifier =
             Modifier

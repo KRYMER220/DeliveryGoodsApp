@@ -56,6 +56,7 @@ import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
 import ru.krymer.delivery.ui.theme.AppTheme
 import ru.krymer.delivery.utills.Constants
+import ru.krymer.delivery.utills.convertToTextDate
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -118,7 +119,7 @@ fun AlertDialogRequestShop(
                                 },
                                 shape = RoundedCornerShape(10.dp)
                             )
-                            .weight(0.2f)
+                            .weight(0.333f)
                             .height(40.dp)
                             .clickable(onClick = {
                                 event(ShopEvent.ChangeTypePay)
@@ -133,9 +134,18 @@ fun AlertDialogRequestShop(
                         textAlign = TextAlign.Center,
                         color = AppTheme.colors.onSecondary
                     )
+                    Text(
+                        style = AppTheme.typography.titleSmall.copy(fontSize = 10.sp),
+                        text = convertToTextDate(trip.date),
+                        color = AppTheme.colors.onSecondary,
+                        modifier = Modifier.weight(0.333f).clickable {
+                            event(ShopEvent.OpenInfoShopDialog(shop = shop))
+                        },
+                        textAlign = TextAlign.Center,
+                    )
                     Row(
                         modifier = Modifier
-                            .weight(0.3f)
+                            .weight(0.333f)
                             .padding(5.dp),
                         horizontalArrangement = Arrangement.End
                     ) {
@@ -762,8 +772,8 @@ fun ProductRequestItem(
                     else -> painterResource(id = R.drawable.active_circle)
 
                 },
-                modifier = Modifier
-                    .size(10.dp)
+                modifier = Modifier.padding(end = 5.dp)
+                    .size(6.dp)
             )
         }
         Text(

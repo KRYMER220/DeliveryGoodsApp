@@ -5,10 +5,12 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,7 +50,7 @@ fun MillageAndInfoView(
         millageInput = if (millage == "0") "" else millage
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             style = AppTheme.typography.titleMedium,
             text = "Касса: $allMoney",
@@ -79,25 +81,30 @@ fun MillageAndInfoView(
             text = "Остаток: $remains",
             color = AppTheme.colors.onSecondary
         )
-        CommonTextField(
-            value = millageInput,
-            placeholder = stringResource(id = R.string.km_et),
-            changerText = { newValue ->
-                millageInput = newValue
-                onMillageTFC(newValue)
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-        )
-        Image(
-            contentDescription = "submit",
-            painter = painterResource(id = R.drawable.submit),
-            modifier = Modifier
-                .size(50.dp)
-                .combinedClickable(onClick = { event(ShopEvent.MillageSaveAction) })
-        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+            CommonTextField(
+                value = millageInput,
+                placeholder = stringResource(id = R.string.km_et),
+                changerText = { newValue ->
+                    millageInput = newValue
+                    onMillageTFC(newValue)
+                },
+                modifier = Modifier.weight(1f)
+                    .fillMaxWidth()
+                    .height(60.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Image(
+                contentDescription = "submit",
+                painter = painterResource(id = R.drawable.submit),
+                modifier = Modifier
+                    .size(50.dp)
+                    .combinedClickable(onClick = { event(ShopEvent.MillageSaveAction) })
+            )
+        }
+
+
     }
 }
 

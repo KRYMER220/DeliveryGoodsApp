@@ -71,7 +71,7 @@ fun ShopAnaliticItem(shop: ShopModel) {
         Spacer(modifier = Modifier.height(5.dp))
         Text(
             style = AppTheme.typography.titleSmall,
-            text = "Доп. сумма: " + shop.addSum.toInt(),
+            text = "Получено: " + (shop.cash + shop.noCash).toInt(),
             fontSize = 12.sp,
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
@@ -95,7 +95,7 @@ fun ShopAnaliticItem(shop: ShopModel) {
         Spacer(modifier = Modifier.height(5.dp))
         Text(
             style = AppTheme.typography.titleSmall,
-            text = "Получено: " + (shop.cash + shop.noCash).toInt(),
+            text = "Доп. сумма: " + shop.addSum.toInt(),
             fontSize = 12.sp,
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary

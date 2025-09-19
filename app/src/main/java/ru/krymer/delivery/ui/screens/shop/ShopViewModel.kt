@@ -357,10 +357,10 @@ class ShopViewModel @Inject constructor(
             ensureActive()
             val user = sharedViewModel.viewState.value.user ?: return@coroutineScope
             if (user.id != trip.idCourier) return@coroutineScope
-            val unSyncedShops = room.shopDao().getStatusShops(idTrip = trip.id, status = StatusModel.UN_SYNC.toStr())
-            if (unSyncedShops.isEmpty()) return@coroutineScope
+            val shops = room.shopDao().getShops(idTrip = trip.id)
+            if (shops.isEmpty()) return@coroutineScope
 
-            for (local in unSyncedShops) {
+            for (local in shops) {
                 ensureActive()
 
                 val shop = local.toModel()
@@ -372,7 +372,7 @@ class ShopViewModel @Inject constructor(
                         idFactory = shop.idFactory,
                         arrears = shop.arrears,
                         addSum = shop.addSum,
-                        status = true,
+                        status = shop.status,
                         date = shop.date,
                         typePay = shop.typePay.getStringByTypePay(),
                         cash = shop.cash,
@@ -385,7 +385,7 @@ class ShopViewModel @Inject constructor(
                     )
                     val shopResp = shopApi.update(shopReq)
                     if (shopResp.success) {
-                        room.shopDao().markShopAsSynced(shop.id, status = StatusModel.SYNC.toStr())
+                        if (shop.status) room.shopDao().markShopAsSynced(shop.id, status = StatusModel.SYNC.toStr())
                     } else {
                         sharedViewModel.message(shopResp.message)
                     }
@@ -720,13 +720,16 @@ class ShopViewModel @Inject constructor(
                     val localRequest = localRequests.find { it.id == serverRequest.id }
 
                     if (localRequest != null) {
-                        requestsToUpdate.add(serverRequest.copy(
-                            statusServer = when(localRequest.statusServer.toStatusModel()) {
-                                StatusModel.NOT_CHANGE -> StatusModel.NOT_CHANGE.toStr()
-                                StatusModel.SYNC -> StatusModel.SYNC.toStr()
-                                StatusModel.UN_SYNC -> StatusModel.UN_SYNC.toStr()
-                            }
-                        ))
+                        if (localRequest.statusServer.toStatusModel() != StatusModel.UN_SYNC) {
+                            requestsToUpdate.add(serverRequest.copy(
+                                statusServer = when(localRequest.statusServer.toStatusModel()) {
+                                    StatusModel.NOT_CHANGE -> StatusModel.NOT_CHANGE.toStr()
+                                    StatusModel.SYNC -> StatusModel.SYNC.toStr()
+                                    StatusModel.UN_SYNC -> StatusModel.UN_SYNC.toStr()
+                                }
+                            ))
+                        }
+
                     } else {
                         requestsToInsert.add(serverRequest)
                     }
@@ -1331,9 +1334,9 @@ class ShopViewModel @Inject constructor(
                             val dataShop = shop.copy(
                                 addSum = addSum,
                                 cash = cash,
+                                status = true,
                                 noCash = noCash,
                                 typePay = typePay,
-                                status = true,
                                 isOldPrice = viewState.value.stateSwitchPrice,
                                 statusServer = StatusModel.UN_SYNC
                             )

@@ -70,7 +70,7 @@ fun createTypography(fontFamily: FontFamily, fontSizeIndex: Int): Typography {
         bodySmall = TextStyle(
             fontFamily = fontFamily,
             fontWeight = FontWeight.Light,
-            fontSize = (14 + multiplier).sp,
+            fontSize = (12 + multiplier).sp,
             lineHeight = 18.sp,
             letterSpacing = 0.sp
         ),

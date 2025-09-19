@@ -30,16 +30,13 @@ import androidx.compose.material3.CardColors
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -48,14 +45,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.ShopModel
 import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.data.model.utilModel.StatusModel
-import ru.krymer.delivery.data.model.utilModel.toStr
 import ru.krymer.delivery.ui.components.CommonAlertAddDialog
 import ru.krymer.delivery.ui.components.CommonConfirmDialog
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
@@ -64,9 +58,6 @@ import ru.krymer.delivery.ui.components.CommonSaveDialog
 import ru.krymer.delivery.ui.components.ConfirmView
 import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
-import ru.krymer.delivery.ui.screens.trip.models.TripEvent
-import ru.krymer.delivery.ui.screens.trip.models.TripViewState
-import ru.krymer.delivery.ui.screens.trip.views.HeaderContentTrip
 import ru.krymer.delivery.ui.theme.AppTheme
 import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.convertToTextDate
@@ -80,56 +71,58 @@ fun ShopView(
     val context = LocalContext.current
     val shops = state.listUIShop
     val lazyListState = rememberLazyListState()
+    state.currentTrip?.let { trip ->
 
-    val showStickyHeader by remember {
-        derivedStateOf {
-            lazyListState.firstVisibleItemIndex > 1 ||
-                    (lazyListState.firstVisibleItemIndex == 1 && lazyListState.firstVisibleItemScrollOffset > 0)
+        val showStickyHeader by remember {
+            derivedStateOf {
+                lazyListState.firstVisibleItemIndex > 1 ||
+                        (lazyListState.firstVisibleItemIndex == 1 && lazyListState.firstVisibleItemScrollOffset > 0)
+            }
         }
-    }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
-            state = lazyListState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(10.dp),
-            verticalArrangement = Arrangement.spacedBy(7.dp)
-        ) {
-            item {
-                Spacer(
-                    modifier = Modifier
-                        .fillParentMaxHeight(0.5f)
-                        .fillMaxWidth()
-                )
-            }
-
-            item {
-                HeaderContentShop(
-                    state = state,
-                    user = user,
-                    event = event,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.TopCenter)
-                )
-            }
-
-            if (shops.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                state = lazyListState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(7.dp)
+            ) {
                 item {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        CircularProgressIndicator(
-                            modifier = Modifier
-                                .size(30.dp)
-                                .align(Alignment.Center),
-                            strokeWidth = 2.dp,
-                            color = Color.White
-                        )
-                    }
+                    Spacer(
+                        modifier = Modifier
+                            .fillParentMaxHeight(0.5f)
+                            .fillMaxWidth()
+                    )
                 }
-            } else {
-                itemsIndexed(shops, key = { _, item -> item.id }) { index, shop ->
-                    state.currentTrip?.let { trip ->
+
+                item {
+                    HeaderContentShop(
+                        state = state,
+                        user = user,
+                        event = event,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.TopCenter),
+                        trip = trip
+                    )
+                }
+
+                if (shops.isEmpty()) {
+                    item {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .size(30.dp)
+                                    .align(Alignment.Center),
+                                strokeWidth = 2.dp,
+                                color = Color.White
+                            )
+                        }
+                    }
+                } else {
+                    itemsIndexed(shops, key = { _, item -> item.id }) { index, shop ->
+
                         ShopsItem(
                             shop = shop,
                             openShop = {
@@ -158,21 +151,24 @@ fun ShopView(
                             },
                             trip = trip
                         )
+
+                        Spacer(modifier = Modifier.height(3.dp))
                     }
-                    Spacer(modifier = Modifier.height(3.dp))
                 }
             }
-        }
-        if (showStickyHeader) {
-            HeaderContentShop(
-                state = state,
-                user = user,
-                event = event,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.TopCenter)
-                    .padding(10.dp)
-            )
+            if (showStickyHeader) {
+                HeaderContentShop(
+                    state = state,
+                    user = user,
+                    event = event,
+                    modifier = Modifier.background(color = AppTheme.colors.onPrimary)
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter)
+                        .padding(10.dp)
+                        .pointerInput(Unit) {},
+                    trip = trip
+                )
+            }
         }
     }
 
@@ -233,7 +229,7 @@ fun ShopView(
             val count = state.allCountRequestsInfo
             val exchange = state.allExchangeRequestsInfo
             val requests = state.listInfoRequests
-            LazyColumn {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 if (state.lightVersion) {
                     item {
                         Column(
@@ -256,16 +252,15 @@ fun ShopView(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(5.dp)
                         ) {
                             Spacer(
-                                modifier = Modifier.weight(0.2f),
+                                modifier = Modifier.weight(0.4f),
                             )
                             Text(
                                 style = AppTheme.typography.bodySmall,
                                 text = "Цена",
                                 color = AppTheme.colors.onSecondary,
-                                modifier = Modifier.weight(0.2f),
+                                modifier = Modifier.weight(0.15f),
                                 textAlign = TextAlign.Center,
                             )
                             if (!state.lightVersion) {
@@ -273,7 +268,7 @@ fun ShopView(
                                     style = AppTheme.typography.bodySmall,
                                     text = "Бонус",
                                     color = AppTheme.colors.onSecondary,
-                                    modifier = Modifier.weight(0.2f),
+                                    modifier = Modifier.weight(0.15f),
                                     textAlign = TextAlign.Center,
                                 )
                             }
@@ -281,14 +276,14 @@ fun ShopView(
                                 style = AppTheme.typography.bodySmall,
                                 text = "Заявка",
                                 color = AppTheme.colors.onSecondary,
-                                modifier = Modifier.weight(0.2f),
+                                modifier = Modifier.weight(0.15f),
                                 textAlign = TextAlign.Center,
                             )
                             Text(
                                 style = AppTheme.typography.bodySmall,
                                 text = "Возврат",
                                 color = AppTheme.colors.onSecondary,
-                                modifier = Modifier.weight(0.2f),
+                                modifier = Modifier.weight(0.15f),
                                 textAlign = TextAlign.Center,
                             )
                         }
@@ -333,7 +328,7 @@ fun ShopView(
                 item {
                     Spacer(modifier = Modifier
                         .fillMaxWidth()
-                        .height(10.dp))
+                        .height(5.dp))
                 }
                 item {
                     MillageAndInfoView(state = state, onMillageTFC = {
@@ -392,15 +387,15 @@ fun ShopView(
     }
 
     if (state.toggleRequestDialog) {
-        Dialog(onDismissRequest = { event(ShopEvent.DismissRequestDialog) }, properties = DialogProperties(
+        Dialog(onDismissRequest = { event(ShopEvent.DismissRequestDialog) },
+            properties = DialogProperties(
             usePlatformDefaultWidth = false,
             decorFitsSystemWindows = false
         )) {
             Card(
                 modifier = Modifier
                     .fillMaxSize()
-                    .statusBarsPadding()
-                    .navigationBarsPadding(), colors = CardColors(
+                    .background(AppTheme.colors.onPrimary), colors = CardColors(
                     containerColor = AppTheme.colors.onPrimary,
                     contentColor = AppTheme.colors.onPrimary,
                     disabledContentColor = AppTheme.colors.onPrimary,
@@ -501,7 +496,11 @@ fun ShopView(
 
 @Composable
 fun HeaderContentShop(
-    state: ShopViewState, user: UserModel, event: (ShopEvent) -> Unit, modifier: Modifier = Modifier
+    state: ShopViewState,
+    user: UserModel,
+    event: (ShopEvent) -> Unit,
+    modifier: Modifier = Modifier,
+    trip: TripModel
 ) {
     Row(
         modifier = modifier,
@@ -520,6 +519,11 @@ fun HeaderContentShop(
                     }
                 })
                 .size(60.dp)
+        )
+        Text(
+            style = AppTheme.typography.titleSmall,
+            text = convertToTextDate(trip.date),
+            color = AppTheme.colors.onSecondary
         )
         if (!state.lightVersion) {
             Image(
@@ -598,20 +602,20 @@ fun ShopsItem(
                 color = AppTheme.colors.onSecondary,
             )
             if (user.isModOrAdminOrSys() && shop.isChanged) {
-                Image(
-                    contentDescription = "info",
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clickable(onClick = {
-                            openInfoShop(shop)
-                        }),
-                    painter = painterResource(R.drawable.info_shop)
-                )
+                Box(modifier = Modifier.size(40.dp).clickable(onClick = {
+                    openInfoShop(shop)
+                }), contentAlignment = Alignment.Center) {
+                    Image(
+                        contentDescription = "info",
+                        painter = painterResource(R.drawable.info_shop),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
             Image(
                 contentDescription = "status",
                 painter = when {
-                    !shop.status && shop.statusServer == StatusModel.NOT_CHANGE -> painterResource(id = R.drawable.inactive_circle)
+                    !shop.status && (shop.statusServer == StatusModel.NOT_CHANGE || shop.statusServer == StatusModel.UN_SYNC) -> painterResource(id = R.drawable.inactive_circle)
                     shop.status && shop.statusServer == StatusModel.UN_SYNC && user.id == trip.idCourier -> painterResource(id = R.drawable.unsync_circle)
                     else -> painterResource(id = R.drawable.active_circle)
                 },
