@@ -44,9 +44,12 @@ import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.RequestModel
 import ru.krymer.delivery.data.model.ShopModel
+import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.data.model.utilModel.Error
+import ru.krymer.delivery.data.model.utilModel.StatusModel
 import ru.krymer.delivery.data.model.utilModel.TypePayModel
+import ru.krymer.delivery.data.model.utilModel.toStatusModel
 import ru.krymer.delivery.ui.components.CommonTextField
 import ru.krymer.delivery.ui.components.KeyBoardDialog
 import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
@@ -60,142 +63,191 @@ fun AlertDialogRequestShop(
     state: ShopViewState, event: (ShopEvent) -> Unit, user: UserModel
 ) {
     state.currentShop?.let { shop ->
-        val listMenu = if (user.isModOrAdminOrSys()) listOf("Долг", "Доп.сумму", "Старая цена", "Добавить бонус", "Удалить магазин" ,"Отправить сообщение", "Добавить заявку")
-        else  listOf("Долг", "Доп.сумму", "Старая цена", "Отправить сообщение")
-        var isExpandedMenu by remember { mutableStateOf(false) }
-        val requests = state.listDataRequests
-        val orderMoney = state.orderMoney.toInt().toString()
-        val stateCash = state.getCash
-        val stateNoCash = state.getNoCash
-        var cash by remember { mutableStateOf("") }
-        var noCash by remember { mutableStateOf("") }
-        val typePayState = state.typePay
-        val switchOldPrice = state.stateSwitchPrice
-        var errorCash by remember { mutableStateOf(Error()) }
-        var errorNoCash by remember { mutableStateOf(Error()) }
+        state.currentTrip?.let { trip ->
+            val listMenu = if (user.isModOrAdminOrSys()) listOf(
+                "Долг",
+                "Доп.сумму",
+                "Старая цена",
+                "Добавить бонус",
+                "Удалить магазин",
+                "Отправить сообщение",
+                "Добавить заявку"
+            )
+            else listOf("Долг", "Доп.сумму", "Старая цена", "Отправить сообщение")
+            var isExpandedMenu by remember { mutableStateOf(false) }
+            val requests = state.listDataRequests
+            val orderMoney = state.orderMoney.toInt().toString()
+            val stateCash = state.getCash
+            val stateNoCash = state.getNoCash
+            var cash by remember { mutableStateOf("") }
+            var noCash by remember { mutableStateOf("") }
+            val typePayState = state.typePay
+            val switchOldPrice = state.stateSwitchPrice
+            var errorCash by remember { mutableStateOf(Error()) }
+            var errorNoCash by remember { mutableStateOf(Error()) }
+            LaunchedEffect(stateCash) {
+                cash = stateCash
+            }
+            LaunchedEffect(stateNoCash) {
+                noCash = stateNoCash
+            }
 
-        LaunchedEffect(stateCash) {
-            cash = stateCash
-        }
-        LaunchedEffect(stateNoCash) {
-            noCash = stateNoCash
-        }
-
-        Column(modifier = Modifier.fillMaxSize().padding(5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Spacer(modifier = Modifier.height(20.dp))
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-
+                    .fillMaxSize()
+                    .padding(5.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(modifier = Modifier.fillMaxWidth().border(
-                    width = 2.dp,
-                    color = when(typePayState) {
-                        TypePayModel.CASH -> AppTheme.colors.onSecondary
-                        TypePayModel.NO_CASH -> Color.Magenta
-                        TypePayModel.ANOTHER -> Color.Green
-                    },
-                    shape = RoundedCornerShape(10.dp)
-                ).weight(0.2f).height(40.dp).clickable(onClick = {
-                    event(ShopEvent.ChangeTypePay)
-                }).wrapContentHeight(Alignment.CenterVertically), text = when(typePayState) {
-                    TypePayModel.CASH -> "Нал"
-                    TypePayModel.NO_CASH -> "Без/нал"
-                    TypePayModel.ANOTHER -> "Смешаный"
-                }, style = AppTheme.typography.titleSmall, textAlign = TextAlign.Center, color = AppTheme.colors.onSecondary)
-                Row(modifier = Modifier.weight(0.3f).padding(5.dp), horizontalArrangement = Arrangement.End) {
-                    Row(
-                        modifier = Modifier.clickable { isExpandedMenu = !isExpandedMenu },
-                    ) {
-                        Image(
-                            contentDescription = "menu list",
-                            painter = painterResource(id = R.drawable.list_item),
-                            modifier = Modifier.size(50.dp)
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = isExpandedMenu,
-                        onDismissRequest = { isExpandedMenu = false },
-                        modifier = Modifier.background(AppTheme.colors.onPrimary)) {
-                        listMenu.forEach { item ->
-                            DropdownMenuItem(onClick = {
-                                isExpandedMenu = false
-                                when (item) {
-                                    "Долг" -> {
-                                        event(ShopEvent.ShowDialogChangeArrears)
-                                    }
+                Spacer(modifier = Modifier.height(20.dp))
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
 
-                                    "Доп.сумму" -> {
-                                        event(ShopEvent.OpenAddSumDialog)
-                                    }
-
-                                    "Старая цена" -> {
-                                        event(ShopEvent.SwitchPrice)
-                                    }
-
-                                    "Добавить бонус" -> {
-                                        event(ShopEvent.SwitchBonus)
-                                    }
-
-                                    "Отправить сообщение" -> {
-                                        event(ShopEvent.ToggleMessageDialog(true))
-                                    }
-
-                                    "Добавить заявку" -> {
-                                        event(ShopEvent.ShowDialogAddRequest)
-                                    }
-
-                                    "Удалить магазин" -> {
-                                        event(ShopEvent.ShowDeleteDialog)
-                                    }
-                                }
-                            }, text = {
-                                when (item) {
-                                    "Старая цена" -> Text(
-                                        color = if (switchOldPrice) Color.Red else AppTheme.colors.onSecondary,
-                                        text = item,
-                                        style = AppTheme.typography.titleSmall
-                                    )
-
-                                    else -> Text(text = item, style = AppTheme.typography.titleSmall, color = AppTheme.colors.onSecondary)
-                                }
+                ) {
+                    Text(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(
+                                width = 2.dp,
+                                color = when (typePayState) {
+                                    TypePayModel.CASH -> Color.Transparent
+                                    TypePayModel.NO_CASH -> Color.Magenta
+                                    TypePayModel.ANOTHER -> Color.Green
+                                },
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                            .weight(0.2f)
+                            .height(40.dp)
+                            .clickable(onClick = {
+                                event(ShopEvent.ChangeTypePay)
                             })
+                            .wrapContentHeight(Alignment.CenterVertically),
+                        text = when (typePayState) {
+                            TypePayModel.CASH -> "Нал"
+                            TypePayModel.NO_CASH -> "Без/нал"
+                            TypePayModel.ANOTHER -> "Смешаный"
+                        },
+                        style = AppTheme.typography.titleSmall,
+                        textAlign = TextAlign.Center,
+                        color = AppTheme.colors.onSecondary
+                    )
+                    Row(
+                        modifier = Modifier
+                            .weight(0.3f)
+                            .padding(5.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Row(
+                            modifier = Modifier.clickable { isExpandedMenu = !isExpandedMenu },
+                        ) {
+                            Image(
+                                contentDescription = "menu list",
+                                painter = painterResource(id = R.drawable.list_item),
+                                modifier = Modifier.size(50.dp)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = isExpandedMenu,
+                            onDismissRequest = { isExpandedMenu = false },
+                            modifier = Modifier.background(AppTheme.colors.onPrimary)
+                        ) {
+                            listMenu.forEach { item ->
+                                DropdownMenuItem(onClick = {
+                                    isExpandedMenu = false
+                                    when (item) {
+                                        "Долг" -> {
+                                            event(ShopEvent.ShowDialogChangeArrears)
+                                        }
+
+                                        "Доп.сумму" -> {
+                                            event(ShopEvent.OpenAddSumDialog)
+                                        }
+
+                                        "Старая цена" -> {
+                                            event(ShopEvent.SwitchPrice)
+                                        }
+
+                                        "Добавить бонус" -> {
+                                            event(ShopEvent.SwitchBonus)
+                                        }
+
+                                        "Отправить сообщение" -> {
+                                            event(ShopEvent.ToggleMessageDialog(true))
+                                        }
+
+                                        "Добавить заявку" -> {
+                                            event(ShopEvent.ShowDialogAddRequest)
+                                        }
+
+                                        "Удалить магазин" -> {
+                                            event(ShopEvent.ShowDeleteDialog)
+                                        }
+                                    }
+                                }, text = {
+                                    when (item) {
+                                        "Старая цена" -> Text(
+                                            color = if (switchOldPrice) Color.Red else AppTheme.colors.onSecondary,
+                                            text = item,
+                                            style = AppTheme.typography.titleSmall
+                                        )
+
+                                        else -> Text(
+                                            text = item,
+                                            style = AppTheme.typography.titleSmall,
+                                            color = AppTheme.colors.onSecondary
+                                        )
+                                    }
+                                })
+                            }
                         }
                     }
                 }
-            }
 
-            Text(
-                style = AppTheme.typography.titleLarge,
-                text = shop.nameShop,
-                textAlign = TextAlign.Center,
-                color = AppTheme.colors.onSecondary,
-                modifier = Modifier
-                    .padding(5.dp)
-            )
-
-            Spacer(modifier = Modifier.height(5.dp))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 5.dp, end = 5.dp)
-            ) {
-                Box(
+                Text(
+                    style = AppTheme.typography.titleLarge,
+                    text = shop.nameShop,
+                    textAlign = TextAlign.Center,
+                    color = AppTheme.colors.onSecondary,
                     modifier = Modifier
-                        .weight(0.40f)
-                        .padding(start = 3.dp, end = 5.dp)
+                        .padding(5.dp)
+                )
+
+                Spacer(modifier = Modifier.height(5.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 5.dp, end = 5.dp)
                 ) {
-                    Text(
-                        style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
-                        text = "",
-                        color = AppTheme.colors.onSecondary
-                    )
-                }
-                if (shop.isBonus) {
+                    Box(
+                        modifier = Modifier
+                            .weight(0.40f)
+                            .padding(start = 3.dp, end = 5.dp)
+                    ) {
+                        Text(
+                            style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
+                            text = "",
+                            color = AppTheme.colors.onSecondary
+                        )
+                    }
+                    if (shop.isBonus) {
+                        Box(
+                            modifier = Modifier
+                                .weight(0.20f)
+                                .padding(end = 5.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
+                                text = "Бонус",
+                                modifier = Modifier.align(Alignment.Center),
+                                color = AppTheme.colors.onSecondary
+                            )
+                        }
+                    }
                     Box(
                         modifier = Modifier
                             .weight(0.20f)
@@ -204,175 +256,334 @@ fun AlertDialogRequestShop(
                     ) {
                         Text(
                             style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
-                            text = "Бонус",
+                            text = "Заявка",
+                            modifier = Modifier.align(Alignment.Center),
+                            color = AppTheme.colors.onSecondary
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .weight(0.20f)
+                            .padding(end = 3.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
+                            text = "Обмены",
                             modifier = Modifier.align(Alignment.Center),
                             color = AppTheme.colors.onSecondary
                         )
                     }
                 }
-                Box(
-                    modifier = Modifier
-                        .weight(0.20f)
-                        .padding(end = 5.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
-                        text = "Заявка",
-                        modifier = Modifier.align(Alignment.Center),
-                        color = AppTheme.colors.onSecondary
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .weight(0.20f)
-                        .padding(end = 3.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
-                        text = "Обмены",
-                        modifier = Modifier.align(Alignment.Center),
-                        color = AppTheme.colors.onSecondary
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(5.dp))
+                Spacer(modifier = Modifier.height(5.dp))
 
-            Box(modifier = Modifier.fillMaxSize()) {
-                LazyColumn(
-                    Modifier
-                        .padding(start = 5.dp, end = 5.dp)
-                        .fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(5.dp)
-                ) {
-                    if (requests.isNotEmpty()) {
-                        items(
-                            items = requests,
-                            key = { request -> request.id }
-                        ) { request ->
-                            ProductRequestItem(
-                                request = request, event = event, shop = shop, user = user
-                            )
-                        }
-                        item {
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Row(
-                                horizontalArrangement = Arrangement.SpaceAround,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(
-                                    verticalArrangement = Arrangement.SpaceAround,
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier
-                                        .weight(0.333f)
-                                        .combinedClickable(onClick = {
-                                            event(
-                                                ShopEvent.SetArrearsInField(arrears = shop.arrears)
-                                            )
-                                        }, onLongClick = {
-                                            event(ShopEvent.SetArrearsAndAddInField(sum = shop.arrears + shop.addSum))
-                                        }, onDoubleClick = {
-                                            event(ShopEvent.SetOrderAndArrearsSumInField(arrears = shop.arrears))
-                                        })
+                Box(modifier = Modifier.fillMaxSize()) {
+                    LazyColumn(
+                        Modifier
+                            .padding(start = 5.dp, end = 5.dp)
+                            .fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
+                        if (requests.isNotEmpty()) {
+                            items(
+                                items = requests,
+                                key = { request -> request.id }
+                            ) { request ->
+                                ProductRequestItem(
+                                    request = request,
+                                    event = event,
+                                    shop = shop,
+                                    user = user,
+                                    trip = trip
+                                )
+                            }
+                            item {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Row(
+                                    horizontalArrangement = Arrangement.SpaceAround,
+                                    modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text(
-                                        style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 4).sp),
-                                        text = "Долг",
-                                        color = AppTheme.colors.onSecondary
-                                    )
-                                    Text(
-                                        style = AppTheme.typography.labelSmall,
-                                        text = "${shop.arrears.toInt()}",
-                                        color = AppTheme.colors.onSecondary
-                                    )
-                                }
-                                if (shop.addSum > 0.0) {
                                     Column(
                                         verticalArrangement = Arrangement.SpaceAround,
                                         horizontalAlignment = Alignment.CenterHorizontally,
                                         modifier = Modifier
                                             .weight(0.333f)
-                                            .combinedClickable(onLongClick = {
-                                                event(ShopEvent.SetOrderAndArrearsAndAddSumInField(arrears = shop.arrears, addSum = shop.addSum))
-                                            }, onClick = {
-                                                event(ShopEvent.SetAddInField(addSum = shop.addSum))
+                                            .combinedClickable(onClick = {
+                                                event(
+                                                    ShopEvent.SetArrearsInField(arrears = shop.arrears)
+                                                )
+                                            }, onLongClick = {
+                                                event(ShopEvent.SetArrearsAndAddInField(sum = shop.arrears + shop.addSum))
+                                            }, onDoubleClick = {
+                                                event(ShopEvent.SetOrderAndArrearsSumInField(arrears = shop.arrears))
                                             })
                                     ) {
                                         Text(
-                                            style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
-                                            text = "Доп",
+                                            style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 4).sp),
+                                            text = "Долг",
                                             color = AppTheme.colors.onSecondary
                                         )
                                         Text(
                                             style = AppTheme.typography.labelSmall,
-                                            text = "${shop.addSum.toInt()}",
+                                            text = "${shop.arrears.toInt()}",
+                                            color = AppTheme.colors.onSecondary
+                                        )
+                                    }
+                                    if (shop.addSum > 0.0) {
+                                        Column(
+                                            verticalArrangement = Arrangement.SpaceAround,
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            modifier = Modifier
+                                                .weight(0.333f)
+                                                .combinedClickable(onLongClick = {
+                                                    event(
+                                                        ShopEvent.SetOrderAndArrearsAndAddSumInField(
+                                                            arrears = shop.arrears,
+                                                            addSum = shop.addSum
+                                                        )
+                                                    )
+                                                }, onClick = {
+                                                    event(ShopEvent.SetAddInField(addSum = shop.addSum))
+                                                })
+                                        ) {
+                                            Text(
+                                                style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
+                                                text = "Доп",
+                                                color = AppTheme.colors.onSecondary
+                                            )
+                                            Text(
+                                                style = AppTheme.typography.labelSmall,
+                                                text = "${shop.addSum.toInt()}",
+                                                color = AppTheme.colors.onSecondary
+                                            )
+                                        }
+                                    }
+                                    Column(
+                                        verticalArrangement = Arrangement.SpaceAround,
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        modifier = Modifier
+                                            .weight(0.333f)
+                                            .combinedClickable(onClick = {
+                                                event(ShopEvent.SetOrderInField)
+                                            }, onLongClick = {
+                                                event(ShopEvent.SetOrderAndAddInField(addSum = shop.addSum))
+                                            }, onDoubleClick = {
+                                                event(ShopEvent.SetOrderAndArrearsSumInField(arrears = shop.arrears))
+                                            })
+                                    ) {
+                                        Text(
+                                            style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
+                                            text = "Заявка",
+                                            color = AppTheme.colors.onSecondary
+                                        )
+                                        Text(
+                                            style = AppTheme.typography.labelSmall,
+                                            text = orderMoney,
                                             color = AppTheme.colors.onSecondary
                                         )
                                     }
                                 }
-                                Column(
-                                    verticalArrangement = Arrangement.SpaceAround,
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier
-                                        .weight(0.333f)
-                                        .combinedClickable(onClick = {
-                                            event(ShopEvent.SetOrderInField)
-                                        }, onLongClick = {
-                                            event(ShopEvent.SetOrderAndAddInField(addSum = shop.addSum))
-                                        }, onDoubleClick = {
-                                            event(ShopEvent.SetOrderAndArrearsSumInField(arrears = shop.arrears))
-                                        })
-                                ) {
-                                    Text(
-                                        style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
-                                        text = "Заявка",
-                                        color = AppTheme.colors.onSecondary
-                                    )
-                                    Text(
-                                        style = AppTheme.typography.labelSmall,
-                                        text = orderMoney,
-                                        color = AppTheme.colors.onSecondary
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(15.dp))
-                            when (typePayState) {
-                                TypePayModel.ANOTHER -> {
-                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                Spacer(modifier = Modifier.height(15.dp))
+                                when (typePayState) {
+                                    TypePayModel.ANOTHER -> {
+                                        Column(modifier = Modifier.fillMaxWidth()) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                            ) {
+                                                CommonTextField(
+                                                    value = cash,
+                                                    placeholder = "Нал",
+                                                    modifier = Modifier.weight(0.333f),
+                                                    changerText = { newValue ->
+                                                        cash = newValue
+                                                        errorCash = when {
+                                                            newValue == "" -> Error(
+                                                                visible = true,
+                                                                error = Constants.EMPTY.EMPTY_FIELD
+                                                            )
+
+                                                            else -> {
+                                                                event(
+                                                                    ShopEvent.ValueChangeCash(
+                                                                        newValue
+                                                                    )
+                                                                )
+                                                                Error()
+                                                            }
+                                                        }
+                                                    },
+                                                    keyboardOptions = KeyboardOptions(
+                                                        keyboardType = KeyboardType.Number,
+                                                        imeAction = ImeAction.Done
+                                                    ),
+                                                    textStyle = AppTheme.typography.titleLarge,
+                                                    isError = errorCash.visible,
+                                                    errorValue = errorCash.error
+                                                )
+                                                CommonTextField(
+                                                    value = noCash,
+                                                    placeholder = "Без/Нал",
+                                                    modifier = Modifier.weight(0.333f),
+                                                    changerText = { newValue ->
+                                                        noCash = newValue
+                                                        errorNoCash = when {
+                                                            newValue == "" -> Error(
+                                                                visible = true,
+                                                                error = Constants.EMPTY.EMPTY_FIELD
+                                                            )
+
+                                                            else -> {
+                                                                event(
+                                                                    ShopEvent.ValueChangeNoCashMoney(
+                                                                        newValue
+                                                                    )
+                                                                )
+                                                                Error()
+                                                            }
+                                                        }
+                                                    },
+                                                    keyboardOptions = KeyboardOptions(
+                                                        keyboardType = KeyboardType.Number,
+                                                        imeAction = ImeAction.Done
+                                                    ),
+                                                    textStyle = AppTheme.typography.titleLarge,
+                                                    isError = errorNoCash.visible,
+                                                    errorValue = errorNoCash.error
+                                                )
+                                            }
+                                            Box(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Image(
+                                                    contentDescription = "submit",
+                                                    painter = when {
+                                                        !shop.status && shop.statusServer == StatusModel.NOT_CHANGE -> painterResource(
+                                                            id = R.drawable.submit
+                                                        )
+
+                                                        shop.status && shop.statusServer == StatusModel.UN_SYNC && user.id == trip.idCourier -> painterResource(
+                                                            id = R.drawable.submit_unsync
+                                                        )
+
+                                                        else -> painterResource(id = R.drawable.submit_active)
+                                                    },
+                                                    modifier = Modifier
+                                                        .size(60.dp)
+                                                        .clickable {
+                                                            when {
+                                                                (cash.isEmpty() && noCash.isEmpty()) -> {
+                                                                    errorCash = Error(
+                                                                        visible = true,
+                                                                        error = Constants.EMPTY.EMPTY_FIELD
+                                                                    )
+                                                                    errorNoCash = Error(
+                                                                        visible = true,
+                                                                        error = Constants.EMPTY.EMPTY_FIELD
+                                                                    )
+                                                                }
+
+                                                                noCash.isEmpty() -> errorNoCash =
+                                                                    Error(
+                                                                        visible = true,
+                                                                        error = Constants.EMPTY.EMPTY_FIELD
+                                                                    )
+
+                                                                cash.isEmpty() -> errorCash = Error(
+                                                                    visible = true,
+                                                                    error = Constants.EMPTY.EMPTY_FIELD
+                                                                )
+
+                                                                else -> event(ShopEvent.InitSaveRequestDialog)
+                                                            }
+                                                        }
+                                                )
+                                            }
+                                        }
+
+                                    }
+
+                                    TypePayModel.CASH -> {
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                            horizontalArrangement = Arrangement.spacedBy(5.dp),
+                                            modifier = Modifier.fillMaxWidth()
                                         ) {
                                             CommonTextField(
                                                 value = cash,
-                                                placeholder = "Нал",
-                                                modifier = Modifier.weight(0.333f),
+                                                placeholder = "",
                                                 changerText = { newValue ->
                                                     cash = newValue
                                                     errorCash = when {
-                                                        newValue == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
+                                                        newValue == "" -> Error(
+                                                            visible = true,
+                                                            error = Constants.EMPTY.EMPTY_FIELD
+                                                        )
+
                                                         else -> {
                                                             event(ShopEvent.ValueChangeCash(newValue))
                                                             Error()
                                                         }
                                                     }
                                                 },
+                                                modifier = Modifier
+                                                    .weight(1f, fill = false)
+                                                    .padding(5.dp),
                                                 keyboardOptions = KeyboardOptions(
-                                                    keyboardType = KeyboardType.Number, imeAction = ImeAction.Done
+                                                    keyboardType = KeyboardType.Number,
+                                                    imeAction = ImeAction.Done
                                                 ),
                                                 textStyle = AppTheme.typography.titleLarge,
                                                 isError = errorCash.visible,
                                                 errorValue = errorCash.error
                                             )
+                                            Image(
+                                                contentDescription = "submit",
+                                                painter = when {
+                                                    !shop.status && shop.statusServer == StatusModel.NOT_CHANGE -> painterResource(
+                                                        id = R.drawable.submit
+                                                    )
+
+                                                    shop.status && shop.statusServer == StatusModel.UN_SYNC && user.id == trip.idCourier -> painterResource(
+                                                        id = R.drawable.submit_unsync
+                                                    )
+
+                                                    else -> painterResource(id = R.drawable.submit_active)
+                                                },
+                                                modifier = Modifier
+                                                    .size(60.dp)
+                                                    .clickable {
+                                                        if (cash.isEmpty()) {
+                                                            errorCash = Error(
+                                                                visible = true,
+                                                                error = Constants.EMPTY.EMPTY_FIELD
+                                                            )
+                                                        } else {
+                                                            event(ShopEvent.InitSaveRequestDialog)
+                                                        }
+                                                    }
+                                            )
+                                        }
+
+                                    }
+
+                                    TypePayModel.NO_CASH -> {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                        ) {
                                             CommonTextField(
                                                 value = noCash,
-                                                placeholder = "Без/Нал",
-                                                modifier = Modifier.weight(0.333f),
+                                                placeholder = "",
                                                 changerText = { newValue ->
                                                     noCash = newValue
                                                     errorNoCash = when {
-                                                        newValue == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
+                                                        newValue == "" -> Error(
+                                                            visible = true,
+                                                            error = Constants.EMPTY.EMPTY_FIELD
+                                                        )
+
                                                         else -> {
                                                             event(
                                                                 ShopEvent.ValueChangeNoCashMoney(
@@ -383,165 +594,64 @@ fun AlertDialogRequestShop(
                                                         }
                                                     }
                                                 },
+                                                modifier = Modifier
+                                                    .weight(1f, fill = false)
+                                                    .padding(5.dp),
                                                 keyboardOptions = KeyboardOptions(
-                                                    keyboardType = KeyboardType.Number, imeAction = ImeAction.Done
+                                                    keyboardType = KeyboardType.Number,
+                                                    imeAction = ImeAction.Done
                                                 ),
                                                 textStyle = AppTheme.typography.titleLarge,
                                                 isError = errorNoCash.visible,
                                                 errorValue = errorNoCash.error
                                             )
-                                        }
-                                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                                             Image(
                                                 contentDescription = "submit",
-                                                painter = if (shop.status) painterResource(id = R.drawable.submit_active) else painterResource(id = R.drawable.submit),
+                                                painter = when {
+                                                    !shop.status && shop.statusServer == StatusModel.NOT_CHANGE -> painterResource(
+                                                        id = R.drawable.submit
+                                                    )
+
+                                                    shop.status && shop.statusServer == StatusModel.UN_SYNC && user.id == trip.idCourier -> painterResource(
+                                                        id = R.drawable.submit_unsync
+                                                    )
+
+                                                    else -> painterResource(id = R.drawable.submit_active)
+                                                },
                                                 modifier = Modifier
                                                     .size(60.dp)
                                                     .clickable {
-                                                        when {
-                                                            (cash.isEmpty() && noCash.isEmpty()) -> {
-                                                                errorCash = Error(
-                                                                    visible = true,
-                                                                    error = Constants.EMPTY.EMPTY_FIELD
-                                                                )
-                                                                errorNoCash = Error(
-                                                                    visible = true,
-                                                                    error = Constants.EMPTY.EMPTY_FIELD
-                                                                )
-                                                            }
-
-                                                            noCash.isEmpty() -> errorNoCash = Error(
+                                                        if (noCash.isEmpty()) {
+                                                            errorNoCash = Error(
                                                                 visible = true,
                                                                 error = Constants.EMPTY.EMPTY_FIELD
                                                             )
-
-                                                            cash.isEmpty() -> errorCash = Error(
-                                                                visible = true,
-                                                                error = Constants.EMPTY.EMPTY_FIELD
-                                                            )
-
-                                                            else -> event(ShopEvent.InitSaveRequestDialog)
+                                                        } else {
+                                                            event(ShopEvent.InitSaveRequestDialog)
                                                         }
                                                     }
                                             )
                                         }
                                     }
-
                                 }
-
-                                TypePayModel.CASH -> {
-                                    Row(verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(5.dp), modifier = Modifier.fillMaxWidth()) {
-                                        CommonTextField(
-                                            value = cash,
-                                            placeholder = "",
-                                            changerText = { newValue ->
-                                                cash = newValue
-                                                errorCash = when {
-                                                    newValue == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
-                                                    else -> {
-                                                        event(ShopEvent.ValueChangeCash(newValue))
-                                                        Error()
-                                                    }
-                                                }
-                                            },
-                                            modifier = Modifier.weight(1f, fill = false)
-                                                .padding(5.dp),
-                                            keyboardOptions = KeyboardOptions(
-                                                keyboardType = KeyboardType.Number, imeAction = ImeAction.Done
-                                            ),
-                                            textStyle = AppTheme.typography.titleLarge,
-                                            isError = errorCash.visible,
-                                            errorValue = errorCash.error
-                                        )
-                                        Image(
-                                            contentDescription = "submit",
-                                            painter = if (shop.status) painterResource(id = R.drawable.submit_active) else painterResource(id = R.drawable.submit),
-                                            modifier = Modifier
-                                                .size(60.dp)
-                                                .clickable {
-                                                    if (cash.isEmpty()) {
-                                                        errorCash = Error(
-                                                            visible = true,
-                                                            error = Constants.EMPTY.EMPTY_FIELD
-                                                        )
-                                                    } else {
-                                                        event(ShopEvent.InitSaveRequestDialog)
-                                                    }
-                                                }
-                                        )
-                                    }
-
-                                }
-
-                                TypePayModel.NO_CASH -> {
-                                    Row(verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                                        CommonTextField(
-                                            value = noCash,
-                                            placeholder = "",
-                                            changerText = { newValue ->
-                                                noCash = newValue
-                                                errorNoCash = when {
-                                                    newValue == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
-                                                    else -> {
-                                                        event(
-                                                            ShopEvent.ValueChangeNoCashMoney(
-                                                                newValue
-                                                            )
-                                                        )
-                                                        Error()
-                                                    }
-                                                }
-                                            },
-                                            modifier = Modifier.weight(1f, fill = false)
-                                                .padding(5.dp),
-                                            keyboardOptions = KeyboardOptions(
-                                                keyboardType = KeyboardType.Number, imeAction = ImeAction.Done
-                                            ),
-                                            textStyle = AppTheme.typography.titleLarge,
-                                            isError = errorNoCash.visible,
-                                            errorValue = errorNoCash.error
-                                        )
-                                        Image(
-                                            contentDescription = "submit",
-                                            painter = if (shop.status) painterResource(id = R.drawable.submit_active) else painterResource(id = R.drawable.submit),
-                                            modifier = Modifier
-                                                .size(60.dp)
-                                                .clickable {
-                                                    if (noCash.isEmpty()) {
-                                                        errorNoCash = Error(
-                                                            visible = true,
-                                                            error = Constants.EMPTY.EMPTY_FIELD
-                                                        )
-                                                    } else {
-                                                        event(ShopEvent.InitSaveRequestDialog)
-                                                    }
-                                                }
-                                        )
-                                    }
-                                }
+                                Spacer(modifier = Modifier.height(10.dp))
                             }
-                            Spacer(modifier = Modifier.height(10.dp))
-                        }
-                    } else {
-                        item {
-                            Box(modifier = Modifier.fillMaxWidth()) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier
-                                        .size(30.dp)
-                                        .align(Alignment.Center),
-                                    strokeWidth = 2.dp,
-                                    color = Color.White
-                                )
+                        } else {
+                            item {
+                                Box(modifier = Modifier.fillMaxWidth()) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier
+                                            .size(30.dp)
+                                            .align(Alignment.Center),
+                                        strokeWidth = 2.dp,
+                                        color = Color.White
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
-
-
-
         }
     }
 }
@@ -553,7 +663,8 @@ fun ProductRequestItem(
     request: RequestModel,
     event: (ShopEvent) -> Unit,
     shop: ShopModel,
-    user: UserModel
+    user: UserModel,
+    trip: TripModel,
 ) {
 
 
@@ -636,6 +747,25 @@ fun ProductRequestItem(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
+        if (user.id == trip.idCourier) {
+            Image(
+                contentDescription = "status",
+                painter = when {
+                    request.statusServer.toStatusModel() == StatusModel.NOT_CHANGE -> painterResource(
+                        id = R.drawable.inactive_circle
+                    )
+
+                    request.statusServer.toStatusModel() == StatusModel.UN_SYNC -> painterResource(
+                        id = R.drawable.unsync_circle
+                    )
+
+                    else -> painterResource(id = R.drawable.active_circle)
+
+                },
+                modifier = Modifier
+                    .size(10.dp)
+            )
+        }
         Text(
             style = AppTheme.typography.titleMedium,
             text = request.name,

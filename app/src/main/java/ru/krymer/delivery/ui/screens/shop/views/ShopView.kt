@@ -54,6 +54,8 @@ import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.ShopModel
 import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.user.UserModel
+import ru.krymer.delivery.data.model.utilModel.StatusModel
+import ru.krymer.delivery.data.model.utilModel.toStr
 import ru.krymer.delivery.ui.components.CommonAlertAddDialog
 import ru.krymer.delivery.ui.components.CommonConfirmDialog
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
@@ -609,8 +611,8 @@ fun ShopsItem(
             Image(
                 contentDescription = "status",
                 painter = when {
-                    !shop.status -> painterResource(id = R.drawable.inactive_circle)
-                    !shop.isSynced && shop.status && trip.idCourier == user.id -> painterResource(id = R.drawable.unsync_circle)
+                    !shop.status && shop.statusServer == StatusModel.NOT_CHANGE -> painterResource(id = R.drawable.inactive_circle)
+                    shop.status && shop.statusServer == StatusModel.UN_SYNC && user.id == trip.idCourier -> painterResource(id = R.drawable.unsync_circle)
                     else -> painterResource(id = R.drawable.active_circle)
                 },
                 modifier = Modifier

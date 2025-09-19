@@ -32,12 +32,15 @@ import ru.krymer.delivery.data.model.ShopModel
 import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.toLocal
 import ru.krymer.delivery.data.model.toModel
+import ru.krymer.delivery.data.model.utilModel.StatusModel
 import ru.krymer.delivery.data.model.utilModel.TypePayModel
 import ru.krymer.delivery.data.model.utilModel.TypePayModel.ANOTHER
 import ru.krymer.delivery.data.model.utilModel.TypePayModel.CASH
 import ru.krymer.delivery.data.model.utilModel.TypePayModel.NO_CASH
 import ru.krymer.delivery.data.model.utilModel.getStringByTypePay
 import ru.krymer.delivery.data.model.utilModel.getTypePayByString
+import ru.krymer.delivery.data.model.utilModel.toStatusModel
+import ru.krymer.delivery.data.model.utilModel.toStr
 import ru.krymer.delivery.data.request.ClientRequest
 import ru.krymer.delivery.data.request.CreateMessage
 import ru.krymer.delivery.data.request.CreateRequestShopRequest
@@ -354,14 +357,13 @@ class ShopViewModel @Inject constructor(
             ensureActive()
             val user = sharedViewModel.viewState.value.user ?: return@coroutineScope
             if (user.id != trip.idCourier) return@coroutineScope
-            val unSyncedShops = room.shopDao().getUnsyncedShops(idTrip = trip.id)
+            val unSyncedShops = room.shopDao().getStatusShops(idTrip = trip.id, status = StatusModel.UN_SYNC.toStr())
             if (unSyncedShops.isEmpty()) return@coroutineScope
 
             for (local in unSyncedShops) {
                 ensureActive()
 
                 val shop = local.toModel()
-                if (!shop.status && shop.isSynced) continue
 
                 try {
                     val shopReq = UpdateShopRequest(
@@ -383,18 +385,21 @@ class ShopViewModel @Inject constructor(
                     )
                     val shopResp = shopApi.update(shopReq)
                     if (shopResp.success) {
-                        room.shopDao().markShopAsSynced(shop.id)
+                        room.shopDao().markShopAsSynced(shop.id, status = StatusModel.SYNC.toStr())
                     } else {
                         sharedViewModel.message(shopResp.message)
                     }
 
-                    val unSyncedRequests = room.requestDao().getUnsyncedRequests(
+                    val unSyncedRequests = room.requestDao().getStatusRequests(
                         idShop = shop.id,
-                        idTrip = shop.idTrip
+                        idTrip = shop.idTrip,
+                        status = StatusModel.UN_SYNC.toStr()
                     )
 
                     for (req in unSyncedRequests) {
                         ensureActive()
+                        if (req.statusServer.toStatusModel() == StatusModel.SYNC) continue
+
                         try {
                             val reqReq = UpdateRequestShopRequest(
                                 id = req.id,
@@ -412,7 +417,7 @@ class ShopViewModel @Inject constructor(
                             )
                             val reqResp = requestApi.update(reqReq)
                             if (reqResp.success) {
-                                room.requestDao().markRequestAsSynced(req.id)
+                                room.requestDao().markRequestAsSynced(req.id, status = StatusModel.SYNC.toStr())
                             } else {
                                 sharedViewModel.message(reqResp.message)
                             }
@@ -427,6 +432,8 @@ class ShopViewModel @Inject constructor(
                     if (isSameDay(trip.date, System.currentTimeMillis())) {
                         updateClient(shop.copy(arrears = (sum + shop.arrears + shop.addSum) - (shop.cash + shop.noCash)))
                     }
+
+                    getLocalData(trip.id)
                 } catch (ex: CancellationException) {
                     throw ex
                 } catch (ex: Exception) {
@@ -494,8 +501,7 @@ class ShopViewModel @Inject constructor(
                 cord = s.cord,
                 isBonus = s.isBonus,
                 isChanged = s.isChanged,
-                isSynced = s.isSynced,
-                lastModified = s.lastModified
+                statusServer = s.statusServer.toStatusModel(),
             )
             shops.add(shop)
         }
@@ -637,7 +643,7 @@ class ShopViewModel @Inject constructor(
             if (response.success) {
                 val shops = response.obj
                 if (!shops.isNullOrEmpty()) {
-                    databaseInit(shops, trip.id)
+                    databaseInit(shops.map { it.copy(statusServer = StatusModel.NOT_CHANGE) }, trip.id)
                 } else {
                     clearLocalShopsForTrip(trip.id)
                     updateViewState { it.copy(listUIShop = emptyList()) }
@@ -664,9 +670,11 @@ class ShopViewModel @Inject constructor(
             val localIds = localShops.map { it.id }.toSet()
             val serverIds = shops.map { it.id }.toSet()
 
-            // Удаляем только те магазины, которых нет на сервере и которые синхронизированы
             val toDeleteIds = (localIds - serverIds)
-                .filter { room.shopDao().isShopSynced(it) }
+                .filter { id ->
+                    val status = room.shopDao().getShopStatus(id)
+                    status.toStatusModel() == StatusModel.SYNC
+                }
 
             if (toDeleteIds.isNotEmpty()) {
                 room.requestDao().deleteRequestsByShopIds(toDeleteIds)
@@ -675,29 +683,56 @@ class ShopViewModel @Inject constructor(
 
             val shopsToUpdate = mutableListOf<ShopLocalModel>()
             val shopsToInsert = mutableListOf<ShopLocalModel>()
+            val requestsToInsert = mutableListOf<RequestModel>()
+            val requestsToUpdate = mutableListOf<RequestModel>()
 
             for (serverShop in shops) {
                 val localShop = localShops.find { it.id == serverShop.id }
 
                 if (localShop != null) {
-                    // Если локальные данные синхронизированы - обновляем из сервера
-                    if (localShop.isSynced) {
+                    if (serverShop.status) {
                         shopsToUpdate.add(serverShop.toLocal().copy(
-                            isSynced = true, // сохраняем статус синхронизации
-                            lastModified = System.currentTimeMillis()
+                            statusServer = StatusModel.SYNC.toStr(),
                         ))
                     }
-                    // Если не синхронизированы - оставляем локальную версию (приоритет локальным изменениям)
                 } else {
-                    // Добавляем новый магазин как синхронизированный
-                    shopsToInsert.add(serverShop.toLocal().copy(
-                        isSynced = true,
-                        lastModified = System.currentTimeMillis()
-                    ))
+                    shopsToInsert.add(serverShop.toLocal())
+                }
+
+                val localRequests = room.requestDao().getRequests(
+                    idShop = serverShop.id,
+                    idTrip = serverShop.idTrip
+                )
+                val serverRequests = serverShop.listRequest.map { it.copy(statusServer = StatusModel.NOT_CHANGE.toStr()) }
+                val localRequestIds = localRequests.map { it.id }.toSet()
+                val serverRequestIds = serverRequests.map { it.id }.toSet()
+
+                val requestsToDelete = (localRequestIds - serverRequestIds)
+                    .filter { requestId ->
+                        localRequests.find { it.id == requestId }?.statusServer?.toStatusModel() == StatusModel.SYNC
+                    }
+
+                if (requestsToDelete.isNotEmpty()) {
+                    room.requestDao().deleteRequestsByIds(requestsToDelete.toList())
+                }
+
+                for (serverRequest in serverRequests) {
+                    val localRequest = localRequests.find { it.id == serverRequest.id }
+
+                    if (localRequest != null) {
+                        requestsToUpdate.add(serverRequest.copy(
+                            statusServer = when(localRequest.statusServer.toStatusModel()) {
+                                StatusModel.NOT_CHANGE -> StatusModel.NOT_CHANGE.toStr()
+                                StatusModel.SYNC -> StatusModel.SYNC.toStr()
+                                StatusModel.UN_SYNC -> StatusModel.UN_SYNC.toStr()
+                            }
+                        ))
+                    } else {
+                        requestsToInsert.add(serverRequest)
+                    }
                 }
             }
 
-            // Выполняем массовые операции
             if (shopsToUpdate.isNotEmpty()) {
                 room.shopDao().updateShops(shopsToUpdate)
             }
@@ -705,52 +740,6 @@ class ShopViewModel @Inject constructor(
                 room.shopDao().insertShops(shopsToInsert)
             }
 
-            // Обрабатываем запросы для каждого магазина
-            val requestsToInsert = mutableListOf<RequestModel>()
-            val requestsToUpdate = mutableListOf<RequestModel>()
-
-            for (serverShop in shops) {
-                val localRequests = room.requestDao().getRequests(
-                    idShop = serverShop.id,
-                    idTrip = serverShop.idTrip
-                )
-                val localRequestIds = localRequests.map { it.id }.toSet()
-                val serverRequestIds = serverShop.listRequest.map { it.id }.toSet()
-
-                // Удаляем синхронизированные запросы, которых нет на сервере
-                val requestsToDelete = (localRequestIds - serverRequestIds)
-                    .filter { requestId ->
-                        localRequests.find { it.id == requestId }?.isSynced == true
-                    }
-
-                if (requestsToDelete.isNotEmpty()) {
-                    room.requestDao().deleteRequestsByIds(requestsToDelete.toList())
-                }
-
-                // Обрабатываем запросы магазина
-                for (serverRequest in serverShop.listRequest) {
-                    val localRequest = localRequests.find { it.id == serverRequest.id }
-
-                    if (localRequest != null) {
-                        // Если локальный запрос синхронизирован - обновляем из сервера
-                        if (localRequest.isSynced) {
-                            requestsToUpdate.add(serverRequest.copy(
-                                isSynced = true,
-                                lastModified = System.currentTimeMillis()
-                            ))
-                        }
-                        // Если не синхронизирован - оставляем локальную версию
-                    } else {
-                        // Добавляем новый запрос как синхронизированный
-                        requestsToInsert.add(serverRequest.copy(
-                            isSynced = true,
-                            lastModified = System.currentTimeMillis()
-                        ))
-                    }
-                }
-            }
-
-            // Выполняем массовые операции с запросами
             if (requestsToUpdate.isNotEmpty()) {
                 room.requestDao().updateRequests(requestsToUpdate)
             }
@@ -905,7 +894,7 @@ class ShopViewModel @Inject constructor(
                     shop?.let {
                         shop.listRequest = emptyList<RequestModel>()
                         setState(add = false)
-                        sendShop(shop)
+                        sendShop(shop.copy(statusServer = StatusModel.NOT_CHANGE))
                         updateViewState {
                             it.copy(
                                 listClient = it.listClient - client,
@@ -1029,7 +1018,7 @@ class ShopViewModel @Inject constructor(
                         counter = product.counter
                     )
                     room.requestDao().upsertRequest(requestModel)
-                    listRequest.add(requestModel)
+                    listRequest.add(requestModel.copy(statusServer = StatusModel.NOT_CHANGE.toStr()))
                 }
             }
             val hasBonus = listRequest.any { it.bonus > 0 }
@@ -1259,7 +1248,7 @@ class ShopViewModel @Inject constructor(
             val newRequest = transform(item)
             requests[reqIndex] = newRequest
 
-            updateRequest(newRequest)
+
 
             val shops = viewState.value.listUIShop.map { it.copy() }.toMutableList()
             val shopIndex = shops.indexOfFirst { it.id == shop.id }
@@ -1272,6 +1261,8 @@ class ShopViewModel @Inject constructor(
                     listUIShop = shops
                 )
             }
+
+            updateRequest(newRequest)
             calculateOrder()
         }
     }
@@ -1282,9 +1273,9 @@ class ShopViewModel @Inject constructor(
             val user = sharedViewModel.viewState.value.user
             val status = if (user != null) (!user.isSysOrAdmin() || req.status == true) else req.status
             when (type) {
-                RequestUpdateType.COUNT -> req.copy(count = v, status = status)
-                RequestUpdateType.BONUS -> req.copy(bonus = v, status = status)
-                RequestUpdateType.EXCHANGE -> req.copy(exchange = v)
+                RequestUpdateType.COUNT -> req.copy(count = v, status = status, statusServer = StatusModel.UN_SYNC.toStr())
+                RequestUpdateType.BONUS -> req.copy(bonus = v, status = status, statusServer = StatusModel.UN_SYNC.toStr())
+                RequestUpdateType.EXCHANGE -> req.copy(exchange = v, statusServer = StatusModel.UN_SYNC.toStr())
             }
         }
     }
@@ -1344,7 +1335,7 @@ class ShopViewModel @Inject constructor(
                                 typePay = typePay,
                                 status = true,
                                 isOldPrice = viewState.value.stateSwitchPrice,
-                                isSynced = false,
+                                statusServer = StatusModel.UN_SYNC
                             )
                             updateViewState { it.copy(currentShop = dataShop) }
                             initShopFunction(event = FunShop.UPDATE)
@@ -1390,6 +1381,8 @@ class ShopViewModel @Inject constructor(
         launchCoroutine {
             val newShop = viewState.value.currentShop
             newShop?.apply {
+                room.shopDao().markShopAsSynced(newShop.id, status = StatusModel.UN_SYNC.toStr())
+
                 val shopRequest = UpdateShopRequest(
                     id = id,
                     idTrip = idTrip,
@@ -1410,15 +1403,19 @@ class ShopViewModel @Inject constructor(
                 room.shopDao().updateShop(newShop.toLocal())
                 val list = viewState.value.listUIShop.map { it.copy() }.toMutableList()
                 val index = list.indexOfFirst { it.id == newShop.id }
-                list[index] = newShop
+                list[index] = newShop.copy(statusServer = StatusModel.UN_SYNC)
                 updateViewState { it.copy(listUIShop = list) }
                 setState(request = false)
                 val response = shopApi.update(shopRequest)
                 if (!response.success) {
                     sharedViewModel.message(response.message)
                 } else {
-                    room.shopDao().markShopAsSynced(shopId = id)
+                    room.shopDao().markShopAsSynced(newShop.id, status = StatusModel.SYNC.toStr())
+                    val updatedList = list.toMutableList()
+                    updatedList[index] = newShop.copy(statusServer = StatusModel.SYNC)
+                    updateViewState { it.copy(listUIShop = updatedList) }
                 }
+
             }
         }
     }
@@ -1428,6 +1425,7 @@ class ShopViewModel @Inject constructor(
             val trip = viewState.value.currentTrip ?: return@launchCoroutine
             val user = sharedViewModel.viewState.value.user ?: return@launchCoroutine
             if (isSameDay(trip.date, System.currentTimeMillis()) || user.isModOrAdminOrSys()) {
+                room.requestDao().markRequestAsSynced(request.id, status = StatusModel.UN_SYNC.toStr())
                 room.requestDao().upsertRequest(request)
                 launchCoroutine {
                     val reqResponse = UpdateRequestShopRequest(
@@ -1448,7 +1446,11 @@ class ShopViewModel @Inject constructor(
                     if (!response.success) {
                         sharedViewModel.message(response.message)
                     } else {
-                        room.requestDao().markRequestAsSynced(request.id)
+                        room.requestDao().markRequestAsSynced(request.id, status = StatusModel.SYNC.toStr())
+                        val updatedList = viewState.value.listDataRequests.map { it.copy() }.toMutableList()
+                        val index = updatedList.indexOfFirst { it.id == request.id }
+                        updatedList[index] = request.copy(statusServer = StatusModel.SYNC.toStr())
+                        updateViewState { it.copy(listDataRequests = updatedList) }
                     }
                 }
             } else {

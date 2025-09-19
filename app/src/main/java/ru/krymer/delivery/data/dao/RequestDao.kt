@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import org.jetbrains.annotations.ApiStatus
 import ru.krymer.delivery.data.model.RequestModel
 
 @Dao
@@ -34,11 +35,14 @@ interface RequestDao {
     @Update
     suspend fun updateRequests(requests: List<RequestModel>)
 
-    @Query("SELECT * FROM request WHERE idShop = :idShop AND idTrip = :idTrip AND isSynced = 0")
-    suspend fun getUnsyncedRequests(idShop: Long, idTrip: Long): List<RequestModel>
+    @Query("SELECT * FROM request WHERE idShop = :idShop AND idTrip = :idTrip AND statusServer = :status")
+    suspend fun getStatusRequests(idShop: Long, idTrip: Long, status: String): List<RequestModel>
 
-    @Query("UPDATE request SET isSynced = 1 WHERE id = :requestId")
-    suspend fun markRequestAsSynced(requestId: Long)
+    @Query("UPDATE request SET statusServer = :status WHERE id = :requestId")
+    suspend fun markRequestAsSynced(requestId: Long, status: String)
+
+    @Query("SELECT statusServer FROM request WHERE id = :requestId")
+    suspend fun getRequestStatus(requestId: Long): String
 
     @Query("DELETE FROM request WHERE id IN (:requestIds)")
     suspend fun deleteRequestsByIds(requestIds: List<Long>)

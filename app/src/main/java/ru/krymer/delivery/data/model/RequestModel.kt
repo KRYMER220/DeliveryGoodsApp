@@ -2,6 +2,8 @@ package ru.krymer.delivery.data.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import ru.krymer.delivery.data.model.utilModel.StatusModel
+import ru.krymer.delivery.data.model.utilModel.toStr
 
 @Entity(tableName = "request", primaryKeys = ["id", "idTrip", "idShop"])
 data class RequestModel(
@@ -17,6 +19,5 @@ data class RequestModel(
     val oldPrice: Double,
     val name: String,
     val counter: Int,
-    val isSynced: Boolean = true,
-    val lastModified: Long = System.currentTimeMillis()
+    val statusServer: String = StatusModel.NOT_CHANGE.toStr(),
 )

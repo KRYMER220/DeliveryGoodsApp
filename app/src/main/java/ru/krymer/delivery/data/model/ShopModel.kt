@@ -1,9 +1,12 @@
 package ru.krymer.delivery.data.model
 
 import androidx.room.Entity
+import ru.krymer.delivery.data.model.utilModel.StatusModel
 import ru.krymer.delivery.data.model.utilModel.TypePayModel
 import ru.krymer.delivery.data.model.utilModel.getStringByTypePay
 import ru.krymer.delivery.data.model.utilModel.getTypePayByString
+import ru.krymer.delivery.data.model.utilModel.toStatusModel
+import ru.krymer.delivery.data.model.utilModel.toStr
 
 data class ShopModel(
     val id: Long,
@@ -23,8 +26,7 @@ data class ShopModel(
     val cord: String,
     var isBonus: Boolean,
     var isChanged: Boolean,
-    val isSynced: Boolean = false,
-    val lastModified: Long = System.currentTimeMillis()
+    val statusServer: StatusModel = StatusModel.NOT_CHANGE,
 )
 
 @Entity(tableName = "shop", primaryKeys = ["id", "idTrip"])
@@ -45,8 +47,7 @@ data class ShopLocalModel(
     val cord: String,
     var isBonus: Boolean,
     var isChanged: Boolean,
-    val isSynced: Boolean = false,
-    val lastModified: Long = System.currentTimeMillis()
+    val statusServer: String = StatusModel.NOT_CHANGE.toStr(),
 )
 
 fun ShopModel.toLocal() = ShopLocalModel(
@@ -66,8 +67,7 @@ fun ShopModel.toLocal() = ShopLocalModel(
     cord = cord,
     isBonus = isBonus,
     isChanged = isChanged,
-    isSynced = isSynced,
-    lastModified = lastModified
+    statusServer = statusServer.toStr(),
 )
 
 fun ShopLocalModel.toModel() = ShopModel(
@@ -88,6 +88,5 @@ fun ShopLocalModel.toModel() = ShopModel(
     isBonus = isBonus,
     listRequest = emptyList(),
     isChanged = isChanged,
-    isSynced = isSynced,
-    lastModified = lastModified
+    statusServer = statusServer.toStatusModel(),
 )
