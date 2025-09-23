@@ -230,79 +230,77 @@ fun ShopView(
             val exchange = state.allExchangeRequestsInfo
             val requests = state.listInfoRequests
             LazyColumn(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                if (state.lightVersion) {
-                    item {
-                        Column(
-                            Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                style = AppTheme.typography.titleSmall,
-                                text = "Общее: $count",
-                                color = AppTheme.colors.onSecondary
-                            )
-                            Spacer(modifier = Modifier.height(5.dp))
-                            Text(
-                                style = AppTheme.typography.titleSmall,
-                                text = "Обмены: $exchange",
-                                color = AppTheme.colors.onSecondary
-                            )
-                        }
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                        ) {
-                            Spacer(
-                                modifier = Modifier.weight(0.4f),
-                            )
-                            Text(
-                                style = AppTheme.typography.bodySmall,
-                                text = "Цена",
-                                color = AppTheme.colors.onSecondary,
-                                modifier = Modifier.weight(0.15f),
-                                textAlign = TextAlign.Center,
-                            )
-                            if (!state.lightVersion) {
-                                Text(
-                                    style = AppTheme.typography.bodySmall,
-                                    text = "Бонус",
-                                    color = AppTheme.colors.onSecondary,
-                                    modifier = Modifier.weight(0.15f),
-                                    textAlign = TextAlign.Center,
-                                )
-                            }
-                            Text(
-                                style = AppTheme.typography.bodySmall,
-                                text = "Заявка",
-                                color = AppTheme.colors.onSecondary,
-                                modifier = Modifier.weight(0.15f),
-                                textAlign = TextAlign.Center,
-                            )
-                            Text(
-                                style = AppTheme.typography.bodySmall,
-                                text = "Возврат",
-                                color = AppTheme.colors.onSecondary,
-                                modifier = Modifier.weight(0.15f),
-                                textAlign = TextAlign.Center,
-                            )
-                        }
+                item {
+                    Column(
+                        Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            style = AppTheme.typography.titleSmall,
+                            text = "Общее: $count",
+                            color = AppTheme.colors.onSecondary
+                        )
+                        Spacer(modifier = Modifier.height(5.dp))
+                        Text(
+                            style = AppTheme.typography.titleSmall,
+                            text = "Обмены: $exchange",
+                            color = AppTheme.colors.onSecondary
+                        )
                     }
-                    if (requests.isNotEmpty()) {
-                        items(requests) { product ->
-                            InfoContentProductItem(product = product, state = state)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    ) {
+                        Spacer(
+                            modifier = Modifier.weight(0.4f),
+                        )
+                        Text(
+                            style = AppTheme.typography.bodySmall,
+                            text = "Цена",
+                            color = AppTheme.colors.onSecondary,
+                            modifier = Modifier.weight(0.15f),
+                            textAlign = TextAlign.Center,
+                        )
+                        if (!state.lightVersion) {
+                            Text(
+                                style = AppTheme.typography.bodySmall,
+                                text = "Бонус",
+                                color = AppTheme.colors.onSecondary,
+                                modifier = Modifier.weight(0.15f),
+                                textAlign = TextAlign.Center,
+                            )
                         }
-                    } else {
-                        item {
-                            Box(modifier = Modifier.fillMaxSize()) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier
-                                        .size(30.dp)
-                                        .align(Alignment.Center),
-                                    strokeWidth = 2.dp,
-                                    color = AppTheme.colors.onSecondary
-                                )
-                            }
+                        Text(
+                            style = AppTheme.typography.bodySmall,
+                            text = "Заявка",
+                            color = AppTheme.colors.onSecondary,
+                            modifier = Modifier.weight(0.15f),
+                            textAlign = TextAlign.Center,
+                        )
+                        Text(
+                            style = AppTheme.typography.bodySmall,
+                            text = "Возврат",
+                            color = AppTheme.colors.onSecondary,
+                            modifier = Modifier.weight(0.15f),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+                if (requests.isNotEmpty()) {
+                    items(requests) { product ->
+                        InfoContentProductItem(product = product, state = state)
+                    }
+                } else {
+                    item {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .size(30.dp)
+                                    .align(Alignment.Center),
+                                strokeWidth = 2.dp,
+                                color = AppTheme.colors.onSecondary
+                            )
                         }
                     }
                 }
@@ -325,11 +323,6 @@ fun ShopView(
                     }
                 }
 
-                item {
-                    Spacer(modifier = Modifier
-                        .fillMaxWidth()
-                        .height(5.dp))
-                }
                 item {
                     MillageAndInfoView(state = state, onMillageTFC = {
                         event(ShopEvent.ValueChangeMillage(millage = if (it.isEmpty()) 0.0 else it.toDouble()))
@@ -407,16 +400,6 @@ fun ShopView(
                 )
             }
         }
-    }
-
-    if (state.toggleInfoTrip) {
-        CommonInfoAlertDialog(
-            onDismissRequest = { event(ShopEvent.DismissRequestInfoDialog) },
-            content = {
-                InfoContent(
-                    state = state,
-                    onUpdate = { event(ShopEvent.CopyInfoData(context = context)) })
-            })
     }
 
     if (state.toggleInfoShop) {
@@ -514,9 +497,7 @@ fun HeaderContentShop(
                 .combinedClickable(onClick = {
                     event(ShopEvent.OpenMillageDialog)
                 }, onLongClick = {
-                    if (state.lightVersion) {
-                        event(ShopEvent.ShowHideDialogAnalitic)
-                    }
+                    event(ShopEvent.ShowHideDialogAnalitic)
                 })
                 .size(60.dp)
         )
@@ -525,20 +506,6 @@ fun HeaderContentShop(
             text = convertToTextDate(trip.date),
             color = AppTheme.colors.onSecondary
         )
-        if (!state.lightVersion) {
-            Image(
-                painter = painterResource(id = R.drawable.count),
-                contentDescription = "product quantity",
-                modifier = Modifier
-                    .padding(start = 10.dp, end = 10.dp)
-                    .combinedClickable(onClick = {
-                        event(ShopEvent.ShowRequestsInfoDialog)
-                    }, onLongClick = {
-                        event(ShopEvent.ShowHideDialogAnalitic)
-                    })
-                    .size(60.dp)
-            )
-        }
         if (user.isModOrAdminOrSys()) {
             Image(
                 painter = painterResource(id = R.drawable.add),

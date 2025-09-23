@@ -135,9 +135,11 @@ fun TripView(
                 user = user,
                 event = event,
                 modifier = Modifier
+                    .background(color = AppTheme.colors.onPrimary)
                     .fillMaxWidth()
                     .align(Alignment.TopCenter)
-                    .padding(10.dp).pointerInput(Unit) {}
+                    .padding(10.dp)
+                    .pointerInput(Unit) {}
             )
         }
     }
@@ -242,8 +244,7 @@ fun TripItem(
             Column(
                 Modifier
                     .align(Alignment.CenterVertically)
-                    .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(5.dp)
+                    .weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)
             ) {
                 Text(
                     style = AppTheme.typography.titleMedium,
@@ -256,10 +257,17 @@ fun TripItem(
                     color = AppTheme.colors.onSecondary
                 )
                 Text(
-                    style = AppTheme.typography.titleSmall,
-                    text = trip.nameCourier,
+                    text = trip.nameCourier, style = AppTheme.typography.titleSmall,
                     color = AppTheme.colors.onSecondary
                 )
+                if (user.isSysOrAdmin()) {
+                    Text(
+                        text = "Гcм: " + trip.millage.toInt()
+                            .toString() + "  ЗП: ${trip.salary.toInt()} / ${trip.salaryCourier.toInt()}",
+                        style = AppTheme.typography.titleSmall,
+                        color = AppTheme.colors.onSecondary
+                    )
+                }
             }
             if (user.isSysOrAdmin()) {
                 Image(

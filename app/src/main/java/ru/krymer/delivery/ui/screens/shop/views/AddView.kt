@@ -165,7 +165,6 @@ fun AddShopAndRequestView(
                         )
                     )
                 },
-                    onChangeStatus = { event(ShopEvent.ChangeAddStatusProduct(it)) },
                     stateBonus = state.isBonusState
                 )
             }
@@ -289,8 +288,7 @@ fun AddRequestView(
                                 product = product, bonus = it
                             )
                         )
-                    },
-                        onChangeStatus = { event(ShopEvent.ChangeAddStatusProduct(it)) })
+                    })
                 }
             }
         }
@@ -312,7 +310,6 @@ fun ProductAddShopWithOrderItem(
     product: ProductModel,
     onVCCount: (String) -> Unit,
     onVCCountBonus: (String) -> Unit,
-    onChangeStatus: (ProductModel) -> Unit,
     stateBonus: Boolean = false
 ) {
 
@@ -371,8 +368,7 @@ fun ProductAddShopWithOrderItem(
             modifier = Modifier
                 .weight(0.4f)
                 .wrapContentHeight()
-                .padding(end = 8.dp)
-                .clickable(onClick = { onChangeStatus(product) }),
+                .padding(end = 8.dp),
             color = if (product.isAdd) Color.Red else AppTheme.colors.onSecondary
         )
         if (stateBonus) {

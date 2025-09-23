@@ -180,7 +180,6 @@ class ShopViewModel @Inject constructor(
             is ShopEvent.ShowDialogAddRequest -> showAddRequestDialog()
             is ShopEvent.SwitchPrice -> switchStatePrice()
             is ShopEvent.CopyInfoData -> copyToClip(event.context)
-            is ShopEvent.ChangeAddStatusProduct -> changeAddStatusProduct(event.product)
             is ShopEvent.SwitchBonus -> switchBonus()
             is ShopEvent.ToggleMessageDialog -> setState(message = event.state)
             is ShopEvent.SendMessage -> sendMessage()
@@ -366,39 +365,39 @@ class ShopViewModel @Inject constructor(
                 val shop = local.toModel()
 
                 try {
-                    val shopReq = UpdateShopRequest(
-                        id = shop.id,
-                        idTrip = shop.idTrip,
-                        idFactory = shop.idFactory,
-                        arrears = shop.arrears,
-                        addSum = shop.addSum,
-                        status = shop.status,
-                        date = shop.date,
-                        typePay = shop.typePay.getStringByTypePay(),
-                        cash = shop.cash,
-                        counter = shop.counter,
-                        noCash = shop.noCash,
-                        isOldPrice = shop.isOldPrice,
-                        cord = shop.cord,
-                        nameShop = shop.nameShop,
-                        isChanged = shop.isChanged
-                    )
-                    val shopResp = shopApi.update(shopReq)
-                    if (shopResp.success) {
-                        if (shop.status) room.shopDao().markShopAsSynced(shop.id, status = StatusModel.SYNC.toStr())
-                    } else {
-                        sharedViewModel.message(shopResp.message)
+                    if (!shop.status) {
+                        val shopReq = UpdateShopRequest(
+                            id = shop.id,
+                            idTrip = shop.idTrip,
+                            idFactory = shop.idFactory,
+                            arrears = shop.arrears,
+                            addSum = shop.addSum,
+                            status = shop.status,
+                            date = shop.date,
+                            typePay = shop.typePay.getStringByTypePay(),
+                            cash = shop.cash,
+                            counter = shop.counter,
+                            noCash = shop.noCash,
+                            isOldPrice = shop.isOldPrice,
+                            cord = shop.cord,
+                            nameShop = shop.nameShop,
+                            isChanged = shop.isChanged
+                        )
+                        val shopResp = shopApi.update(shopReq)
+                        if (shopResp.success) {
+                            if (shop.status) room.shopDao().markShopAsSynced(shop.id, status = StatusModel.SYNC.toStr())
+                        } else {
+                            sharedViewModel.message(shopResp.message)
+                        }
                     }
 
-                    val unSyncedRequests = room.requestDao().getStatusRequests(
+                    val requests = room.requestDao().getRequests(
                         idShop = shop.id,
-                        idTrip = shop.idTrip,
-                        status = StatusModel.UN_SYNC.toStr()
+                        idTrip = shop.idTrip
                     )
 
-                    for (req in unSyncedRequests) {
+                    for (req in requests) {
                         ensureActive()
-                        if (req.statusServer.toStatusModel() == StatusModel.SYNC) continue
 
                         try {
                             val reqReq = UpdateRequestShopRequest(
@@ -428,7 +427,7 @@ class ShopViewModel @Inject constructor(
                         }
                     }
 
-                    val sum = unSyncedRequests.sumOf { it.count * it.price - it.exchange * (if (shop.isOldPrice) it.oldPrice else it.price) }
+                    val sum = requests.sumOf { it.count * it.price - it.exchange * (if (shop.isOldPrice) it.oldPrice else it.price) }
                     if (isSameDay(trip.date, System.currentTimeMillis())) {
                         updateClient(shop.copy(arrears = (sum + shop.arrears + shop.addSum) - (shop.cash + shop.noCash)))
                     }
@@ -832,9 +831,6 @@ class ShopViewModel @Inject constructor(
         updateViewState { it.copy(listProductRequest = list) }
     }
 
-    private fun changeAddStatusProduct(editProduct: ProductModel) =
-        updateProductRequest(editProduct) { it.copy(isAdd = !it.isAdd) }
-
     private fun changeRequestCountProduct(count: String, editProduct: ProductModel) =
         updateProductRequest(editProduct) { it.copy(count = count.trim().toIntOrNull() ?: 0) }
 
@@ -911,6 +907,7 @@ class ShopViewModel @Inject constructor(
                 } else {
                     sharedViewModel.message(message = response.message)
                 }
+                updateShops(trip)
             }
         }
     }
@@ -1373,6 +1370,8 @@ class ShopViewModel @Inject constructor(
                         val response = clientApi.update(request)
                         if (!response.success) {
                             sharedViewModel.message(response.message)
+                        } else {
+                            room.shopDao().updateShop(shop.copy(status = false, statusServer = StatusModel.UN_SYNC).toLocal())
                         }
                     }
                 }

@@ -30,6 +30,7 @@ import ru.krymer.delivery.ui.screens.trip.models.TripViewState
 import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.getStartOfNextDay
 import javax.inject.Inject
+import kotlin.random.Random
 
 @HiltViewModel
 class TripViewModel @Inject constructor(
@@ -386,7 +387,7 @@ class TripViewModel @Inject constructor(
             val factory = sharedViewModel.viewState.value.factory
             val curRoute = viewState.value.currentRoute
             val curCourier = viewState.value.currentCourier
-            val date = viewState.value.currentDate
+            val date = viewState.value.currentDate + Random.nextInt(from = 1, until = 1000)
             if (curRoute != null && curCourier != null && factory != null) {
                 val tripRequest = CreateTripRequest(
                     factoryId = factory.id,

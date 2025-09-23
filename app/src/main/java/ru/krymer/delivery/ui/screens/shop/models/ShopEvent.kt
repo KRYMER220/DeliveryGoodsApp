@@ -65,7 +65,6 @@ sealed class ShopEvent {
 
     data class CopyInfoData(val context: Context) : ShopEvent()
 
-    data class ChangeAddStatusProduct(val product: ProductModel) : ShopEvent()
     data class ToggleMessageDialog(val state: Boolean): ShopEvent()
     data object SendMessage: ShopEvent()
     data class ChangeMessage(val message: String): ShopEvent()

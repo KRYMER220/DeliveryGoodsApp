@@ -31,9 +31,10 @@ import ru.krymer.delivery.ui.theme.AppTheme
 @Composable
 fun AnaliticView(state: ShopViewState) {
     val shops = state.listUIShop
-    LazyColumn(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    LazyColumn(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(15.dp)) {
         itemsIndexed(shops, key = { _, item -> item.id }) { index, shop ->
-            ShopAnaliticItem(shop)
+            AlertDialogRequestShopInfo(shop = shop)
+            //ShopAnaliticItem(shop)
         }
     }
 }
@@ -41,8 +42,9 @@ fun AnaliticView(state: ShopViewState) {
 @Composable
 fun ShopAnaliticItem(shop: ShopModel) {
     Column(modifier = Modifier
-        .background(AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp))
+        .background(AppTheme.colors.secondary, shape = RoundedCornerShape(15.dp))
         .padding(5.dp)) {
+
         val sumDept = shop.listRequest.sumOf { it.price * it.count - it.price * it.exchange }
         Text(
             style = AppTheme.typography.titleMedium,

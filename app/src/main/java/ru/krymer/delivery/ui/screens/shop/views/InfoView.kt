@@ -1,14 +1,13 @@
 package ru.krymer.delivery.ui.screens.shop.views
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,114 +21,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.RequestModel
 import ru.krymer.delivery.data.model.ShopModel
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
 import ru.krymer.delivery.ui.theme.AppTheme
 import ru.krymer.delivery.utills.convertToTextDate
-
-@Composable
-fun InfoContent(state: ShopViewState, onUpdate: () -> Unit) {
-    if (state.isLoadDataRequestsInfoDialog) {
-        val count = state.allCountRequestsInfo
-        val exchange = state.allExchangeRequestsInfo
-        val requests = state.listInfoRequests
-        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    style = AppTheme.typography.titleSmall,
-                    text = "Общее: $count",
-                    color = AppTheme.colors.onSecondary
-                )
-                Spacer(modifier = Modifier.height(5.dp))
-                Text(
-                    style = AppTheme.typography.titleSmall,
-                    text = "Обмены: $exchange",
-                    color = AppTheme.colors.onSecondary
-                )
-            }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(5.dp)
-            ) {
-                Spacer(
-                    modifier = Modifier.weight(0.2f),
-                )
-                Text(
-                    style = AppTheme.typography.bodySmall,
-                    text = "Цена",
-                    color = AppTheme.colors.onSecondary,
-                    modifier = Modifier.weight(0.2f),
-                    textAlign = TextAlign.Center,
-                )
-                if (!state.lightVersion) {
-                    Text(
-                        style = AppTheme.typography.bodySmall,
-                        text = "Бонус",
-                        color = AppTheme.colors.onSecondary,
-                        modifier = Modifier.weight(0.2f),
-                        textAlign = TextAlign.Center,
-                    )
-                }
-                Text(
-                    style = AppTheme.typography.bodySmall,
-                    text = "Заявка",
-                    color = AppTheme.colors.onSecondary,
-                    modifier = Modifier.weight(0.2f),
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    style = AppTheme.typography.bodySmall,
-                    text = "Возврат",
-                    color = AppTheme.colors.onSecondary,
-                    modifier = Modifier.weight(0.2f),
-                    textAlign = TextAlign.Center,
-                )
-            }
-
-            LazyColumn(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                items(requests) { product ->
-                    InfoContentProductItem(product = product, state = state)
-                }
-            }
-
-            if (!state.lightVersion) {
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Image(
-                        painter = painterResource(id = R.drawable.folow),
-                        contentDescription = "clip",
-                        modifier = Modifier
-                            .clickable(onClick = {
-                                onUpdate()
-                            })
-                            .size(40.dp)
-                    )
-                }
-            }
-        }
-    } else {
-        Box(modifier = Modifier.fillMaxSize()) {
-            CircularProgressIndicator(
-                modifier = Modifier
-                    .size(30.dp)
-                    .align(Alignment.Center),
-                strokeWidth = 2.dp,
-                color = AppTheme.colors.onSecondary
-            )
-        }
-    }
-}
 
 @Composable
 fun InfoContentProductItem(product: RequestModel, state: ShopViewState) {
@@ -181,6 +83,8 @@ fun InfoContentProductItem(product: RequestModel, state: ShopViewState) {
 }
 
 
+
+
 @Composable
 fun ItemInfoShop(shop: ShopModel, copyInfoData: (ShopModel) -> Unit = {}) {
     Column(
@@ -207,12 +111,6 @@ fun ItemInfoShop(shop: ShopModel, copyInfoData: (ShopModel) -> Unit = {}) {
         )
         Text(
             style = AppTheme.typography.bodySmall,
-            text = "Пред. реал: " + shop.arrears.toInt(),
-            modifier = Modifier.fillMaxWidth(),
-            color = AppTheme.colors.onSecondary
-        )
-        Text(
-            style = AppTheme.typography.bodySmall,
             text = "Заявка: " + sumDept.toInt(),
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
@@ -225,25 +123,31 @@ fun ItemInfoShop(shop: ShopModel, copyInfoData: (ShopModel) -> Unit = {}) {
         )
         Text(
             style = AppTheme.typography.bodySmall,
-            text = "Нал: " + shop.cash.toInt(),
-            modifier = Modifier.fillMaxWidth(),
-            color = AppTheme.colors.onSecondary
-        )
-        Text(
-            style = AppTheme.typography.bodySmall,
-            text = "Без/Нал: " + shop.noCash.toInt(),
-            modifier = Modifier.fillMaxWidth(),
-            color = AppTheme.colors.onSecondary
-        )
-        Text(
-            style = AppTheme.typography.bodySmall,
-            text = "Доп. сумма: " + shop.addSum.toInt(),
+            text = "Долг: " + shop.arrears.toInt() + "  Новый долг: " + (shop.arrears - (shop.cash + shop.noCash) + sumDept + shop.addSum).toInt(),
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
         Text(
             style = AppTheme.typography.bodySmall,
             text = "Новый долг: " + (shop.arrears - (shop.cash + shop.noCash) + sumDept + shop.addSum).toInt(),
+            modifier = Modifier.fillMaxWidth(),
+            color = AppTheme.colors.onSecondary
+        )
+        Text(
+            style = AppTheme.typography.bodySmall,
+            text = "Нал: " + shop.cash.toInt(),
+            modifier = Modifier.fillMaxWidth(),
+            color = AppTheme.colors.onSecondary
+        )
+        Text(
+            style = AppTheme.typography.bodySmall,
+            text = "Без/Нал: ${shop.noCash.toInt()}",
+            modifier = Modifier.fillMaxWidth(),
+            color = AppTheme.colors.onSecondary
+        )
+        Text(
+            style = AppTheme.typography.bodySmall,
+            text = "Доп. сумма: " + shop.addSum.toInt(),
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
@@ -377,16 +281,13 @@ fun RequestInfoItem(requestModel: RequestModel) {
 
 
 @Composable
-fun InfoShopContent(state: ShopViewState, modifier: Modifier = Modifier.fillMaxWidth()) {
+fun InfoShopContent(state: ShopViewState) {
     val listShop = state.listInfoShop
     if (listShop.isNotEmpty()) {
-        LazyColumn(
-            modifier =
-            modifier
-        ) {
+        LazyColumn(modifier = Modifier.fillMaxHeight()) {
             items(listShop) { shop ->
-                ItemInfoShop(shop)
-                Spacer(modifier = Modifier.height(10.dp))
+                AlertDialogRequestShopInfo(shop = shop)
+                Spacer(modifier = Modifier.height(15.dp))
             }
         }
     } else {

@@ -81,7 +81,7 @@ fun MillageAndInfoView(
             text = "Остаток: $remains",
             color = AppTheme.colors.onSecondary
         )
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
             CommonTextField(
                 value = millageInput,
                 placeholder = stringResource(id = R.string.km_et),
@@ -89,16 +89,15 @@ fun MillageAndInfoView(
                     millageInput = newValue
                     onMillageTFC(newValue)
                 },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(0.5f)
                     .fillMaxWidth()
                     .height(60.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
-            Spacer(modifier = Modifier.width(10.dp))
             Image(
                 contentDescription = "submit",
                 painter = painterResource(id = R.drawable.submit),
-                modifier = Modifier
+                modifier = Modifier.weight(0.3f)
                     .size(50.dp)
                     .combinedClickable(onClick = { event(ShopEvent.MillageSaveAction) })
             )
