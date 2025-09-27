@@ -2,7 +2,7 @@ package ru.krymer.delivery.ui.screens.product
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import ru.krymer.delivery.ui.screens.product.view.ProductView
 
 @Composable

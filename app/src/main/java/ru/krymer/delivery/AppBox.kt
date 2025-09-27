@@ -15,6 +15,7 @@ import ru.ok.tracer.profiler.systrace.SystraceProfilerConfiguration
 
 @HiltAndroidApp
 class AppBox : Application(), HasTracerConfiguration {
+
     override val tracerConfiguration: List<TracerConfiguration>
         get() = listOf(
             CoreTracerConfiguration.build {},

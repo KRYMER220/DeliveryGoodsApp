@@ -69,8 +69,8 @@ data class ShopViewState(
     val toggleConfirmRequestDialog: Boolean = false,
 
 
-    val toggleInfoShop: Boolean = false,
-    val listInfoShop: List<ShopModel> = emptyList(),
+    val toggleCurrentShopInfo: Boolean = false,
+    val listCurrentShopInfo: List<ShopModel> = emptyList(),
     val stateSwitchPrice: Boolean = false,
 
     val messages: List<MessageModel> = emptyList(),

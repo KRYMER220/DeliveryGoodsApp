@@ -50,7 +50,7 @@ fun ClientView(
 ) {
     val list = state.clients
     val loader = when {
-        state.isLoading-> Loader.LOADING
+        state.isLoading -> Loader.LOADING
         state.clients.isEmpty() -> Loader.EMPTY
         else -> Loader.LOAD
     }
@@ -62,7 +62,7 @@ fun ClientView(
         }
     }
 
-    LaunchedEffect(state.isLoading) {
+    LaunchedEffect(state.clients) {
         clients.clear()
         clients.addAll(list)
     }
@@ -128,7 +128,7 @@ fun ClientView(
     }
 
     if (state.toggleDeleteDialog) {
-        state.clientDelete?.let {
+        state.client?.let {
             CommonDeleteDialog(
                 itemName = it.name,
                 isVisible = true,
@@ -144,7 +144,7 @@ fun ClientView(
         CommonSaveDialog(dismiss = {
             event(ClientEvent.ToggleAddDialog)
         }, confirm = {
-            event(ClientEvent.ClientAddAction)
+            event(ClientEvent.CreateClient)
         }, content = {
             AddClientView(changeName = {
                 event(ClientEvent.ChangeNameClient(name = it))
@@ -164,7 +164,7 @@ fun ClientView(
             event(ClientEvent.ToggleUpdateDialog(null))
         }, confirm = {
             if (user.isModOrAdminOrSys()) {
-                event(ClientEvent.ClientUpdateAction)
+                event(ClientEvent.UpdateClient)
             }
         }, content = {
             UpdateClientView(

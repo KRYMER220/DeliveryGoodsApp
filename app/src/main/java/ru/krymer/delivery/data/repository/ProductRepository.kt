@@ -9,7 +9,7 @@ interface ProductRepository {
 
     suspend fun updateProduct(product: ProductRequest): MyResult<Unit>
 
-    suspend fun moves(products: List<ProductRequest>): MyResult<Unit>
+    suspend fun moves(requests: List<ProductRequest>): MyResult<Unit>
 
     suspend fun deleteProduct(id: Long): MyResult<Unit>
 

@@ -22,6 +22,7 @@ data class UserModel(
 ) {
     fun isMod(): Boolean = role == RoleModel.MODERATOR
     fun isSysOrAdmin(): Boolean = role == RoleModel.ADMIN || role == RoleModel.SYSTEM
+    fun isSys(): Boolean = role == RoleModel.SYSTEM
     fun isModOrAdminOrSys(): Boolean =
         role == RoleModel.MODERATOR || role == RoleModel.ADMIN || role == RoleModel.SYSTEM
 }

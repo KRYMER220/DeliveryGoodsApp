@@ -16,8 +16,8 @@ android {
         applicationId = "ru.krymer.delivery"
         minSdk = 26
         targetSdk = 36
-        versionCode = 39
-        versionName = "1.3.4.6"
+        versionCode = 43
+        versionName = "1.3.5.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -89,6 +89,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.runtime.livedata)
+    implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.animation)
     implementation(libs.androidx.foundation)
     debugImplementation(libs.androidx.ui.tooling)
@@ -98,6 +99,7 @@ dependencies {
     implementation(libs.androidx.hilt.common)
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
+    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     // --- Room (DB) ---
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
@@ -126,4 +128,9 @@ dependencies {
     implementation("ru.ok.tracer:tracer-disk-usage")
     implementation("ru.ok.tracer:tracer-profiler-sampling")
     implementation("ru.ok.tracer:tracer-profiler-systrace")
+
+    implementation(platform("ru.rustore.sdk:bom:2025.08.01"))
+    implementation("ru.rustore.sdk:appupdate")
+
+
 }

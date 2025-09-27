@@ -18,7 +18,6 @@ import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.utilModel.Error
 import ru.krymer.delivery.ui.components.CommonTextField
 import ru.krymer.delivery.utills.Constants
-import ru.krymer.delivery.utills.SignedNumberWithComma
 import ru.krymer.delivery.utills.isValidCords
 import ru.krymer.delivery.utills.isValidPhone
 import ru.krymer.delivery.utills.startsWithDigit
@@ -124,8 +123,7 @@ fun AddClientView(
             },
             modifier = Modifier
                 .fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-            visualTransformation = SignedNumberWithComma(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             isError = errorCords.visible,
             errorValue = errorCords.error
         )

@@ -13,8 +13,6 @@ data class ClientViewState(
     val toggleAddDialog: Boolean = false,
     val toggleUpdateDialog: Boolean = false,
     val toggleDeleteDialog: Boolean = false,
-    val clientDelete: ClientModel? = null,
-    val clientUpdate: ClientModel? = null,
     val name: String = "",
     val arrears: String = "",
     val phone: String = "",

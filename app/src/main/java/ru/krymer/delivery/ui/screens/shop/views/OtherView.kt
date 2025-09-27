@@ -1,41 +1,52 @@
 package ru.krymer.delivery.ui.screens.shop.views
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.MessageModel
 import ru.krymer.delivery.data.model.utilModel.Error
 import ru.krymer.delivery.ui.components.CommonTextField
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
+import ru.krymer.delivery.ui.theme.AppTheme
 import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.startsWithDigit
 
 @Composable
 fun ChangeAddSumView(
-    changeAddSum: (String) -> Unit
+    changeAddSum: (String) -> Unit, saveAddSum: () -> Unit
 ) {
     var addSum by remember { mutableStateOf("") }
-    var errorAddSum by remember { mutableStateOf(Error()) }
-    Column {
-        Spacer(modifier = Modifier.height(5.dp))
+    var errorAddSum by remember {
+        mutableStateOf(
+            Error(
+                visible = true,
+                error = Constants.EMPTY.EMPTY_FIELD
+            )
+        )
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
         CommonTextField(
             value = addSum,
             placeholder = "Добавочная сумма",
@@ -51,24 +62,39 @@ fun ChangeAddSumView(
                 }
 
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.weight(0.6f),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Number, imeAction = ImeAction.Done
             ),
-            textStyle = TextStyle(textAlign = TextAlign.Center)
+            textStyle = AppTheme.typography.titleLarge,
+            errorValue = errorAddSum.error,
+            isError = errorAddSum.visible
         )
-        Spacer(modifier = Modifier.height(5.dp))
+        Image(
+            contentDescription = "submit",
+            painter = painterResource(id = R.drawable.submit),
+            modifier = Modifier
+                .weight(0.3f)
+                .size(50.dp)
+                .combinedClickable(onClick = { if (!errorAddSum.visible) saveAddSum() })
+        )
     }
 }
 
 @Composable
 fun ChangeArrearsView(
-    changeArrears: (String) -> Unit
+    changeArrears: (String) -> Unit, saveArrear: () -> Unit
 ) {
     var arrears by remember { mutableStateOf("") }
-    var errorArrears by remember { mutableStateOf(Error()) }
-    Column {
-        Spacer(modifier = Modifier.height(5.dp))
+    var errorArrears by remember {
+        mutableStateOf(
+            Error(
+                visible = true,
+                error = Constants.EMPTY.EMPTY_FIELD
+            )
+        )
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
         CommonTextField(
             value = arrears,
             placeholder = "Долг",
@@ -83,13 +109,22 @@ fun ChangeArrearsView(
                     }
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.weight(0.6f),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Number, imeAction = ImeAction.Done
             ),
-            textStyle = TextStyle(textAlign = TextAlign.Center)
+            textStyle = AppTheme.typography.titleLarge,
+            errorValue = errorArrears.error,
+            isError = errorArrears.visible
         )
-        Spacer(modifier = Modifier.height(5.dp))
+        Image(
+            contentDescription = "submit",
+            painter = painterResource(id = R.drawable.submit),
+            modifier = Modifier
+                .weight(0.3f)
+                .size(50.dp)
+                .combinedClickable(onClick = { if (!errorArrears.visible) saveArrear() })
+        )
     }
 }
 

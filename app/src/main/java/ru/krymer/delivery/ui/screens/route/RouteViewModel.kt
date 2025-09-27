@@ -3,15 +3,14 @@ package ru.krymer.delivery.ui.screens.route
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.runningFold
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import ru.krymer.delivery.common.EventHandler
-import ru.krymer.delivery.data.model.RouteModel
 import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
 import ru.krymer.delivery.data.repositoryImpl.RouteRepositoryImpl
 import ru.krymer.delivery.data.request.RouteRequest
@@ -26,147 +25,125 @@ import javax.inject.Inject
 class RouteViewModel @Inject constructor(
     private val repository: RouteRepositoryImpl,
     private val sharedViewModel: SharedViewModel
-) : ViewModel(), EventHandler<RouteEvent> {
+) : ViewModel() {
 
-    private val _viewState = MutableStateFlow(RouteViewState())
-    val viewState = _viewState.asStateFlow()
+    private val _events = MutableSharedFlow<RouteEvent>(extraBufferCapacity = 64)
 
-    private fun updateState(update: (RouteViewState) -> RouteViewState) {
-        _viewState.update { update(it) }
-    }
+    val viewState: StateFlow<RouteViewState> = _events
+        .onStart {
+            emit(RouteEvent.RefreshRoutes)
+        }
+        .runningFold(RouteViewState()) { state, event ->
+            when (event) {
+                is RouteEvent.RefreshRoutes -> {
+                    viewModelScope.launch(Dispatchers.IO) { loadRoutes() }
+                    state.copy(isLoading = true)
+                }
 
-    private fun launchCoroutine(block: suspend () -> Unit) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                block()
-            } catch (e: CancellationException) {
-                throw e
-                sharedViewModel.message(
-                    Constants.ERROR.CANCEL_OPERATION,
-                    type = TypeMessageModel.ERROR
-                )
-            } catch (e: TimeoutCancellationException) {
-                throw e
-                sharedViewModel.message(Constants.ERROR.TIMEOUT, type = TypeMessageModel.ERROR)
-            } catch (e: Exception) {
-                throw e
-                sharedViewModel.message(e.message, type = TypeMessageModel.ERROR)
+                is RouteEvent.RoutesLoaded -> {
+                    state.copy(isLoading = false, routes = event.routes)
+                }
+
+                is RouteEvent.Error -> {
+                    sharedViewModel.message(event.message, type = TypeMessageModel.ERROR)
+                    state.copy(isLoading = false)
+                }
+
+                is RouteEvent.ToggleAddDialog ->
+                    state.copy(toggleDialogAdd = !state.toggleDialogAdd)
+
+                is RouteEvent.ToggleUpdateDialog ->
+                    state.copy(toggleDialogUpdate = !state.toggleDialogUpdate, route = event.route)
+
+                is RouteEvent.ToggleDeleteDialog ->
+                    state.copy(toggleDialogDelete = !state.toggleDialogDelete, route = event.route)
+
+                is RouteEvent.ChangeAddName ->
+                    state.copy(nameRouteAdd = event.name)
+
+                is RouteEvent.ChangeUpdateName ->
+                    state.copy(nameRouteUpdate = event.name)
+
+                is RouteEvent.CreateRoute -> {
+                    viewModelScope.launch(Dispatchers.IO) { createRoute() }
+                    state
+                }
+
+                is RouteEvent.UpdateRoute -> {
+                    viewModelScope.launch(Dispatchers.IO) { updateRoute() }
+                    state
+                }
+
+                is RouteEvent.DeleteRoute -> {
+                    viewModelScope.launch(Dispatchers.IO) { deleteRoute() }
+                    state
+                }
             }
         }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), RouteViewState())
+
+    fun obtainEvent(event: RouteEvent) {
+        _events.tryEmit(event)
     }
 
-    override fun obtainEvent(event: RouteEvent) {
-        when (event) {
-            is RouteEvent.CreateRoute -> createRoute()
-            is RouteEvent.NameRouteChangedAdd -> setValue(add = event.name)
-            is RouteEvent.UpdateNameRoute -> setValue(update = event.name)
+    private suspend fun loadRoutes() {
+        val user = sharedViewModel.viewState.value.user ?: run {
+            _events.emit(RouteEvent.Error(Constants.ERROR.AGAIN))
+            return
+        }
 
-            is RouteEvent.ToggleDeleteDialog -> setState(delete = !viewState.value.toggleDialogDelete, route = event.route)
-            is RouteEvent.ToggleAddDialog -> setState(add = !viewState.value.toggleDialogAdd)
-            is RouteEvent.ToggleUpdateDialog -> setState(update = !viewState.value.toggleDialogUpdate, route = event.route)
-
-            is RouteEvent.UpdateRoute -> updateRoute()
-            is RouteEvent.DeleteRoute -> deleteRoute()
+        when (val res = repository.getRoutes(user.idFactory)) {
+            is MyResult.Success -> _events.emit(RouteEvent.RoutesLoaded(res.data))
+            is MyResult.Error -> _events.emit(RouteEvent.Error(res.message))
         }
     }
 
-    init {
-        loadRoutes()
-    }
-
-    private fun loadRoutes() = launchCoroutine {
-        updateState { it.copy(isLoading = true) }
-        val user = sharedViewModel.viewState.value.user
-        if (user == null) {
-            updateState { it.copy(isLoading = false) }
-            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
-            return@launchCoroutine
+    private suspend fun createRoute() {
+        val state = viewState.value
+        val user = sharedViewModel.viewState.value.user ?: run {
+            _events.emit(RouteEvent.Error(message = Constants.ERROR.AGAIN))
+            return
         }
 
-        when (val res = repository.getRoutes(idFactory = user.idFactory)) {
-            is MyResult.Success -> updateState { it.copy(routes = res.data, isLoading = false) }
-            is MyResult.Error -> {
-                updateState { it.copy(isLoading = false) }
-                sharedViewModel.message(res.message, type = TypeMessageModel.ERROR)
-            }
-        }
-    }
-
-    private fun setState(
-        delete: Boolean = viewState.value.toggleDialogDelete,
-        update: Boolean = viewState.value.toggleDialogUpdate,
-        add: Boolean = viewState.value.toggleDialogAdd,
-        route: RouteModel? = viewState.value.route
-    ) {
-        updateState { it.copy(
-            route = route,
-            toggleDialogDelete = delete,
-            toggleDialogUpdate = update,
-            toggleDialogAdd = add
-        ) }
-    }
-
-    private fun setValue(
-        add: String = viewState.value.nameRouteAdd,
-        update: String = viewState.value.nameRouteUpdate
-    ) {
-        updateState { it.copy(
-            nameRouteAdd = add,
-            nameRouteUpdate = update
-        ) }
-    }
-
-    private fun updateRoute() = launchCoroutine {
-        val route = viewState.value.route
-        if (route == null) {
-            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
-            return@launchCoroutine
-        }
-        val name = viewState.value.nameRouteUpdate.ifBlank { "Маршрут без имени" }
-        val req = RouteRequest(id = route.id, name = name, date = route.date, idFactory = route.idFactory)
-
-        when (val res = repository.updateRoute(req)) {
-            is MyResult.Success -> {
-                loadRoutes()
-                setState(update = false)
-            }
-            is MyResult.Error -> sharedViewModel.message(res.message, type = TypeMessageModel.ERROR)
-        }
-    }
-
-    private fun createRoute() = launchCoroutine {
-        val user = sharedViewModel.viewState.value.user
-        if (user == null) {
-            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
-            return@launchCoroutine
-        }
-
-        val name = viewState.value.nameRouteAdd.ifBlank { "Маршрут без имени" }
-        val request = RouteRequest(name = name, date = System.currentTimeMillis(), idFactory = user.idFactory)
+        val name = viewState.value.nameRouteAdd.ifBlank { "Маршрут без имени ${state.routes.size}" }
+        val request =
+            RouteRequest(name = name, date = System.currentTimeMillis(), idFactory = user.idFactory)
 
         when (val res = repository.addRoute(request)) {
             is MyResult.Success -> {
-                loadRoutes()
-                setState(add = false)
-                setValue(add = "")
+                _events.emit(RouteEvent.RefreshRoutes)
+                _events.emit(RouteEvent.ToggleAddDialog())
             }
-            is MyResult.Error -> sharedViewModel.message(res.message, type = TypeMessageModel.ERROR)
+
+            is MyResult.Error -> _events.emit(RouteEvent.Error(message = res.message))
         }
     }
 
-    private fun deleteRoute() = launchCoroutine {
-        val route = viewState.value.route
-        if (route == null) {
-            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
-            return@launchCoroutine
-        }
+    private suspend fun updateRoute() {
+        val route = viewState.value.route ?: return
+        val name = viewState.value.nameRouteUpdate.ifBlank { route.name }
+        val req =
+            RouteRequest(id = route.id, name = name, date = route.date, idFactory = route.idFactory)
 
-        when (val res = repository.deleteRoute(route.id)) {
+        when (val res = repository.updateRoute(req)) {
             is MyResult.Success -> {
-                loadRoutes()
-                setState(delete = false)
+                _events.emit(RouteEvent.RefreshRoutes)
+                _events.emit(RouteEvent.ToggleUpdateDialog(route = null))
             }
-            is MyResult.Error -> sharedViewModel.message(res.message, type = TypeMessageModel.ERROR)
+
+            is MyResult.Error -> _events.emit(RouteEvent.Error(res.message))
+        }
+    }
+
+    private suspend fun deleteRoute() {
+        val route = viewState.value.route ?: return
+        when (val res = repository.deleteRoute(id = route.id)) {
+            is MyResult.Success -> {
+                _events.emit(RouteEvent.RefreshRoutes)
+                _events.emit(RouteEvent.ToggleDeleteDialog(route = null))
+            }
+
+            is MyResult.Error -> _events.emit(RouteEvent.Error(message = res.message))
         }
     }
 }

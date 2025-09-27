@@ -69,7 +69,7 @@ class ProductViewModel @Inject constructor(
                 }
             }
             is ProductEvent.DeleteProduct -> deleteProduct()
-            is ProductEvent.ReorderProducts -> reorderProducts(list = event.list)
+            is ProductEvent.ReorderProducts -> reorderProducts(products = event.list)
         }
     }
 
@@ -93,8 +93,9 @@ class ProductViewModel @Inject constructor(
         ) }
     }
 
-    private fun reorderProducts(list: List<ProductModel>) = launchCoroutine {
-        val requests = list.map { product -> ProductRequest(
+    private fun reorderProducts(products: List<ProductModel>) = launchCoroutine {
+        val requests = products.map { product ->
+            ProductRequest(
             id = product.id,
             idFactory = product.idFactory,
             name = product.name,

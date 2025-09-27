@@ -15,10 +15,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -54,6 +52,7 @@ import ru.krymer.delivery.ui.components.CommonAlertAddDialog
 import ru.krymer.delivery.ui.components.CommonConfirmDialog
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
 import ru.krymer.delivery.ui.components.CommonInfoAlertDialog
+import ru.krymer.delivery.ui.components.CommonInfoBottomSheet
 import ru.krymer.delivery.ui.components.CommonSaveDialog
 import ru.krymer.delivery.ui.components.ConfirmView
 import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
@@ -98,7 +97,6 @@ fun ShopView(
 
                 item {
                     HeaderContentShop(
-                        state = state,
                         user = user,
                         event = event,
                         modifier = Modifier
@@ -158,10 +156,10 @@ fun ShopView(
             }
             if (showStickyHeader) {
                 HeaderContentShop(
-                    state = state,
                     user = user,
                     event = event,
-                    modifier = Modifier.background(color = AppTheme.colors.onPrimary)
+                    modifier = Modifier
+                        .background(color = AppTheme.colors.onPrimary)
                         .fillMaxWidth()
                         .align(Alignment.TopCenter)
                         .padding(10.dp)
@@ -335,7 +333,7 @@ fun ShopView(
     if (state.toggleAnaliticOfTrip) {
         CommonInfoAlertDialog(
             content = {
-                AnaliticView(state = state)
+                InfoShopContent(shops = state.listUIShop)
             },
             onDismissRequest = {
                 event(ShopEvent.ShowHideDialogAnalitic)
@@ -402,19 +400,22 @@ fun ShopView(
         }
     }
 
-    if (state.toggleInfoShop) {
+    if (state.toggleCurrentShopInfo) {
         CommonInfoAlertDialog(
             onDismissRequest = { event(ShopEvent.DismissInfoShopDialog) },
-            content = { InfoShopContent(state = state) })
+            content = {
+                InfoShopContent(shops = state.listCurrentShopInfo)
+            })
     }
 
     if (state.toggleAddSumDialog) {
-        CommonAlertAddDialog(
-            onDismiss = { event(ShopEvent.DismissAddSumDialog) },
-            confirm = { event(ShopEvent.SaveAddSum) },
+        CommonInfoBottomSheet(
+            onDismissRequest = { event(ShopEvent.DismissAddSumDialog) },
             content = {
                 ChangeAddSumView(changeAddSum = {
                     event(ShopEvent.ChangeAddSum(it))
+                }, saveAddSum = {
+                    event(ShopEvent.SaveAddSum)
                 })
             })
     }
@@ -443,15 +444,13 @@ fun ShopView(
 
 
     if (state.toggleArrearsDialog) {
-        CommonAlertAddDialog(
-            onDismiss = { event(ShopEvent.DismissDialogChangeArrears) },
-            confirm = { event(ShopEvent.SaveArrears) },
+        CommonInfoBottomSheet(
+            onDismissRequest = { event(ShopEvent.DismissDialogChangeArrears) },
             content = {
                 ChangeArrearsView(changeArrears = {
                     event(ShopEvent.ChangeArrears(it))
-                })
-            },
-            otherFun = {})
+                }, saveArrear = { event(ShopEvent.SaveArrears) })
+            })
     }
 
     if (state.toggleDeleteDialog) {
@@ -479,7 +478,6 @@ fun ShopView(
 
 @Composable
 fun HeaderContentShop(
-    state: ShopViewState,
     user: UserModel,
     event: (ShopEvent) -> Unit,
     modifier: Modifier = Modifier,
@@ -569,9 +567,11 @@ fun ShopsItem(
                 color = AppTheme.colors.onSecondary,
             )
             if (user.isModOrAdminOrSys() && shop.isChanged) {
-                Box(modifier = Modifier.size(40.dp).clickable(onClick = {
-                    openInfoShop(shop)
-                }), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier
+                    .size(40.dp)
+                    .clickable(onClick = {
+                        openInfoShop(shop)
+                    }), contentAlignment = Alignment.Center) {
                     Image(
                         contentDescription = "info",
                         painter = painterResource(R.drawable.info_shop),
@@ -582,8 +582,11 @@ fun ShopsItem(
             Image(
                 contentDescription = "status",
                 painter = when {
-                    !shop.status && (shop.statusServer == StatusModel.NOT_CHANGE || shop.statusServer == StatusModel.UN_SYNC) -> painterResource(id = R.drawable.inactive_circle)
-                    shop.status && shop.statusServer == StatusModel.UN_SYNC && user.id == trip.idCourier -> painterResource(id = R.drawable.unsync_circle)
+                    !shop.status && shop.statusServer == StatusModel.NOT_CHANGE -> painterResource(
+                        id = R.drawable.inactive_circle
+                    )
+
+                    shop.statusServer == StatusModel.UN_SYNC -> painterResource(id = R.drawable.unsync_circle)
                     else -> painterResource(id = R.drawable.active_circle)
                 },
                 modifier = Modifier

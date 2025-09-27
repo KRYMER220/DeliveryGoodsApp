@@ -26,7 +26,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,7 +53,7 @@ fun AddShopAndRequestView(
     state: ShopViewState, event: (ShopEvent) -> Unit
 ) {
     val clients = state.listClient
-    val listShop = state.listInfoShop
+    val listShop = state.listCurrentShopInfo
     val products = state.listProduct
     var toggleSelectorClients by remember { mutableStateOf(false) }
     if (clients.isNotEmpty() && products.isNotEmpty()) {

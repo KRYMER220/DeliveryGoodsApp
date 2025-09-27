@@ -2,7 +2,7 @@ package ru.krymer.delivery.ui.screens.route
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import ru.krymer.delivery.data.model.RouteModel
 import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.ui.screens.route.views.RouteView
@@ -13,7 +13,7 @@ fun RouteScreen(user: UserModel?, openRoute: (RouteModel, List<RouteModel>) -> U
         val viewModel = hiltViewModel<RouteViewModel>()
         RouteView(
             state = viewModel.viewState.collectAsState().value,
-            event = viewModel::obtainEvent,
+            event = { viewModel.obtainEvent(it) },
             user = user,
             openRoute = { route, routes ->
                 openRoute(route, routes)
