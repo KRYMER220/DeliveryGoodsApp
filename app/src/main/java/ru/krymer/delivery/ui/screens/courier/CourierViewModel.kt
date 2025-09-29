@@ -6,10 +6,17 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.runningFold
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import ru.krymer.delivery.AppDatabase
 import ru.krymer.delivery.common.EventHandler
 import ru.krymer.delivery.data.model.FactoryModel
 import ru.krymer.delivery.data.model.user.RoleModel
@@ -24,6 +31,7 @@ import ru.krymer.delivery.data.request.SignUpRequest
 import ru.krymer.delivery.data.request.UserRequest
 import ru.krymer.delivery.ui.screens.courier.models.CourierEvent
 import ru.krymer.delivery.ui.screens.courier.models.CourierViewState
+import ru.krymer.delivery.ui.screens.route.models.RouteEvent
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.MyResult
@@ -33,14 +41,10 @@ import javax.inject.Inject
 class CourierViewModel @Inject constructor(
     private val repository: CourierRepositoryImpl,
     private val sharedViewModel: SharedViewModel,
-) : ViewModel(), EventHandler<CourierEvent> {
+    private val room: AppDatabase
+) : ViewModel() {
 
-    private val _viewState = MutableStateFlow(CourierViewState())
-    val viewState = _viewState.asStateFlow()
-
-    private fun updateState(update: (CourierViewState) -> CourierViewState) {
-        _viewState.update { update(it) }
-    }
+    private val _events = MutableSharedFlow<CourierEvent>(extraBufferCapacity = 64)
 
     private fun launchCoroutine(block: suspend () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -62,159 +66,109 @@ class CourierViewModel @Inject constructor(
         }
     }
 
+    val viewState: StateFlow<CourierViewState> = _events
+        .onStart {
+            emit(CourierEvent.RefreshCouriers)
+        }
+        .runningFold(CourierViewState()) { state, event ->
+            when (event) {
+                CourierEvent.BanUser -> {
+                    val user = state.user
+                    if (user != null) state.copy(user = user.copy(isBan = !user.isBan)) else state
+                }
 
-    override fun obtainEvent(event: CourierEvent) {
-        when (event) {
-            is CourierEvent.ToggleAddDialog -> setState(add = !viewState.value.toggleAddCourier)
-            is CourierEvent.ToggleBanUser -> setState(ban = !viewState.value.toggleBanDialog, user = event.user)
-            is CourierEvent.ToggleUpdateDialog -> setState(user = event.user, updateCourier = !viewState.value.toggleUpdateCourier)
-            is CourierEvent.CreateUser -> createUser()
-            is CourierEvent.ChangedEmailUser -> setValue(email = event.email)
-            is CourierEvent.ChangedPassUser -> setValue(pass = event.pass)
-            is CourierEvent.ChangeUsername -> setValue(name = event.name)
-            is CourierEvent.ChangeUserPercent -> setValue(percent = event.percent)
-            is CourierEvent.UpdateUser -> updateUser()
-            is CourierEvent.ChangedPrice -> setValue(priceKm = event.price)
-            is CourierEvent.ChangedSalary -> setValue(salarySys = event.salary)
-            is CourierEvent.UpdateSettings -> updateSettings()
-            is CourierEvent.ToggleUpdateSettingsDialog -> {
-                val factory = sharedViewModel.viewState.value.factory
-                if (factory != null) {
-                    setState(factory = factory, updateSettings = !viewState.value.toggleSettingsFactory)
+                CourierEvent.CreateUser -> {
+                    launchCoroutine { createUser() }
+                    state
+                }
+
+                CourierEvent.DeleteUser -> {
+                    launchCoroutine { deleteUser() }
+                    state
+                }
+
+                CourierEvent.RefreshCouriers -> {
+                    launchCoroutine { loadCouriers() }
+                    state.copy(isLoading = true)
+                }
+
+                CourierEvent.UpdateSettings -> {
+                    launchCoroutine { updateSettings() }
+                    state
+                }
+
+                CourierEvent.UpdateUser -> {
+                    launchCoroutine { updateUser() }
+                    state
+                }
+
+                is CourierEvent.ChangeUserPercent -> state.copy(userPercent = event.percent)
+                is CourierEvent.ChangeUserSalary -> state.copy(userSalary = event.salary)
+                is CourierEvent.ChangeUsername -> state.copy(userName = event.name)
+                is CourierEvent.ChangedEmailUser -> state.copy(userEmail = event.email)
+                is CourierEvent.ChangedPassUser -> state.copy(userPass = event.pass)
+                is CourierEvent.ChangedPrice -> state.copy(priceMillage = event.price)
+                is CourierEvent.ChangedSalary -> state.copy(salaryChange = event.salary)
+                is CourierEvent.CouriersLoaded -> state.copy(couriers = event.couriers, isLoading = false)
+
+                is CourierEvent.SelectedItemMenu -> state.copy(userRole = event.role)
+
+                CourierEvent.ToggleAddDialog -> state.copy(toggleAddDialog = !state.toggleAddDialog)
+                is CourierEvent.ToggleBanUser -> state.copy(user = event.user, toggleBanDialog = !state.toggleBanDialog)
+                is CourierEvent.ToggleDeleteDialog -> state.copy(user = event.user, toggleDeleteCourier = !state.toggleDeleteCourier)
+                is CourierEvent.ToggleUpdateDialog -> state.copy(user = event.user, toggleUpdateCourier = !state.toggleUpdateCourier)
+                CourierEvent.ToggleUpdateSettingsDialog -> {
+                    val factory = sharedViewModel.viewState.value.factory
+                    if (factory != null) state.copy(factory = factory, toggleUpdateSettings = !state.toggleUpdateSettings) else state
+                }
+
+                is CourierEvent.Error -> {
+                    sharedViewModel.message(event.message, type = TypeMessageModel.ERROR)
+                    state.copy(isLoading = false)
                 }
             }
-
-            is CourierEvent.BanUser -> {
-                val user = viewState.value.user
-                if (user != null)
-                    updateState { it.copy(user = user.copy(isBan = !user.isBan)) }
-                setState(ban = false)
-            }
-            is CourierEvent.ToggleDeleteDialog -> setState(user = event.user, delete = !viewState.value.toggleDeleteCourier)
-            is CourierEvent.DeleteUser -> deleteUser()
-            is CourierEvent.SelectedItemMenu -> setValue(role = event.role)
-            is CourierEvent.ChangeUserSalary -> setValue(salary = event.salary)
         }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), CourierViewState())
+
+    fun obtainEvent(event: CourierEvent) {
+        _events.tryEmit(event)
     }
 
-    init {
-        getDataUsers()
-    }
-
-    private fun setValue(
-        name: String = viewState.value.userName,
-        role: RoleModel? = viewState.value.userRole,
-        percent: String = viewState.value.userPercent,
-        salary: String = viewState.value.userSalary,
-        email: String = viewState.value.userEmail,
-        pass: String = viewState.value.userPass,
-        priceKm: String = viewState.value.priceMillage,
-        salarySys: String = viewState.value.salaryChange,
-    ) {
-        updateState {
-            it.copy(
-                userPass = pass,
-                userRole = role,
-                userSalary = salary,
-                userEmail = email,
-                userName = name,
-                userPercent = percent,
-                priceMillage = priceKm,
-                salaryChange = salarySys,
-            )
-        }
-    }
-
-    private fun getDataUsers() = launchCoroutine {
-        updateState { it.copy(isLoading = true) }
-        val user = sharedViewModel.viewState.value.user
-        if (user == null) {
-            updateState { it.copy(isLoading = false) }
-            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
-            return@launchCoroutine
+    private suspend fun loadCouriers() {
+        val user = sharedViewModel.viewState.value.user ?: run {
+            _events.emit(CourierEvent.Error(Constants.ERROR.AGAIN))
+            return
         }
 
         when (val res = repository.getUsers(idFactory = user.idFactory)) {
-            is MyResult.Success -> updateState { it.copy(couriers = res.data, isLoading = false) }
-            is MyResult.Error -> {
-                updateState { it.copy(isLoading = false) }
-                sharedViewModel.message(res.message, type = TypeMessageModel.ERROR)
+            is MyResult.Success -> _events.emit(CourierEvent.CouriersLoaded(couriers = res.data))
+            is MyResult.Error -> _events.emit(CourierEvent.Error(message = res.message))
+        }
+    }
+
+    private suspend fun deleteUser() {
+        val user = viewState.value.user ?: return
+        val userSignIn = sharedViewModel.viewState.value.user ?: return
+        if (user.id == userSignIn.id) {
+            sharedViewModel.message(message = Constants.ERROR.RESRTRAINT, type = TypeMessageModel.ERROR)
+            return
+        }
+
+        when (val res = repository.delete(id = user.id)) {
+            is MyResult.Success -> {
+                _events.emit(CourierEvent.RefreshCouriers)
+                _events.emit(CourierEvent.ToggleDeleteDialog(user = null))
             }
+
+            is MyResult.Error -> _events.emit(CourierEvent.Error(message = res.message))
         }
     }
 
-    private fun deleteUser() = launchCoroutine {
-        val user = viewState.value.user
-        val userSignIn = sharedViewModel.viewState.value.user
+    private suspend fun updateSettings() {
+        val factory = viewState.value.factory ?: return
 
-        if (user == null) {
-            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
-            return@launchCoroutine
-        }
-
-        if (userSignIn == null) {
-            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
-            return@launchCoroutine
-        }
-
-        if (user.id != userSignIn.id) {
-            when (val res = repository.delete(id = user.id)) {
-                is MyResult.Success -> {
-                    getDataUsers()
-                    setState(user = null, delete = false)
-                }
-
-                is MyResult.Error -> sharedViewModel.message(
-                    res.message,
-                    type = TypeMessageModel.ERROR
-                )
-            }
-        } else {
-            sharedViewModel.message(Constants.ERROR.RESRTRAINT, type = TypeMessageModel.ERROR)
-        }
-    }
-
-    private fun setState(
-        factory: FactoryModel? = viewState.value.factory,
-        user: UserModel? = viewState.value.user,
-        delete: Boolean = viewState.value.toggleDeleteCourier,
-        updateCourier: Boolean = viewState.value.toggleUpdateCourier,
-        updateSettings: Boolean = viewState.value.toggleSettingsFactory,
-        add: Boolean = viewState.value.toggleAddCourier,
-        ban: Boolean = viewState.value.toggleBanDialog,
-    ) {
-        updateState {
-            it.copy(
-                user = user,
-                factory = factory,
-                toggleAddCourier = add,
-                toggleUpdateCourier = updateCourier,
-                toggleDeleteCourier = delete,
-                toggleSettingsFactory = updateSettings,
-                toggleBanDialog = ban
-            )
-        }
-
-        if (updateCourier && user != null) {
-            setValue(name = user.name, percent = user.percentSalary.toString(), salary = user.percentSalary.toString(), role = user.role)
-        }
-
-        if (updateSettings && factory != null) {
-            setValue(salarySys = factory.salary.toString(), priceKm = factory.priceMillage.toString())
-        }
-    }
-
-
-    private fun updateSettings() = launchCoroutine {
-        val factory = viewState.value.factory
-
-        if (factory == null) {
-            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
-            return@launchCoroutine
-        }
-
-        val salary = viewState.value.salaryChange.toDouble()
-        val price = viewState.value.priceMillage.toDouble()
+        val salary = viewState.value.salaryChange.ifBlank { factory.priceMillage.toString() }.toDouble()
+        val price = viewState.value.priceMillage.ifBlank { factory.priceMillage.toString() }.toDouble()
 
         val request = FactoryRequest(
             id = factory.id,
@@ -226,8 +180,10 @@ class CourierViewModel @Inject constructor(
 
         when (val res = repository.updateFactory(factory = request)) {
             is MyResult.Success -> {
-                sharedViewModel.updateFactory(factory = factory.copy(salary = salary, priceMillage = price))
-                setState(updateSettings = false)
+                val newFactory = factory.copy(salary = salary, priceMillage = price)
+                sharedViewModel.updateFactory(factory = newFactory)
+                room.factoryDao().updateFactory(factory = newFactory)
+                _events.emit(CourierEvent.ToggleUpdateSettingsDialog)
             }
 
             is MyResult.Error -> sharedViewModel.message(res.message, type = TypeMessageModel.ERROR)
@@ -235,35 +191,19 @@ class CourierViewModel @Inject constructor(
     }
 
 
-    private fun updateUser() = launchCoroutine {
-        var user = viewState.value.user
-        val userRole = viewState.value.userRole
-        val userSignIn = sharedViewModel.viewState.value.user
-
-        if (userSignIn == null) {
-            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
-            return@launchCoroutine
-        }
-
-        if (user == null) {
-            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
-            return@launchCoroutine
-        }
-
-        if (userRole == null) {
-            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
-            return@launchCoroutine
-        }
+    private suspend fun updateUser() {
+        var user = viewState.value.user ?: return
+        val userSignIn = sharedViewModel.viewState.value.user ?: return
 
         if (user.id == userSignIn.id) {
             sharedViewModel.message(Constants.ERROR.RESRTRAINT, type = TypeMessageModel.ERROR)
-            return@launchCoroutine
+            return
         }
 
         val name = viewState.value.userName.ifBlank { user.name }
-        val salary = viewState.value.userSalary.toDouble()
-        val percent = viewState.value.userPercent.toDouble()
-        val role = viewState.value.userRole ?: RoleModel.USER
+        val salary = viewState.value.userSalary.ifBlank { user.salary.toString() }.toDouble()
+        val percent = viewState.value.userPercent.ifBlank { user.percentSalary.toString() }.toDouble()
+        val role = viewState.value.userRole ?: user.role
 
         val request = UserRequest(
             id = user.id,
@@ -279,23 +219,19 @@ class CourierViewModel @Inject constructor(
 
         when (val res = repository.update(request = request)) {
             is MyResult.Success -> {
-                getDataUsers()
-                setState(updateCourier = false, user = null)
+                _events.emit(CourierEvent.RefreshCouriers)
+                _events.emit(CourierEvent.ToggleUpdateDialog(null))
             }
             is MyResult.Error -> sharedViewModel.message(res.message, type = TypeMessageModel.ERROR)
         }
     }
 
+    private suspend fun createUser() {
+        val user = sharedViewModel.viewState.value.user ?: return
 
-    private fun createUser() = launchCoroutine {
-        val email = viewState.value.userEmail
-        val pass = viewState.value.userPass
+        val email = viewState.value.userEmail.ifBlank { return }
+        val pass = viewState.value.userPass.ifBlank { return }
         val name = viewState.value.userName.ifBlank { "Пользователь #${viewState.value.couriers.size}" }
-        val user = sharedViewModel.viewState.value.user
-        if (user == null) {
-            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
-            return@launchCoroutine
-        }
 
         val request = SignUpRequest(
             email = email,
@@ -308,8 +244,8 @@ class CourierViewModel @Inject constructor(
 
         when (val res = repository.signUp(request = request)) {
             is MyResult.Success -> {
-                getDataUsers()
-                setState(add = false)
+                _events.emit(CourierEvent.RefreshCouriers)
+                _events.emit(CourierEvent.ToggleAddDialog)
             }
 
             is MyResult.Error -> sharedViewModel.message(res.message, type = TypeMessageModel.ERROR)

@@ -293,7 +293,7 @@ class TripViewModel @Inject constructor(
                 val tripRequest = UpdateTripRequest(
                     id = trip.id,
                     factoryId = trip.idFactory,
-                    date = date,
+                    date = date + Random.nextInt(from = 1, until = 1000),
                     courierId = courier.id,
                     routeId = route.id,
                     salary = if (salary == "") courier.salary else salary.toDouble(),

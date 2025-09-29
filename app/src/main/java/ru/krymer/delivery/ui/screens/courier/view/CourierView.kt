@@ -43,6 +43,7 @@ fun CourierView(
     state: CourierViewState
 ) {
     val users = state.couriers
+
     val loader = when {
         state.isLoading -> Loader.LOADING
         state.couriers.isEmpty() -> Loader.EMPTY
@@ -76,39 +77,41 @@ fun CourierView(
 
         }
         Spacer(modifier = Modifier.height(5.dp))
-        when (loader) {
-            Loader.LOAD -> {
-                LazyColumn {
-                    items(users) { courier ->
-                        CourierItem(
-                            courier = courier,
-                            onItemClicked = {
-                                event(CourierEvent.ToggleUpdateDialog(it))
-                            },
-                            onItemDelete = {
-                                event(CourierEvent.ToggleDeleteDialog(it))
-                            }
-                        )
-                        Spacer(modifier = Modifier.padding(bottom = 10.dp))
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            when (loader) {
+                Loader.LOAD -> {
+                    LazyColumn {
+                        items(users) { courier ->
+                            CourierItem(
+                                courier = courier,
+                                onItemClicked = {
+                                    event(CourierEvent.ToggleUpdateDialog(it))
+                                },
+                                onItemDelete = {
+                                    event(CourierEvent.ToggleDeleteDialog(it))
+                                }
+                            )
+                            Spacer(modifier = Modifier.padding(bottom = 10.dp))
+                        }
                     }
                 }
-            }
 
-            Loader.EMPTY -> {
-                Text(
-                    text = stringResource(R.string.empty_data),
-                    color = AppTheme.colors.onSecondary,
-                    fontSize = 18.sp
-                )
-            }
+                Loader.EMPTY -> {
+                    Text(
+                        text = stringResource(R.string.empty_data),
+                        color = AppTheme.colors.onSecondary,
+                        fontSize = 18.sp
+                    )
+                }
 
-            Loader.LOADING -> {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .size(60.dp),
-                    strokeWidth = 2.dp,
-                    color = AppTheme.colors.onSecondary
-                )
+                Loader.LOADING -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .size(60.dp),
+                        strokeWidth = 2.dp,
+                        color = AppTheme.colors.onSecondary
+                    )
+                }
             }
         }
     }
@@ -134,7 +137,7 @@ fun CourierView(
         }
     }
 
-    if (state.toggleAddCourier) {
+    if (state.toggleAddDialog) {
         CommonSaveDialog(dismiss = {
             event(CourierEvent.ToggleAddDialog)
         }, confirm = {
@@ -163,7 +166,7 @@ fun CourierView(
         })
     }
 
-    if (state.toggleSettingsFactory) {
+    if (state.toggleUpdateSettings) {
         CommonSaveDialog(dismiss = {
             event(CourierEvent.ToggleUpdateSettingsDialog)
         }, confirm = {

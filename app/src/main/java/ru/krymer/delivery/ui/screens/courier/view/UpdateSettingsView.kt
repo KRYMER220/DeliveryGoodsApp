@@ -27,9 +27,9 @@ fun UpdateSettingsView(
     changeSalary: (String) -> Unit,
     changePriceMillage: (String) -> Unit,
 ) {
-    viewState.factory?.let {
-        var salary by remember { mutableStateOf("${it.salary.toInt()}") }
-        var priceMillage by remember { mutableStateOf("${it.priceMillage}") }
+    viewState.factory?.let { factory ->
+        var salary by remember { mutableStateOf("${factory.salary.toInt()}") }
+        var priceMillage by remember { mutableStateOf("${factory.priceMillage}") }
         var errorSalary by remember { mutableStateOf(Error()) }
         var errorPrice by remember { mutableStateOf(Error()) }
 

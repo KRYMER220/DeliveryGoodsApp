@@ -7,9 +7,9 @@ import ru.krymer.delivery.data.model.user.UserModel
 data class CourierViewState(
     val couriers: List<UserModel> = emptyList(),
     val isLoading: Boolean = false,
-    val toggleAddCourier: Boolean = false,
+    val toggleAddDialog: Boolean = false,
     val toggleUpdateCourier: Boolean = false,
-    val toggleSettingsFactory: Boolean = false,
+    val toggleUpdateSettings: Boolean = false,
     val toggleBanDialog: Boolean = false,
     val userSalary: String = "",
     val userName: String = "",
