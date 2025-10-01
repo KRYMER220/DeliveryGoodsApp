@@ -6,8 +6,14 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.runningFold
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ru.krymer.delivery.common.EventHandler
@@ -17,6 +23,7 @@ import ru.krymer.delivery.data.repositoryImpl.ProductRepositoryImpl
 import ru.krymer.delivery.data.request.ProductRequest
 import ru.krymer.delivery.ui.screens.product.models.ProductEvent
 import ru.krymer.delivery.ui.screens.product.models.ProductViewState
+import ru.krymer.delivery.ui.screens.route.models.RouteEvent
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.MyResult
@@ -26,14 +33,9 @@ import javax.inject.Inject
 class ProductViewModel @Inject constructor(
     private val repository: ProductRepositoryImpl,
     private val sharedViewModel: SharedViewModel
-) : ViewModel(), EventHandler<ProductEvent> {
+) : ViewModel() {
 
-    private val _viewState = MutableStateFlow(ProductViewState())
-    val viewState = _viewState.asStateFlow()
-
-    private fun updateState(update: (ProductViewState) -> ProductViewState) {
-        _viewState.update { update(it) }
-    }
+    private val _events = MutableSharedFlow<ProductEvent>(extraBufferCapacity = 64)
 
     private fun launchCoroutine(block: suspend () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -41,136 +43,108 @@ class ProductViewModel @Inject constructor(
                 block()
             } catch (e: CancellationException) {
                 throw e
-                sharedViewModel.message(
-                    Constants.ERROR.CANCEL_OPERATION, type = TypeMessageModel.ERROR
-                )
+                _events.emit(ProductEvent.Error(Constants.ERROR.CANCEL_OPERATION))
             } catch (e: TimeoutCancellationException) {
                 throw e
-                sharedViewModel.message(Constants.ERROR.TIMEOUT, type = TypeMessageModel.ERROR)
+                _events.emit(ProductEvent.Error(Constants.ERROR.TIMEOUT))
             } catch (e: Exception) {
                 throw e
-                sharedViewModel.message(e.message, type = TypeMessageModel.ERROR)
+                _events.emit(ProductEvent.Error(e.message))
             }
         }
     }
 
-    override fun obtainEvent(event: ProductEvent) {
-        when (event) {
-            is ProductEvent.ToggleUpdateDialog -> setState(product = event.product, update = true)
-            is ProductEvent.CreateProduct -> createProduct()
-            is ProductEvent.ToggleAddDialog -> setState(add = true)
-            is ProductEvent.ToggleDeleteDialog -> setState(delete = true, product = event.product)
-            is ProductEvent.UpdateProduct -> updateProduct()
-            is ProductEvent.ChangedNameProduct -> setValue(name = event.name)
-            is ProductEvent.ChangedPriceProduct -> setValue(price = event.price)
-            is ProductEvent.ChangeStatusProduct -> {
-                viewState.value.product?.let { p ->
-                    updateState { it.copy(product = p.copy(isActive = !p.isActive)) }
+    val viewState: StateFlow<ProductViewState> = _events
+        .onStart {
+            emit(ProductEvent.RefreshProducts)
+        }
+        .runningFold(ProductViewState()) { state, event ->
+            when (event) {
+                ProductEvent.ChangeStatusProduct -> {
+                    val product = state.product
+                    if (product != null) state.copy(product = product.copy(isActive = !product.isActive)) else state
+                }
+
+                ProductEvent.CreateProduct -> {
+                    launchCoroutine { createProduct() }
+                    state
+                }
+
+                ProductEvent.DeleteProduct -> {
+                    launchCoroutine { deleteProduct() }
+                    state
+                }
+
+                ProductEvent.RefreshProducts -> {
+                    launchCoroutine { loadProducts() }
+                    state.copy(isLoading = true)
+                }
+
+                ProductEvent.UpdateProduct -> {
+                    launchCoroutine { updateProduct() }
+                    state
+                }
+
+                is ProductEvent.ChangedNameProduct -> state.copy(itemName = event.name)
+                is ProductEvent.ChangedPriceProduct -> state.copy(itemPrice = event.price)
+                is ProductEvent.ProductsLoaded -> state.copy(products = event.products, isLoading = false)
+                is ProductEvent.ReorderProducts -> {
+                    launchCoroutine { reorderProducts(event.list) }
+                    state
+                }
+
+                ProductEvent.ToggleAddDialog -> state.copy(toggleAddDialog = !state.toggleAddDialog)
+                is ProductEvent.ToggleDeleteDialog -> state.copy(product = event.product, toggleDeleteDialog = !state.toggleDeleteDialog)
+                is ProductEvent.ToggleUpdateDialog -> state.copy(product = event.product, toggleUpdateDialog = !state.toggleUpdateDialog)
+
+                is ProductEvent.Error -> {
+                    sharedViewModel.message(event.message, type = TypeMessageModel.ERROR)
+                    state.copy(isLoading = false)
                 }
             }
-            is ProductEvent.DeleteProduct -> deleteProduct()
-            is ProductEvent.ReorderProducts -> reorderProducts(products = event.list)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ProductViewState())
+
+    fun obtainEvent(event: ProductEvent) {
+        _events.tryEmit(event)
+    }
+
+    private suspend fun loadProducts() {
+        val user = sharedViewModel.viewState.value.user ?: run {
+            _events.emit(ProductEvent.Error(Constants.ERROR.AGAIN))
+            return
+        }
+
+        when (val res = repository.getProducts(idFactory = user.idFactory)) {
+            is MyResult.Success -> _events.emit(ProductEvent.ProductsLoaded(products = res.data))
+            is MyResult.Error -> _events.emit(ProductEvent.Error(message = res.message))
         }
     }
 
-    init {
-        getProducts()
-    }
-
-    private fun setState(
-        product: ProductModel? = viewState.value.product,
-        add: Boolean = viewState.value.toggleAddDialog,
-        update: Boolean = viewState.value.toggleUpdateDialog,
-        delete: Boolean = viewState.value.toggleDeleteDialog,
-
-    ) {
-        updateState { it.copy(
-            product = product,
-            toggleAddDialog = add,
-            toggleUpdateDialog = update,
-            toggleDeleteDialog = delete,
-
-        ) }
-    }
-
-    private fun reorderProducts(products: List<ProductModel>) = launchCoroutine {
-        val requests = products.map { product ->
-            ProductRequest(
-            id = product.id,
-            idFactory = product.idFactory,
-            name = product.name,
-            counter = product.counter,
-            date = product.date,
-            price = product.price,
-            isActive = product.isActive,
-            oldPrice = product.oldPrice
-        ) }
-        when (val res = repository.moves(requests = requests)) {
-            is MyResult.Error -> sharedViewModel.message(res.message, type = TypeMessageModel.ERROR)
-            is MyResult.Success -> {}
-        }
-    }
-
-    private fun getProducts() = launchCoroutine {
-        updateState { it.copy(isLoading = true) }
-        val user = sharedViewModel.viewState.value.user
-        if (user == null) {
-            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
-            return@launchCoroutine
-        }
-        when(val res = repository.getProducts(idFactory = user.idFactory)) {
-            is MyResult.Success -> updateState { it.copy(products = res.data, isLoading = false) }
-            is MyResult.Error -> {
-                updateState { it.copy(isLoading = false) }
-                sharedViewModel.message(res.message, type = TypeMessageModel.ERROR)
-            }
-        }
-    }
-
-    fun deleteProduct() = launchCoroutine {
-        val product = viewState.value.product
-        if (product == null) {
-            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
-            return@launchCoroutine
-        }
+    private suspend fun deleteProduct() {
+        val product = viewState.value.product ?: return
 
         when (val res = repository.deleteProduct(product.id)) {
             is MyResult.Success -> {
-                getProducts()
-                setState(delete = false, product = null)
+                _events.emit(ProductEvent.RefreshProducts)
+                _events.emit(ProductEvent.ToggleDeleteDialog(product = null))
             }
 
-            is MyResult.Error -> sharedViewModel.message(res.message, type = TypeMessageModel.ERROR)
+            is MyResult.Error -> _events.emit(ProductEvent.Error(message = res.message))
         }
     }
 
-    private fun setValue(
-        name: String = viewState.value.itemName,
-        price: String = viewState.value.itemPrice,
-        product: ProductModel? = viewState.value.product
-    ) {
-        updateState { it.copy(
-            itemName = name,
-            itemPrice = price,
-        ) }
+    private suspend fun updateProduct() {
+        val product = viewState.value.product ?: return
+        val name = viewState.value.itemName.ifBlank { product.name }
+        val price = viewState.value.itemPrice.ifBlank { product.price.toString() }.toDouble()
 
-        if (product != null) {
-            updateState { it.copy(product = product.copy(price = if (price == "") product.price else price.toDouble(), name = name.ifBlank { product.name })) }
-        }
-    }
-
-    private fun updateProduct() = launchCoroutine {
-        val product = viewState.value.product
-        if (product == null) {
-            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
-            return@launchCoroutine
-        }
         val request = ProductRequest(
             id = product.id,
-            name = product.name,
+            name = name,
             idFactory = product.idFactory,
             counter = product.counter,
-            price = product.price,
+            price = price,
             isActive = product.isActive,
             date = product.date,
             oldPrice = product.oldPrice
@@ -178,41 +152,60 @@ class ProductViewModel @Inject constructor(
 
         when (val res = repository.updateProduct(product = request)) {
             is MyResult.Success -> {
-                getProducts()
-                setState(update = false, product = null)
-                setValue(name = "", price = "")
+                _events.emit(ProductEvent.RefreshProducts)
+                _events.emit(ProductEvent.ToggleUpdateDialog(product = null))
             }
-            is MyResult.Error -> sharedViewModel.message(res.message, type = TypeMessageModel.ERROR)
+
+            is MyResult.Error -> _events.emit(ProductEvent.Error(message = res.message))
         }
     }
 
-    private fun createProduct() = launchCoroutine {
-        val name = viewState.value.itemName
-        val price = viewState.value.itemPrice
-        val user = sharedViewModel.viewState.value.user
-
-        if (user == null) {
-            sharedViewModel.message(Constants.ERROR.AGAIN, type = TypeMessageModel.ERROR)
-            return@launchCoroutine
+    private suspend fun createProduct() {
+        val user = sharedViewModel.viewState.value.user ?: run {
+            _events.emit(ProductEvent.Error(Constants.ERROR.AGAIN))
+            return
         }
+
+        val name = viewState.value.itemName.ifBlank { "Продукт #${viewState.value.products.lastOrNull()?.counter?.plus(1) ?: 0}" }
+        val price = viewState.value.itemPrice.ifBlank { "0" }.toDouble()
 
         val request = ProductRequest(
             name = name,
             idFactory = user.idFactory,
             counter = viewState.value.products.size,
-            price = if (price == "") 0.0 else price.toDouble(),
+            price = price,
             isActive = true,
             date = System.currentTimeMillis(),
             oldPrice = 0.0,
         )
 
-        when(val res = repository.addProduct(product = request)) {
+        when (val res = repository.addProduct(product = request)) {
             is MyResult.Success -> {
-                getProducts()
-                setState(add = false)
-                setValue(name = "", price = "")
+                _events.emit(ProductEvent.RefreshProducts)
+                _events.emit(ProductEvent.ToggleAddDialog)
             }
-            is MyResult.Error -> sharedViewModel.message(res.message, type = TypeMessageModel.ERROR)
+
+            is MyResult.Error -> _events.emit(ProductEvent.Error(message = res.message))
+        }
+    }
+
+    private suspend fun reorderProducts(products: List<ProductModel>) {
+        val requests = products.map { product ->
+            ProductRequest(
+                id = product.id,
+                idFactory = product.idFactory,
+                name = product.name,
+                counter = product.counter,
+                date = product.date,
+                price = product.price,
+                isActive = product.isActive,
+                oldPrice = product.oldPrice
+            )
+        }
+
+        when (val res = repository.moves(requests = requests)) {
+            is MyResult.Success -> Unit
+            is MyResult.Error -> _events.emit(ProductEvent.Error(message = res.message))
         }
     }
 }

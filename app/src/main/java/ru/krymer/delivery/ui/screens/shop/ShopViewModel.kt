@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.room.withTransaction
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,9 +46,10 @@ import ru.krymer.delivery.data.request.ClientRequest
 import ru.krymer.delivery.data.request.CreateMessage
 import ru.krymer.delivery.data.request.CreateRequestShopRequest
 import ru.krymer.delivery.data.request.CreateShopRequest
+import ru.krymer.delivery.data.request.TripRequest
 import ru.krymer.delivery.data.request.UpdateRequestShopRequest
 import ru.krymer.delivery.data.request.UpdateShopRequest
-import ru.krymer.delivery.data.request.UpdateTripRequest
+import ru.krymer.delivery.ui.screens.client.models.ClientEvent
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
@@ -87,7 +89,12 @@ class ShopViewModel @Inject constructor(
                 block()
             } catch (e: CancellationException) {
                 throw e
+                sharedViewModel.message(Constants.ERROR.CANCEL_OPERATION)
+            } catch (e: TimeoutCancellationException) {
+                throw e
+                sharedViewModel.message(Constants.ERROR.TIMEOUT)
             } catch (e: Exception) {
+                throw e
                 sharedViewModel.message(e.message)
             }
         }
@@ -351,7 +358,7 @@ class ShopViewModel @Inject constructor(
                         if (isSameDay(trip.date, System.currentTimeMillis())) {
                             updateShops(trip)
                             if (localTrip.millage > 0) {
-                                val tripNew = tripApi.update(trip = UpdateTripRequest(
+                                val tripNew = tripApi.update(trip = TripRequest(
                                     id = localTrip.id,
                                     factoryId = localTrip.idFactory,
                                     date = localTrip.date,
@@ -1209,7 +1216,7 @@ class ShopViewModel @Inject constructor(
                     val newTrip = trip.copy(millage = millage)
                     room.tripDao().upsertTrip(newTrip)
                     updateViewState { it.copy(currentTrip = newTrip) }
-                    val request = UpdateTripRequest(
+                    val request = TripRequest(
                         id = trip.id,
                         factoryId = trip.idFactory,
                         date = trip.date,

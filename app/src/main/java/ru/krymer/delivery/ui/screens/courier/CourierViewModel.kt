@@ -29,6 +29,7 @@ import ru.krymer.delivery.data.repositoryImpl.CourierRepositoryImpl
 import ru.krymer.delivery.data.request.FactoryRequest
 import ru.krymer.delivery.data.request.SignUpRequest
 import ru.krymer.delivery.data.request.UserRequest
+import ru.krymer.delivery.ui.screens.client.models.ClientEvent
 import ru.krymer.delivery.ui.screens.courier.models.CourierEvent
 import ru.krymer.delivery.ui.screens.courier.models.CourierViewState
 import ru.krymer.delivery.ui.screens.route.models.RouteEvent
@@ -52,16 +53,13 @@ class CourierViewModel @Inject constructor(
                 block()
             } catch (e: CancellationException) {
                 throw e
-                sharedViewModel.message(
-                    Constants.ERROR.CANCEL_OPERATION,
-                    type = TypeMessageModel.ERROR
-                )
+                _events.emit(CourierEvent.Error(Constants.ERROR.CANCEL_OPERATION))
             } catch (e: TimeoutCancellationException) {
                 throw e
-                sharedViewModel.message(Constants.ERROR.TIMEOUT, type = TypeMessageModel.ERROR)
+                _events.emit(CourierEvent.Error(Constants.ERROR.TIMEOUT))
             } catch (e: Exception) {
                 throw e
-                sharedViewModel.message(e.message, type = TypeMessageModel.ERROR)
+                _events.emit(CourierEvent.Error(e.message))
             }
         }
     }

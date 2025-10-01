@@ -39,7 +39,7 @@ fun UpdateProductView(
     state.product?.let { product ->
         var name by remember { mutableStateOf(product.name) }
         var errorName by remember { mutableStateOf(Error()) }
-        var price by remember { mutableStateOf("${product.price}") }
+        var price by remember { mutableStateOf("${product.price.toInt()}") }
         var errorPrice by remember { mutableStateOf(Error()) }
         var isActive by remember { mutableStateOf(product.isActive) }
         Column {

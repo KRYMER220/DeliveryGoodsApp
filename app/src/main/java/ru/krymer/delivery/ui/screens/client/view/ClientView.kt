@@ -38,6 +38,7 @@ import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.data.model.utilModel.Loader
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
 import ru.krymer.delivery.ui.components.CommonSaveDialog
+import ru.krymer.delivery.ui.components.CustomCircularProgressIndicator
 import ru.krymer.delivery.ui.screens.client.models.ClientEvent
 import ru.krymer.delivery.ui.screens.client.models.ClientViewState
 import ru.krymer.delivery.ui.theme.AppTheme
@@ -96,33 +97,26 @@ fun ClientView(
             }
         }
         Spacer(modifier = Modifier.height(15.dp))
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            when(loader) {
-                Loader.LOAD -> {
-                    LazyColumn(state = lazyListState, verticalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.fillMaxSize()) {
-                        items(clients, key = { client -> client.id }) { client ->
-                            ReorderableItem(reorderableLazyListState, key = client.id) { isDragging ->
-                                ClientItem(
-                                    modifier = Modifier.draggableHandle(
-                                        onDragStopped = {
-                                            event(ClientEvent.ReorderClients(list = clients))
-                                        }), client = client, user = user, event = event
-                                )
-                            }
+        when(loader) {
+            Loader.LOAD -> {
+                LazyColumn(state = lazyListState, verticalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.fillMaxSize()) {
+                    items(clients, key = { client -> client.id }) { client ->
+                        ReorderableItem(reorderableLazyListState, key = client.id) { isDragging ->
+                            ClientItem(
+                                modifier = Modifier.draggableHandle(
+                                    onDragStopped = {
+                                        event(ClientEvent.ReorderClients(list = clients))
+                                    }), client = client, user = user, event = event
+                            )
                         }
                     }
                 }
-                Loader.EMPTY -> {
-                    Text(text = stringResource(R.string.empty_data), color = AppTheme.colors.onSecondary, fontSize = 18.sp)
-                }
-                Loader.LOADING -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .size(60.dp),
-                        strokeWidth = 2.dp,
-                        color = AppTheme.colors.onSecondary
-                    )
-                }
+            }
+            Loader.EMPTY -> {
+                Text(text = stringResource(R.string.empty_data), color = AppTheme.colors.onSecondary, fontSize = 18.sp)
+            }
+            Loader.LOADING -> {
+                CustomCircularProgressIndicator()
             }
         }
     }

@@ -3,7 +3,9 @@ package ru.krymer.delivery.ui.screens.route
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -29,6 +31,23 @@ class RouteViewModel @Inject constructor(
 
     private val _events = MutableSharedFlow<RouteEvent>(extraBufferCapacity = 64)
 
+    private fun launchCoroutine(block: suspend () -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                block()
+            } catch (e: CancellationException) {
+                throw e
+                _events.emit(RouteEvent.Error(Constants.ERROR.CANCEL_OPERATION))
+            } catch (e: TimeoutCancellationException) {
+                throw e
+                _events.emit(RouteEvent.Error(Constants.ERROR.TIMEOUT))
+            } catch (e: Exception) {
+                throw e
+                _events.emit(RouteEvent.Error(e.message))
+            }
+        }
+    }
+
     val viewState: StateFlow<RouteViewState> = _events
         .onStart {
             emit(RouteEvent.RefreshRoutes)
@@ -36,7 +55,7 @@ class RouteViewModel @Inject constructor(
         .runningFold(RouteViewState()) { state, event ->
             when (event) {
                 is RouteEvent.RefreshRoutes -> {
-                    viewModelScope.launch(Dispatchers.IO) { loadRoutes() }
+                    launchCoroutine { loadRoutes() }
                     state.copy(isLoading = true)
                 }
 
@@ -65,17 +84,17 @@ class RouteViewModel @Inject constructor(
                     state.copy(nameRouteUpdate = event.name)
 
                 is RouteEvent.CreateRoute -> {
-                    viewModelScope.launch(Dispatchers.IO) { createRoute() }
+                    launchCoroutine { createRoute() }
                     state
                 }
 
                 is RouteEvent.UpdateRoute -> {
-                    viewModelScope.launch(Dispatchers.IO) { updateRoute() }
+                    launchCoroutine { updateRoute() }
                     state
                 }
 
                 is RouteEvent.DeleteRoute -> {
-                    viewModelScope.launch(Dispatchers.IO) { deleteRoute() }
+                    launchCoroutine { deleteRoute() }
                     state
                 }
             }

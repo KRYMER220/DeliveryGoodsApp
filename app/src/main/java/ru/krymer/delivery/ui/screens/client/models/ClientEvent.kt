@@ -6,7 +6,7 @@ import ru.krymer.delivery.data.model.RouteModel
 sealed class ClientEvent {
     data class ClientsLoaded(val clients: List<ClientModel>) : ClientEvent()
     data class Initialize(val route: RouteModel, val routes: List<RouteModel>) : ClientEvent()
-
+    data class Error(val message: String?) : ClientEvent()
     object RefreshClients : ClientEvent()
     object CreateClient : ClientEvent()
     object UpdateClient : ClientEvent()

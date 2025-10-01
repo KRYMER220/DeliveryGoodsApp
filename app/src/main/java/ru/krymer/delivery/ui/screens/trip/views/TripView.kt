@@ -104,11 +104,10 @@ fun TripView(
                 items(items = trips) { trip ->
                     TripItem(
                         trip = trip, updateTrip = {
-                            if (user.isSysOrAdmin()) event(TripEvent.ShowUpdateDialog(it))
+                            if (user.isSysOrAdmin()) event(TripEvent.ToggleUpdateDialog(it))
                         }, deleteTrip = {
-                            event(TripEvent.ShowDeleteDialog(trip = it))
+                            event(TripEvent.ToggleDeleteDialog(trip = it))
                         }, openTrip = {
-                            event(TripEvent.SyncTrip(it))
                             openTrip(it)
                         }, user = user
                     )
@@ -145,19 +144,19 @@ fun TripView(
     }
 
 
-    if (state.showDeleteDialog) {
-        state.deleteTrip?.let {
+    if (state.toggleDeleteTrip) {
+        state.trip?.let {
             CommonDeleteDialog(
                 itemName = it.nameRoute,
                 isVisible = true,
-                onDismiss = { event(TripEvent.DismissDeleteDialog) },
+                onDismiss = { event(TripEvent.ToggleDeleteDialog(null)) },
                 onConfirm = { event(TripEvent.DeleteTrip) })
         }
     }
 
     if (state.isShowFilterDialog) {
         CommonAlertAddDialog(onDismiss = {
-            event(TripEvent.OpenFilterTrip)
+            event(TripEvent.ToggleFilterDialog)
         }, content = {
             FilterView(changeFilterCourier = {
                 event(TripEvent.IsFilter(it))
@@ -167,9 +166,9 @@ fun TripView(
 
 
 
-    if (state.stateAddDialog) {
+    if (state.toggleAddTrip) {
         CommonAlertAddDialog(confirm = { event(TripEvent.SaveTrip) }, onDismiss = {
-            event(TripEvent.ShowHideAddDialog)
+            event(TripEvent.ToggleAddDialog)
         }, content = {
             AddTripView(
                 state = state, event = event
@@ -177,9 +176,9 @@ fun TripView(
         })
     }
 
-    if (state.showUpdateSheetDialog) {
+    if (state.toggleUpdateTrip) {
         CommonAlertAddDialog(confirm = { event(TripEvent.UpdateTrip) }, onDismiss = {
-            event(TripEvent.DismissUpdateDialog)
+            event(TripEvent.ToggleUpdateDialog(null))
         }, content = {
             UpdateTripView(
                 state = state, event = event
@@ -203,7 +202,7 @@ fun HeaderContentTrip(
                 contentDescription = "sort",
                 modifier = Modifier
                     .clickable(onClick = {
-                        event(TripEvent.OpenFilterTrip)
+                        event(TripEvent.ToggleFilterDialog)
                     })
                     .size(60.dp)
             )
@@ -214,7 +213,7 @@ fun HeaderContentTrip(
                 contentDescription = "add trip",
                 modifier = Modifier
                     .clickable(onClick = {
-                        event(TripEvent.ShowHideAddDialog)
+                        event(TripEvent.ToggleAddDialog)
                     })
                     .size(60.dp)
             )

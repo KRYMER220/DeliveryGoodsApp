@@ -45,7 +45,7 @@ fun UpdateClientView(
 ) {
     state.client?.let { client ->
         var name by remember { mutableStateOf(client.name) }
-        var arrears by remember { mutableStateOf("${client.arrears}") }
+        var arrears by remember { mutableStateOf("${client.arrears.toInt()}") }
         var phone by remember { mutableStateOf(client.phone) }
         var cords by remember { mutableStateOf(client.cord) }
         var errorName by remember { mutableStateOf(Error()) }

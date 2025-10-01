@@ -33,6 +33,7 @@ import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.data.model.utilModel.Loader
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
 import ru.krymer.delivery.ui.components.CommonSaveDialog
+import ru.krymer.delivery.ui.components.CustomCircularProgressIndicator
 import ru.krymer.delivery.ui.screens.route.models.RouteEvent
 import ru.krymer.delivery.ui.screens.route.models.RouteViewState
 import ru.krymer.delivery.ui.theme.AppTheme
@@ -71,42 +72,35 @@ fun RouteView(
             }
         }
         Spacer(modifier = Modifier.height(15.dp))
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            when(loader) {
-                Loader.LOAD -> {
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.fillMaxSize()) {
-                        items(routes) { route ->
-                            RouteItem(
-                                route = route,
-                                openRoute = {
-                                    openRoute(it, routes)
-                                },
-                                deleteRoute = {
-                                    if (user.isSysOrAdmin()) {
-                                        event(RouteEvent.ToggleDeleteDialog(it))
-                                    }
-                                },
-                                updateRoute = {
-                                    if (user.isSysOrAdmin()) {
-                                        event(RouteEvent.ToggleUpdateDialog(it))
-                                    }
-                                },
-                                user = user
-                            )
-                        }
+        when(loader) {
+            Loader.LOAD -> {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.fillMaxSize()) {
+                    items(routes) { route ->
+                        RouteItem(
+                            route = route,
+                            openRoute = {
+                                openRoute(it, routes)
+                            },
+                            deleteRoute = {
+                                if (user.isSysOrAdmin()) {
+                                    event(RouteEvent.ToggleDeleteDialog(it))
+                                }
+                            },
+                            updateRoute = {
+                                if (user.isSysOrAdmin()) {
+                                    event(RouteEvent.ToggleUpdateDialog(it))
+                                }
+                            },
+                            user = user
+                        )
                     }
                 }
-                Loader.EMPTY -> {
-                    Text(text = stringResource(R.string.empty_data), color = AppTheme.colors.onSecondary, fontSize = 18.sp)
-                }
-                Loader.LOADING -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .size(60.dp),
-                        strokeWidth = 2.dp,
-                        color = AppTheme.colors.onSecondary
-                    )
-                }
+            }
+            Loader.EMPTY -> {
+                Text(text = stringResource(R.string.empty_data), color = AppTheme.colors.onSecondary, fontSize = 18.sp)
+            }
+            Loader.LOADING -> {
+                CustomCircularProgressIndicator()
             }
         }
     }

@@ -35,6 +35,7 @@ import ru.krymer.delivery.data.model.ProductModel
 import ru.krymer.delivery.data.model.utilModel.Loader
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
 import ru.krymer.delivery.ui.components.CommonSaveDialog
+import ru.krymer.delivery.ui.components.CustomCircularProgressIndicator
 import ru.krymer.delivery.ui.screens.product.models.ProductEvent
 import ru.krymer.delivery.ui.screens.product.models.ProductViewState
 import ru.krymer.delivery.ui.theme.AppTheme
@@ -103,12 +104,7 @@ fun ProductView(
                 Text(text = stringResource(R.string.empty_data), color = AppTheme.colors.onSecondary, fontSize = 18.sp)
             }
             Loader.LOADING -> {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .size(60.dp),
-                    strokeWidth = 2.dp,
-                    color = AppTheme.colors.onSecondary
-                )
+                CustomCircularProgressIndicator()
             }
         }
     }

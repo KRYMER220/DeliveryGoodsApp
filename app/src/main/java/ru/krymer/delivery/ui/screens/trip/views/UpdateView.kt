@@ -2,6 +2,7 @@ package ru.krymer.delivery.ui.screens.trip.views
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -38,6 +39,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.ui.components.CommonTextField
+import ru.krymer.delivery.ui.components.GenericDropdown
 import ru.krymer.delivery.ui.screens.trip.models.TripEvent
 import ru.krymer.delivery.ui.screens.trip.models.TripViewState
 import ru.krymer.delivery.ui.theme.AppTheme
@@ -52,6 +54,9 @@ fun UpdateTripView(
     val routes = state.listRoute
     val couriers = state.listCourier
     var salary by remember { mutableStateOf(state.salary) }
+    var toggleMenuRoute by remember { mutableStateOf(false) }
+    var toggleMenuCourier by remember { mutableStateOf(false) }
+    var toggleDatePicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.salary) {
         salary = state.salary
@@ -60,7 +65,7 @@ fun UpdateTripView(
     if (routes.isNotEmpty() && couriers.isNotEmpty()) {
         state.currentRoute?.let { r ->
             state.currentCourier?.let { c ->
-                Column {
+                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -69,9 +74,7 @@ fun UpdateTripView(
                             .background(
                                 color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)
                             )
-                            .clickable {
-                                event(TripEvent.OpenHideDatePickerForAddTrip)
-                            }) {
+                            .clickable { toggleDatePicker = true }) {
                         Text(
                             text = convertToTextDate(state.currentDate),
                             modifier = Modifier
@@ -80,7 +83,7 @@ fun UpdateTripView(
                             color = AppTheme.colors.onSecondary,
                             style = AppTheme.typography.titleMedium
                             )
-                        if (state.dropDownStateDatePicker) {
+                        if (toggleDatePicker) {
                             val datePickerState = rememberDatePickerState()
                             DatePickerDialog(onDismissRequest = {
 
@@ -88,7 +91,7 @@ fun UpdateTripView(
                                 TextButton(onClick = {
                                     datePickerState.selectedDateMillis?.let {
                                         event(TripEvent.ChangeDate(it))
-                                        event(TripEvent.OpenHideDatePickerForAddTrip)
+                                        toggleDatePicker = false
                                     }
 
                                 }) {
@@ -96,7 +99,7 @@ fun UpdateTripView(
                                 }
                             }, dismissButton = {
                                 TextButton(onClick = {
-                                    event(TripEvent.OpenHideDatePickerForAddTrip)
+                                    toggleDatePicker = false
                                 }) {
                                     Text(stringResource(id = R.string.close))
                                 }
@@ -105,88 +108,35 @@ fun UpdateTripView(
                             }
                         }
                     }
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 10.dp)
-                            .background(
-                                color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)
-                            )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(60.dp)
-                                .clickable {
-                                    event(TripEvent.OpenHideDropDownMenuWithRoutes)
-                                }, verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = r.name,
-                                modifier = Modifier.padding(start = 15.dp),
-                                color = AppTheme.colors.onSecondary,
-                                style = AppTheme.typography.titleMedium
-                            )
-                            Spacer(modifier = Modifier.weight(1f))
-                            Icon(
-                                imageVector = Icons.Filled.ArrowDropDown,
-                                contentDescription = null,
-                                modifier = Modifier.padding(end = 15.dp)
-                            )
-                            DropdownMenu(expanded = state.dropDownStateRoutes, onDismissRequest = {
-                                event(TripEvent.OpenHideDropDownMenuWithRoutes)
-                            }) {
-                                routes.forEach {
-                                    DropdownMenuItem(text = { Text(text = it.name) }, onClick = {
-                                        event(TripEvent.SelectRoute(it))
-                                        event(TripEvent.OpenHideDropDownMenuWithRoutes)
-                                    })
-                                }
-                            }
+
+                    GenericDropdown(
+                        selectedItem = state.currentRoute,
+                        items = routes,
+                        expanded = toggleMenuRoute,
+                        onExpandedChange = { expanded ->
+                            toggleMenuRoute = !toggleMenuRoute
+                        },
+                        itemLabel = { it.name },
+                        placeholder = "Маршрут не выбран",
+                        onItemSelected = { selectedRoute ->
+                            event(TripEvent.SelectRoute(selectedRoute))
                         }
-                    }
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 10.dp)
-                            .background(
-                                color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)
-                            )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(60.dp)
-                                .clickable {
-                                    event(TripEvent.OpenHideDropDownMenuWithCouriers)
-                                }, verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = c.name,
-                                modifier = Modifier.padding(start = 15.dp),
-                                color = AppTheme.colors.onSecondary,
-                                style = AppTheme.typography.titleMedium
-                            )
-                            Spacer(modifier = Modifier.weight(1f))
-                            Icon(
-                                imageVector = Icons.Filled.ArrowDropDown,
-                                contentDescription = null,
-                                modifier = Modifier.padding(end = 15.dp)
-                            )
-                            DropdownMenu(
-                                expanded = state.dropDownStateCourier,
-                                onDismissRequest = {
-                                    event(TripEvent.OpenHideDropDownMenuWithCouriers)
-                                }) {
-                                couriers.forEach {
-                                    DropdownMenuItem(text = { Text(text = it.name) }, onClick = {
-                                        event(TripEvent.SelectCourier(it))
-                                        event(TripEvent.OpenHideDropDownMenuWithCouriers)
-                                    })
-                                }
-                            }
+                    )
+
+                    GenericDropdown(
+                        selectedItem = state.currentCourier,
+                        items = state.listCourier,
+                        expanded = toggleMenuCourier,
+                        onExpandedChange = { expanded ->
+                            toggleMenuCourier = !toggleMenuCourier
+                        },
+                        itemLabel = { it.name },
+                        placeholder = "Курьер не выбран",
+                        onItemSelected = { selectedCourier ->
+                            event(TripEvent.SelectCourier(selectedCourier))
                         }
-                    }
+                    )
+
                     Spacer(modifier = Modifier.height(10.dp))
                     CommonTextField(
                         modifier = Modifier.fillMaxWidth(),

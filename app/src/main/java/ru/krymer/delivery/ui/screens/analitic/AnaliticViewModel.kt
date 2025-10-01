@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import ir.ehsannarmani.compose_charts.models.Bars
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -286,7 +287,14 @@ class AnaliticViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 block()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+                sharedViewModel.message(Constants.ERROR.CANCEL_OPERATION)
+            } catch (e: TimeoutCancellationException) {
+                throw e
+                sharedViewModel.message(Constants.ERROR.TIMEOUT)
             } catch (e: Exception) {
+                throw e
                 sharedViewModel.message(e.message)
             }
         }

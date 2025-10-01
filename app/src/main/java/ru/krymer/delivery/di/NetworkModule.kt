@@ -16,8 +16,6 @@ const val BASE_URL = "https://monolit.containerapps.ru/api/v1/"
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-
-
     @Singleton
     @Provides
     fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {

@@ -3,7 +3,9 @@ package ru.krymer.delivery.ui.screens.client
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +20,8 @@ import ru.krymer.delivery.data.repositoryImpl.ClientRepositoryImpl
 import ru.krymer.delivery.data.request.ClientRequest
 import ru.krymer.delivery.ui.screens.client.models.ClientEvent
 import ru.krymer.delivery.ui.screens.client.models.ClientViewState
+import ru.krymer.delivery.ui.screens.product.models.ProductEvent
+import ru.krymer.delivery.ui.screens.route.models.RouteEvent
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.MyResult
@@ -30,6 +34,23 @@ class ClientViewModel @Inject constructor(
 
     private val _events = MutableSharedFlow<ClientEvent>(extraBufferCapacity = 64)
 
+    private fun launchCoroutine(block: suspend () -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                block()
+            } catch (e: CancellationException) {
+                throw e
+                _events.emit(ClientEvent.Error(Constants.ERROR.CANCEL_OPERATION))
+            } catch (e: TimeoutCancellationException) {
+                throw e
+                _events.emit(ClientEvent.Error(Constants.ERROR.TIMEOUT))
+            } catch (e: Exception) {
+                throw e
+                _events.emit(ClientEvent.Error(e.message))
+            }
+        }
+    }
+
     val viewState: StateFlow<ClientViewState> = _events
         .onStart {}
         .runningFold(ClientViewState()) { state, event ->
@@ -40,7 +61,7 @@ class ClientViewModel @Inject constructor(
                         listRoute = event.routes,
                         isLoading = true
                     )
-                    viewModelScope.launch(Dispatchers.IO) {
+                    launchCoroutine {
                         loadClients(route = event.route)
                     }
                     newState
@@ -49,10 +70,10 @@ class ClientViewModel @Inject constructor(
                 is ClientEvent.RefreshClients -> {
                     val currentRoute = state.route
                     if (currentRoute == null) {
-                        sharedViewModel.message(Constants.ERROR.AGAIN, TypeMessageModel.ERROR)
+                        _events.emit(ClientEvent.Error(message = Constants.ERROR.AGAIN))
                         state.copy(isLoading = false)
                     } else {
-                        viewModelScope.launch(Dispatchers.IO) { loadClients(route = currentRoute) }
+                        launchCoroutine { loadClients(route = currentRoute) }
                         state.copy(isLoading = true)
                     }
                 }
@@ -103,22 +124,27 @@ class ClientViewModel @Inject constructor(
                 }
 
                 is ClientEvent.CreateClient -> {
-                    viewModelScope.launch(Dispatchers.IO) { createClient() }
+                    launchCoroutine { createClient() }
                     state
                 }
 
                 is ClientEvent.UpdateClient -> {
-                    viewModelScope.launch(Dispatchers.IO) { updateClient() }
+                    launchCoroutine { updateClient() }
                     state
                 }
 
                 is ClientEvent.DeleteClient -> {
-                    viewModelScope.launch(Dispatchers.IO) { deleteClient() }
+                    launchCoroutine { deleteClient() }
                     state
                 }
 
                 is ClientEvent.ReorderClients -> {
-                    viewModelScope.launch(Dispatchers.IO) { reorderClients(clients = event.list) }
+                    launchCoroutine { reorderClients(clients = event.list) }
+                    state
+                }
+
+                is ClientEvent.Error -> {
+                    sharedViewModel.message(message = event.message)
                     state
                 }
             }
@@ -133,7 +159,7 @@ class ClientViewModel @Inject constructor(
         when (val res = repository.getClients(route.id)) {
             is MyResult.Success -> _events.emit(ClientEvent.ClientsLoaded(res.data))
             is MyResult.Error -> {
-                sharedViewModel.message(res.message, type = TypeMessageModel.ERROR)
+                _events.emit(ClientEvent.Error(message = res.message))
                 _events.emit(ClientEvent.ClientsLoaded(emptyList()))
             }
         }
@@ -142,7 +168,7 @@ class ClientViewModel @Inject constructor(
     private suspend fun createClient() {
         val state = viewState.value
         val route = state.route ?: run {
-            sharedViewModel.message(Constants.ERROR.AGAIN, TypeMessageModel.ERROR)
+            _events.emit(ClientEvent.Error(message = Constants.ERROR.AGAIN))
             return
         }
 
@@ -172,7 +198,8 @@ class ClientViewModel @Inject constructor(
                 _events.emit(ClientEvent.RefreshClients)
             }
 
-            is MyResult.Error -> sharedViewModel.message(res.message, TypeMessageModel.ERROR)
+            is MyResult.Error -> _events.emit(ClientEvent.Error(message = res.message))
+
         }
     }
 
@@ -199,7 +226,7 @@ class ClientViewModel @Inject constructor(
                 _events.emit(ClientEvent.RefreshClients)
             }
 
-            is MyResult.Error -> sharedViewModel.message(res.message, TypeMessageModel.ERROR)
+            is MyResult.Error -> _events.emit(ClientEvent.Error(message = res.message))
         }
     }
 
@@ -213,7 +240,7 @@ class ClientViewModel @Inject constructor(
                 _events.emit(ClientEvent.RefreshClients)
             }
 
-            is MyResult.Error -> sharedViewModel.message(res.message, TypeMessageModel.ERROR)
+            is MyResult.Error -> _events.emit(ClientEvent.Error(message = res.message))
         }
     }
 
@@ -233,8 +260,9 @@ class ClientViewModel @Inject constructor(
         }
 
         when (val res = repository.moves(requests = requests)) {
-            is MyResult.Error -> sharedViewModel.message(res.message, TypeMessageModel.ERROR)
+            is MyResult.Error -> _events.emit(ClientEvent.Error(message = res.message))
             is MyResult.Success -> Unit
+
         }
     }
 }

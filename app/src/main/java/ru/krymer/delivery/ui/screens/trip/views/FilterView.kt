@@ -20,6 +20,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,12 +41,22 @@ fun FilterView(
     event: (TripEvent) -> Unit
 ) {
 
+    var toggleMenuRoute by remember { mutableStateOf(false) }
+    var toggleMenuCourier by remember { mutableStateOf(false) }
+
     var isFilter by remember { mutableStateOf(state.isFilter) }
     var isSorted by remember { mutableStateOf(state.sort) }
     val routes = state.listRoute
     val couriers = state.listCourier
-    val route = state.currentRoute
-    val user = state.currentCourier
+
+    var route = state.currentRoute
+    var user = state.currentCourier
+
+    LaunchedEffect(route, user) {
+        route = state.currentRoute
+        user = state.currentCourier
+    }
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Checkbox(
@@ -105,7 +116,7 @@ fun FilterView(
                 style = AppTheme.typography.titleMedium
             )
         }
-        route.let {
+        route?.let {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -119,7 +130,7 @@ fun FilterView(
                         .fillMaxWidth()
                         .height(60.dp)
                         .clickable {
-                            event(TripEvent.OpenHideDropDownMenuWithRoutes)
+                            toggleMenuRoute = true
                         }, verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -135,14 +146,14 @@ fun FilterView(
                         modifier = Modifier.padding(end = 15.dp)
                     )
 
-                    DropdownMenu(expanded = state.dropDownStateRoutes, onDismissRequest = {
-                        event(TripEvent.OpenHideDropDownMenuWithRoutes)
+                    DropdownMenu(expanded = toggleMenuRoute, onDismissRequest = {
+                        toggleMenuRoute = false
                     }) {
                         DropdownMenuItem(text = {
                             Text(text = "Не выбран", style = AppTheme.typography.titleSmall)
                         }, onClick = {
                             event(TripEvent.ChangeRouteFilter(null))
-                            event(TripEvent.OpenHideDropDownMenuWithRoutes)
+                            toggleMenuRoute = false
                         })
                         routes.forEach {
                             DropdownMenuItem(text = {
@@ -152,14 +163,14 @@ fun FilterView(
                                 )
                             }, onClick = {
                                 event(TripEvent.ChangeRouteFilter(it))
-                                event(TripEvent.OpenHideDropDownMenuWithRoutes)
+                                toggleMenuRoute = false
                             })
                         }
                     }
                 }
             }
         }
-        user.let {
+        user?.let {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -173,7 +184,7 @@ fun FilterView(
                         .fillMaxWidth()
                         .height(60.dp)
                         .clickable {
-                            event(TripEvent.OpenHideDropDownMenuWithCouriers)
+                            toggleMenuCourier = true
                         }, verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -189,15 +200,15 @@ fun FilterView(
                         modifier = Modifier.padding(end = 15.dp)
                     )
                     DropdownMenu(
-                        expanded = state.dropDownStateCourier,
+                        expanded = toggleMenuCourier,
                         onDismissRequest = {
-                            event(TripEvent.OpenHideDropDownMenuWithCouriers)
+                            toggleMenuCourier = false
                         }) {
                         DropdownMenuItem(text = {
                             Text(text = "Не выбран", style = AppTheme.typography.titleSmall)
                         }, onClick = {
                             event(TripEvent.ChangeCourierFilter(null))
-                            event(TripEvent.OpenHideDropDownMenuWithCouriers)
+                            toggleMenuCourier = false
                         })
                         couriers.forEach {
                             DropdownMenuItem(text = {
@@ -207,7 +218,7 @@ fun FilterView(
                                 )
                             }, onClick = {
                                 event(TripEvent.ChangeCourierFilter(it))
-                                event(TripEvent.OpenHideDropDownMenuWithCouriers)
+                                toggleMenuCourier = false
                             })
                         }
                     }
