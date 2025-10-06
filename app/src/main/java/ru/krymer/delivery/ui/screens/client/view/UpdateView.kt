@@ -32,7 +32,6 @@ import ru.krymer.delivery.ui.components.CommonTextField
 import ru.krymer.delivery.ui.screens.client.models.ClientEvent
 import ru.krymer.delivery.ui.screens.client.models.ClientViewState
 import ru.krymer.delivery.ui.theme.AppTheme
-import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.isValidCords
 import ru.krymer.delivery.utills.isValidPhone
 import ru.krymer.delivery.utills.startsWithDigit
@@ -52,6 +51,11 @@ fun UpdateClientView(
         var errorArrears by remember { mutableStateOf(Error()) }
         var errorPhone by remember { mutableStateOf(Error()) }
         var errorCords by remember { mutableStateOf(Error()) }
+        val errorEmpty = stringResource(R.string.empty_input)
+        val errorNum = stringResource(R.string.error_num)
+        val errorNumPhone = stringResource(R.string.error_phone)
+        val errorUncorrectCords = stringResource(R.string.error_cord)
+
         var toggleDropDownMenuChangeRoute by remember { mutableStateOf(false) }
         val route = state.selectedRoute
         val list = state.listRoute
@@ -65,7 +69,7 @@ fun UpdateClientView(
                     changerText = { str ->
                         name = str
                         errorName = when {
-                            str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
+                            str == "" -> Error(visible = true, error = errorEmpty)
                             else -> {
                                 event(ClientEvent.ChangeNameClient(str))
                                 Error()
@@ -87,7 +91,7 @@ fun UpdateClientView(
                     changerText = { str ->
                         arrears = str
                         errorArrears = when {
-                            !startsWithDigit(str) -> Error(visible = true, error = Constants.ERROR.ERROR_NUMBER_INPUT)
+                            !startsWithDigit(str) -> Error(visible = true, error = errorNum)
                             else -> {
                                 event(ClientEvent.ChangeArrearsClient(str))
                                 Error()
@@ -109,7 +113,7 @@ fun UpdateClientView(
                     changerText = { str ->
                         phone = str
                         errorPhone = when {
-                            !isValidPhone(str) -> Error(visible = true, error = Constants.ERROR.PHONE)
+                            !isValidPhone(str) -> Error(visible = true, error = errorNumPhone)
                             else -> {
                                 event(ClientEvent.ChangePhoneClient(str))
                                 Error()
@@ -131,7 +135,7 @@ fun UpdateClientView(
                     changerText = { str ->
                         cords = str
                         errorCords = when {
-                            !isValidCords(str) -> Error(visible = true, error = Constants.ERROR.CORD)
+                            !isValidCords(str) -> Error(visible = true, error = errorUncorrectCords)
                             else -> {
                                 event(ClientEvent.ChangeCordClient(str))
                                 Error()

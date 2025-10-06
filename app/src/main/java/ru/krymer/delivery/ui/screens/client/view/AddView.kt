@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.dp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.utilModel.Error
 import ru.krymer.delivery.ui.components.CommonTextField
-import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.isValidCords
 import ru.krymer.delivery.utills.isValidPhone
 import ru.krymer.delivery.utills.startsWithDigit
@@ -38,6 +37,11 @@ fun AddClientView(
     var errorArrears by remember { mutableStateOf(Error()) }
     var errorPhone by remember { mutableStateOf(Error()) }
     var errorCords by remember { mutableStateOf(Error()) }
+    val errorEmpty = stringResource(R.string.empty_input)
+    val errorNum = stringResource(R.string.error_num)
+    val errorNumPhone = stringResource(R.string.error_phone)
+    val errorUncorrectCords = stringResource(R.string.error_cord)
+
 
     Column {
         CommonTextField(
@@ -48,7 +52,7 @@ fun AddClientView(
             changerText = { str ->
                 name = str
                 errorName = when {
-                    str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
+                    str == "" -> Error(visible = true, error = errorEmpty)
                     else -> {
                         changeName(str)
                         Error()
@@ -70,7 +74,7 @@ fun AddClientView(
             changerText = { str ->
                 arrears = str
                 errorArrears = when {
-                    !startsWithDigit(str) -> Error(visible = true, error = Constants.ERROR.ERROR_NUMBER_INPUT)
+                    !startsWithDigit(str) -> Error(visible = true, error = errorNum)
                     else -> {
                         changeArrears(str)
                         Error()
@@ -92,7 +96,7 @@ fun AddClientView(
             changerText = { str ->
                 phone = str
                 errorPhone = when {
-                    !isValidPhone(str) -> Error(visible = true, error = Constants.ERROR.PHONE)
+                    !isValidPhone(str) -> Error(visible = true, error = errorNumPhone)
                     else -> {
                         changePhone(str)
                         Error()
@@ -114,7 +118,7 @@ fun AddClientView(
             changerText = { str ->
                 cords = str
                 errorCords = when {
-                    !isValidCords(str) -> Error(visible = true, error = Constants.ERROR.CORD)
+                    !isValidCords(str) -> Error(visible = true, error = errorUncorrectCords)
                     else -> {
                         changeCords(str)
                         Error()

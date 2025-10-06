@@ -22,7 +22,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
@@ -36,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -44,32 +44,30 @@ import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.RequestModel
 import ru.krymer.delivery.data.model.ShopModel
-import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.data.model.utilModel.Error
 import ru.krymer.delivery.data.model.utilModel.StatusModel
 import ru.krymer.delivery.data.model.utilModel.TypePayModel
 import ru.krymer.delivery.data.model.utilModel.toStatusModel
 import ru.krymer.delivery.ui.components.CommonTextField
+import ru.krymer.delivery.ui.components.CustomCircularProgressIndicator
 import ru.krymer.delivery.ui.components.KeyBoardDialog
 import ru.krymer.delivery.ui.request.models.RequestEvent
 import ru.krymer.delivery.ui.request.models.RequestViewState
 import ru.krymer.delivery.ui.theme.AppTheme
-import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.convertToTextDate
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun RequestView(state: RequestViewState, event: (RequestEvent) -> Unit, user: UserModel) {
+fun RequestView(state: RequestViewState, event: (RequestEvent) -> Unit) {
     state.shop?.let { shop ->
-        val listMenu = if (user.isModOrAdminOrSys()) listOf(
-            "Долг",
-            "Доп.сумму",
-            "Старая цена",
-            "Добавить бонус",
-            "Удалить магазин",
-            "Отправить сообщение",
+        val listMenu = listOf(
+            stringResource(R.string.arrears),
+            stringResource(R.string.add_sum),
+            stringResource(R.string.old_price),
+            stringResource(R.string.bonus),
+            stringResource(R.string.del_shop),
+            stringResource(R.string.send_message),
         )
-        else listOf("Долг", "Доп.сумму", "Старая цена", "Отправить сообщение")
         var isExpandedMenu by remember { mutableStateOf(false) }
         val requests = state.requests
         val orderMoney = state.orderMoney.toInt().toString()
@@ -81,6 +79,8 @@ fun RequestView(state: RequestViewState, event: (RequestEvent) -> Unit, user: Us
         val switchOldPrice = state.isOldPrice
         var errorCash by remember { mutableStateOf(Error()) }
         var errorNoCash by remember { mutableStateOf(Error()) }
+        val errorEmpty = stringResource(R.string.empty_input)
+
 
         LaunchedEffect(stateCash) {
             cash = stateCash.toString()
@@ -107,13 +107,11 @@ fun RequestView(state: RequestViewState, event: (RequestEvent) -> Unit, user: Us
                     modifier = Modifier
                         .fillMaxWidth()
                         .border(
-                            width = 2.dp,
-                            color = when (typePayState) {
+                            width = 2.dp, color = when (typePayState) {
                                 TypePayModel.CASH -> Color.Transparent
                                 TypePayModel.NO_CASH -> Color.Magenta
                                 TypePayModel.ANOTHER -> Color.Green
-                            },
-                            shape = RoundedCornerShape(10.dp)
+                            }, shape = RoundedCornerShape(10.dp)
                         )
                         .weight(0.333f)
                         .height(40.dp)
@@ -122,9 +120,9 @@ fun RequestView(state: RequestViewState, event: (RequestEvent) -> Unit, user: Us
                         })
                         .wrapContentHeight(Alignment.CenterVertically),
                     text = when (typePayState) {
-                        TypePayModel.CASH -> "Нал"
-                        TypePayModel.NO_CASH -> "Без/нал"
-                        TypePayModel.ANOTHER -> "Смешаный"
+                        TypePayModel.CASH -> stringResource(R.string.cash)
+                        TypePayModel.NO_CASH -> stringResource(R.string.noCash)
+                        TypePayModel.ANOTHER -> stringResource(R.string.another_pay)
                     },
                     style = AppTheme.typography.titleSmall,
                     textAlign = TextAlign.Center,
@@ -160,33 +158,33 @@ fun RequestView(state: RequestViewState, event: (RequestEvent) -> Unit, user: Us
                             DropdownMenuItem(onClick = {
                                 isExpandedMenu = false
                                 when (item) {
-                                    "Долг" -> {
+                                    listMenu[0] -> {
                                         event(RequestEvent.ToggleArrearsDialog)
                                     }
 
-                                    "Доп.сумму" -> {
+                                    listMenu[1] -> {
                                         event(RequestEvent.ToggleAddSumDialog)
                                     }
 
-                                    "Старая цена" -> {
+                                    listMenu[2] -> {
                                         event(RequestEvent.ChangeTypePrice)
                                     }
 
-                                    "Добавить бонус" -> {
+                                    listMenu[3] -> {
                                         event(RequestEvent.SwitchBonus)
                                     }
 
-                                    "Отправить сообщение" -> {
-                                        event(RequestEvent.ToggleMessageDialog)
+                                    listMenu[4] -> {
+                                        event(RequestEvent.ToggleDeleteShop)
                                     }
 
-                                    "Удалить магазин" -> {
-                                        event(RequestEvent.ToggleDeleteShop)
+                                    listMenu[5] -> {
+                                        event(RequestEvent.ToggleMessageDialog)
                                     }
                                 }
                             }, text = {
                                 when (item) {
-                                    "Старая цена" -> Text(
+                                    listMenu[2] -> Text(
                                         color = if (switchOldPrice) Color.Red else AppTheme.colors.onSecondary,
                                         text = item,
                                         style = AppTheme.typography.titleSmall
@@ -241,7 +239,7 @@ fun RequestView(state: RequestViewState, event: (RequestEvent) -> Unit, user: Us
                     ) {
                         Text(
                             style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
-                            text = "Бонус",
+                            text = stringResource(R.string.bonus),
                             modifier = Modifier.align(Alignment.Center),
                             color = AppTheme.colors.onSecondary
                         )
@@ -255,7 +253,7 @@ fun RequestView(state: RequestViewState, event: (RequestEvent) -> Unit, user: Us
                 ) {
                     Text(
                         style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
-                        text = "Заявка",
+                        text = stringResource(R.string.request),
                         modifier = Modifier.align(Alignment.Center),
                         color = AppTheme.colors.onSecondary
                     )
@@ -268,7 +266,7 @@ fun RequestView(state: RequestViewState, event: (RequestEvent) -> Unit, user: Us
                 ) {
                     Text(
                         style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
-                        text = "Обмены",
+                        text = stringResource(R.string.exchange),
                         modifier = Modifier.align(Alignment.Center),
                         color = AppTheme.colors.onSecondary
                     )
@@ -317,7 +315,7 @@ fun RequestView(state: RequestViewState, event: (RequestEvent) -> Unit, user: Us
                                 ) {
                                     Text(
                                         style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 4).sp),
-                                        text = "Долг",
+                                        text = stringResource(R.string.arrears),
                                         color = AppTheme.colors.onSecondary
                                     )
                                     Text(
@@ -345,7 +343,7 @@ fun RequestView(state: RequestViewState, event: (RequestEvent) -> Unit, user: Us
                                     ) {
                                         Text(
                                             style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
-                                            text = "Доп",
+                                            text = stringResource(R.string.add_sum_short),
                                             color = AppTheme.colors.onSecondary
                                         )
                                         Text(
@@ -370,7 +368,7 @@ fun RequestView(state: RequestViewState, event: (RequestEvent) -> Unit, user: Us
                                 ) {
                                     Text(
                                         style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
-                                        text = "Заявка",
+                                        text = stringResource(R.string.request),
                                         color = AppTheme.colors.onSecondary
                                     )
                                     Text(
@@ -390,14 +388,14 @@ fun RequestView(state: RequestViewState, event: (RequestEvent) -> Unit, user: Us
                                         ) {
                                             CommonTextField(
                                                 value = cash,
-                                                placeholder = "Нал",
+                                                placeholder = stringResource(R.string.cash),
                                                 modifier = Modifier.weight(0.333f),
                                                 changerText = { newValue ->
                                                     cash = newValue
                                                     errorCash = when {
                                                         newValue == "" -> Error(
                                                             visible = true,
-                                                            error = Constants.EMPTY.EMPTY_FIELD
+                                                            error = errorEmpty
                                                         )
 
                                                         else -> {
@@ -420,14 +418,14 @@ fun RequestView(state: RequestViewState, event: (RequestEvent) -> Unit, user: Us
                                             )
                                             CommonTextField(
                                                 value = noCash,
-                                                placeholder = "Без/Нал",
+                                                placeholder = stringResource(R.string.noCash),
                                                 modifier = Modifier.weight(0.333f),
                                                 changerText = { newValue ->
                                                     noCash = newValue
                                                     errorNoCash = when {
                                                         newValue == "" -> Error(
                                                             visible = true,
-                                                            error = Constants.EMPTY.EMPTY_FIELD
+                                                            error = errorEmpty
                                                         )
 
                                                         else -> {
@@ -473,23 +471,23 @@ fun RequestView(state: RequestViewState, event: (RequestEvent) -> Unit, user: Us
                                                             (cash.isEmpty() && noCash.isEmpty()) -> {
                                                                 errorCash = Error(
                                                                     visible = true,
-                                                                    error = Constants.EMPTY.EMPTY_FIELD
+                                                                    error = errorEmpty
                                                                 )
                                                                 errorNoCash = Error(
                                                                     visible = true,
-                                                                    error = Constants.EMPTY.EMPTY_FIELD
+                                                                    error = errorEmpty
                                                                 )
                                                             }
 
                                                             noCash.isEmpty() -> errorNoCash =
                                                                 Error(
                                                                     visible = true,
-                                                                    error = Constants.EMPTY.EMPTY_FIELD
+                                                                    error = errorEmpty
                                                                 )
 
                                                             cash.isEmpty() -> errorCash = Error(
                                                                 visible = true,
-                                                                error = Constants.EMPTY.EMPTY_FIELD
+                                                                error = errorEmpty
                                                             )
 
                                                             else -> event(RequestEvent.SubmitSaveShop)
@@ -509,13 +507,13 @@ fun RequestView(state: RequestViewState, event: (RequestEvent) -> Unit, user: Us
                                     ) {
                                         CommonTextField(
                                             value = cash,
-                                            placeholder = "",
+                                            placeholder = stringResource(R.string.cash),
                                             changerText = { newValue ->
                                                 cash = newValue
                                                 errorCash = when {
                                                     newValue == "" -> Error(
                                                         visible = true,
-                                                        error = Constants.EMPTY.EMPTY_FIELD
+                                                        error = errorEmpty
                                                     )
 
                                                     else -> {
@@ -554,7 +552,7 @@ fun RequestView(state: RequestViewState, event: (RequestEvent) -> Unit, user: Us
                                                     if (cash.isEmpty()) {
                                                         errorCash = Error(
                                                             visible = true,
-                                                            error = Constants.EMPTY.EMPTY_FIELD
+                                                            error = errorEmpty
                                                         )
                                                     } else {
                                                         event(RequestEvent.SubmitSaveShop)
@@ -572,13 +570,13 @@ fun RequestView(state: RequestViewState, event: (RequestEvent) -> Unit, user: Us
                                     ) {
                                         CommonTextField(
                                             value = noCash,
-                                            placeholder = "",
+                                            placeholder = stringResource(R.string.noCash),
                                             changerText = { newValue ->
                                                 noCash = newValue
                                                 errorNoCash = when {
                                                     newValue == "" -> Error(
                                                         visible = true,
-                                                        error = Constants.EMPTY.EMPTY_FIELD
+                                                        error = errorEmpty
                                                     )
 
                                                     else -> {
@@ -621,7 +619,7 @@ fun RequestView(state: RequestViewState, event: (RequestEvent) -> Unit, user: Us
                                                     if (noCash.isEmpty()) {
                                                         errorNoCash = Error(
                                                             visible = true,
-                                                            error = Constants.EMPTY.EMPTY_FIELD
+                                                            error = errorEmpty
                                                         )
                                                     } else {
                                                         event(RequestEvent.SubmitSaveShop)
@@ -635,15 +633,7 @@ fun RequestView(state: RequestViewState, event: (RequestEvent) -> Unit, user: Us
                         }
                     } else {
                         item {
-                            Box(modifier = Modifier.fillMaxWidth()) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier
-                                        .size(30.dp)
-                                        .align(Alignment.Center),
-                                    strokeWidth = 2.dp,
-                                    color = Color.White
-                                )
-                            }
+                            CustomCircularProgressIndicator()
                         }
                     }
                 }
@@ -694,7 +684,7 @@ fun ProductRequestItem(
                             count = it.toString(), request = request
                         )
                     )
-                }, text = "Заявка:\n" + request.name, value = count
+                }, text = "${stringResource(R.string.request)}:\n" + request.name, value = count
             )
         }
         if (editExchange) {
@@ -711,7 +701,9 @@ fun ProductRequestItem(
                         exchange = it.toString(), request = request
                     )
                 )
-            }, text = "Возврат:\n" + request.name, value = countExchange
+                },
+                text = "${stringResource(R.string.exchange)}:\n" + request.name,
+                value = countExchange
             )
         }
         if (editBonus) {
@@ -728,7 +720,7 @@ fun ProductRequestItem(
                         bonus = it.toString(), request = request
                     )
                 )
-            }, text = "Бонус:\n" + request.name, value = countBonus
+                }, text = "${stringResource(R.string.bonus)}:\n" + request.name, value = countBonus
             )
         }
     }

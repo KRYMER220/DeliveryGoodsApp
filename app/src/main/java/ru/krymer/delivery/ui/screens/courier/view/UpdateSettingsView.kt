@@ -18,7 +18,6 @@ import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.utilModel.Error
 import ru.krymer.delivery.ui.components.CommonTextField
 import ru.krymer.delivery.ui.screens.courier.models.CourierViewState
-import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.startsWithDigit
 
 @Composable
@@ -32,7 +31,8 @@ fun UpdateSettingsView(
         var priceMillage by remember { mutableStateOf("${factory.priceMillage}") }
         var errorSalary by remember { mutableStateOf(Error()) }
         var errorPrice by remember { mutableStateOf(Error()) }
-
+        val errorEmpty = stringResource(R.string.empty_input)
+        val errorNum = stringResource(R.string.error_num)
         Column {
             CommonTextField(
                 value =  salary,
@@ -42,8 +42,8 @@ fun UpdateSettingsView(
                 changerText = {
                     salary = it
                     errorSalary = when {
-                       it == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
-                        !startsWithDigit(it) -> Error(visible = true, error = Constants.ERROR.ERROR_NUMBER_INPUT)
+                        it == "" -> Error(visible = true, error = errorEmpty)
+                        !startsWithDigit(it) -> Error(visible = true, error = errorNum)
                         else -> {
                             changeSalary(it)
                             Error()
@@ -67,8 +67,8 @@ fun UpdateSettingsView(
 
                     priceMillage = it
                     errorPrice = when {
-                        it == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
-                        !startsWithDigit(it) -> Error(visible = true, error = Constants.ERROR.ERROR_NUMBER_INPUT)
+                        it == "" -> Error(visible = true, error = errorEmpty)
+                        !startsWithDigit(it) -> Error(visible = true, error = errorNum)
                         else -> {
                             changePriceMillage(it)
                             Error()

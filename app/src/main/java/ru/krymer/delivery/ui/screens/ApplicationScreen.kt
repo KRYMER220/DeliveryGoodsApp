@@ -197,7 +197,7 @@ fun ApplicationScreen(
 
             entry<Screens.Request> { key ->
                 RequestScreen(
-                    shop = key.shop, user = user, backStack = {
+                    shop = key.shop, backStack = {
                         backStack.removeLastOrNull()
                     }
                 )
@@ -236,8 +236,10 @@ fun ApplicationScreen(
 
 @Composable
 fun ChangerPass(event: (SharedEvents) -> Unit) {
-    var newPass by remember { mutableStateOf(Constants.EMPTY.EMPTY_STRING) }
-    var oldPass by remember { mutableStateOf(Constants.EMPTY.EMPTY_STRING) }
+    var newPass by remember { mutableStateOf("") }
+    var oldPass by remember { mutableStateOf("") }
+    val errorEmpty = stringResource(R.string.empty_input)
+    val errorPass = stringResource(R.string.empty_input)
 
     var errorNewPass by remember { mutableStateOf(Error()) }
     var errorOldPass by remember { mutableStateOf(Error()) }
@@ -254,8 +256,8 @@ fun ChangerPass(event: (SharedEvents) -> Unit) {
             changerText = { str ->
                 oldPass = str
                 errorOldPass = when {
-                    str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
-                    str.length < 8 -> Error(visible = true, error = Constants.ERROR.PASS_INVALID)
+                    str == "" -> Error(visible = true, error = errorEmpty)
+                    str.length < 8 -> Error(visible = true, error = errorPass)
                     else -> {
                         Error()
                     }
@@ -276,8 +278,8 @@ fun ChangerPass(event: (SharedEvents) -> Unit) {
             changerText = { str ->
                 newPass = str
                 errorNewPass = when {
-                    str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
-                    str.length < 8 -> Error(visible = true, error = Constants.ERROR.PASS_INVALID)
+                    str == "" -> Error(visible = true, error = errorEmpty)
+                    str.length < 8 -> Error(visible = true, error = errorPass)
                     else -> {
                         Error()
                     }
@@ -427,7 +429,7 @@ fun UserBlocked(logout: () -> Unit) {
                 )
             ) {
                 Text(
-                    text = Constants.ACTIONS.EXIT,
+                    text = stringResource(R.string.exit),
                     textAlign = TextAlign.Center,
                     color = AppTheme.colors.onPrimary
                 )

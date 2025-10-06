@@ -38,9 +38,11 @@
     <string name="del_confirm">Are you sure you want to delete?</string>
     <string name="copy_confirm">"Are you sure you want to copy requests? "</string>
     <string name="empty_data">List is empty!</string>
+    <string name="error_email">Uncorrect email!</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="pass_old">Old password</string>
+    <string name="exit">Exit</string>
     <string name="box_office">Box office</string>
     <string name="cash">Cash</string>
     <string name="noCash">No Cash</string>
@@ -63,4 +65,15 @@
     <string name="sort">Sort</string>
     <string name="asc">ascending</string>
     <string name="desc">descendig</string>
+    <string name="empty_input">Input empty!</string>
+    <string name="error_num">Is not number!</string>
+    <string name="low_pass">Low pass!</string>
+    <string name="error_phone">Uncorrect phone!</string>
+    <string name="error_cord">Uncorrect cords!</string>
+    <string name="hide">Hide</string>
+    <string name="show">Show</string>
+    <string name="old_price">Old price</string>
+    <string name="del_shop">Delete shop</string>
+    <string name="send_message">Send message</string>
+    <string name="another_pay">Another pay</string>
 </resources>

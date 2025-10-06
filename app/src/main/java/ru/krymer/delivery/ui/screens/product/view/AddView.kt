@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.dp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.utilModel.Error
 import ru.krymer.delivery.ui.components.CommonTextField
-import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.startsWithDigit
 
 @Composable
@@ -26,10 +25,13 @@ fun AddProductView(
     changePrice: (String) -> Unit
 ) {
 
-    var name by remember { mutableStateOf(Constants.EMPTY.EMPTY_STRING) }
+    var name by remember { mutableStateOf("") }
     var errorName by remember { mutableStateOf(Error()) }
-    var price by remember { mutableStateOf(Constants.EMPTY.EMPTY_STRING) }
+
+    var price by remember { mutableStateOf("") }
     var errorPrice by remember { mutableStateOf(Error()) }
+    val errorEmpty = stringResource(R.string.empty_input)
+    val errorNum = stringResource(R.string.error_num)
 
     Column {
         CommonTextField(
@@ -42,7 +44,7 @@ fun AddProductView(
             changerText = { str ->
                 name = str
                 errorName = when {
-                    str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
+                    str == "" -> Error(visible = true, error = errorEmpty)
                     else -> {
                         changeName(str)
                         Error()
@@ -66,8 +68,8 @@ fun AddProductView(
             changerText = { str ->
                 price = str
                 errorPrice = when {
-                    str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
-                    !startsWithDigit(str) -> Error(visible = true, error = Constants.ERROR.ERROR_NUMBER_INPUT)
+                    str == "" -> Error(visible = true, error = errorEmpty)
+                    !startsWithDigit(str) -> Error(visible = true, error = errorNum)
                     else -> {
                         changePrice(str)
                         Error()

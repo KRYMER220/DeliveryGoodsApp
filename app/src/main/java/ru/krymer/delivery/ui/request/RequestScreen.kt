@@ -6,7 +6,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import ru.krymer.delivery.data.model.ShopModel
-import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
 import ru.krymer.delivery.ui.components.CommonInfoAlertDialog
 import ru.krymer.delivery.ui.components.CommonInfoBottomSheet
@@ -20,27 +19,24 @@ import ru.krymer.delivery.ui.request.view.MessageEditView
 import ru.krymer.delivery.ui.request.view.RequestView
 
 @Composable
-fun RequestScreen(shop: ShopModel, user: UserModel?, backStack: () -> Unit) {
-    user?.let {
-        val viewModel = hiltViewModel<RequestViewModel>()
-        LaunchedEffect(Unit) {
-            viewModel.initData(shop = shop)
-        }
-        RequestViews(
-            state = viewModel.viewState.collectAsState().value,
-            event = viewModel::obtainEvent,
-            user = it,
-            backStack = backStack
-        )
+fun RequestScreen(shop: ShopModel, backStack: () -> Unit) {
+    val viewModel = hiltViewModel<RequestViewModel>()
+    LaunchedEffect(Unit) {
+        viewModel.initData(shop = shop)
     }
+    RequestViews(
+        state = viewModel.viewState.collectAsState().value,
+        event = viewModel::obtainEvent,
+        backStack = backStack
+    )
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RequestViews(
-    state: RequestViewState, event: (RequestEvent) -> Unit, user: UserModel, backStack: () -> Unit
+    state: RequestViewState, event: (RequestEvent) -> Unit, backStack: () -> Unit
 ) {
-    RequestView(state = state, event = event, user = user)
+    RequestView(state = state, event = event)
 
     if (state.toggleDeleteShop) {
         state.shop?.let {

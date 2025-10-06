@@ -2,6 +2,7 @@ package ru.krymer.delivery.ui.components
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,6 +33,8 @@ fun CommonTextField(
     visualTransformation: VisualTransformation = VisualTransformation.None,
     isError: Boolean = false,
     errorValue: String = "",
+    infoValue: String = "",
+    infoAlign: TextAlign = TextAlign.Unspecified,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     textStyle: TextStyle = AppTheme.typography.titleMedium,
     isNotCenter: Boolean = false
@@ -40,49 +43,55 @@ fun CommonTextField(
     val isFocused = interactionSource.collectIsFocusedAsState().value
 
 
-    TextField(
-        modifier = modifier.heightIn(min = 60.dp, max = Dp.Unspecified),
-        value = value,
-        placeholder = {
-            if (!isFocused && value.isEmpty()) {
-                Text(
-                    text = placeholder,
-                    style = AppTheme.typography.titleSmall,
-                    color = AppTheme.colors.onSecondary,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        isError = isError,
-        visualTransformation = visualTransformation,
-        keyboardOptions = keyboardOptions,
-        enabled = enabled,
-        onValueChange = changerText,
-        shape = RoundedCornerShape(10.dp),
-        colors = TextFieldDefaults.colors(
-            errorTextColor = AppTheme.colors.onSecondary,
-            errorContainerColor = AppTheme.colors.secondary,
-            focusedTextColor = AppTheme.colors.onSecondary,
-            unfocusedTextColor = AppTheme.colors.onSecondary,
-            focusedContainerColor = AppTheme.colors.secondary,
-            unfocusedContainerColor = AppTheme.colors.secondary,
-            disabledContainerColor = AppTheme.colors.secondary,
-            cursorColor = AppTheme.colors.onSecondary,
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-            disabledIndicatorColor = Color.Transparent,
-            errorIndicatorColor = Color.Transparent,
-        ),
-        keyboardActions = keyboardActions,
-        textStyle = if (isNotCenter) textStyle else textStyle.copy(textAlign = TextAlign.Center)
-    )
-    if (isError) {
+    Column(modifier = modifier.heightIn(min = 60.dp, max = Dp.Unspecified)) {
         Text(
-            text = errorValue,
-            color = Color.Red,
-            style = AppTheme.typography.titleSmall,
-            textAlign = TextAlign.Center
+            text = infoValue,
+            color = AppTheme.colors.onSecondary,
+            style = AppTheme.typography.bodySmall,
+            textAlign = infoAlign
         )
+        TextField(
+            value = value,
+            placeholder = {
+                if (!isFocused && value.isEmpty()) {
+                    Text(
+                        text = placeholder,
+                        style = AppTheme.typography.titleSmall,
+                        color = AppTheme.colors.onSecondary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            isError = isError,
+            visualTransformation = visualTransformation,
+            keyboardOptions = keyboardOptions,
+            enabled = enabled,
+            onValueChange = changerText,
+            shape = RoundedCornerShape(10.dp),
+            colors = TextFieldDefaults.colors(
+                errorTextColor = AppTheme.colors.onSecondary,
+                errorContainerColor = AppTheme.colors.secondary,
+                focusedTextColor = AppTheme.colors.onSecondary,
+                unfocusedTextColor = AppTheme.colors.onSecondary,
+                focusedContainerColor = AppTheme.colors.secondary,
+                unfocusedContainerColor = AppTheme.colors.secondary,
+                disabledContainerColor = AppTheme.colors.secondary,
+                cursorColor = AppTheme.colors.onSecondary,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                disabledIndicatorColor = Color.Transparent,
+                errorIndicatorColor = Color.Transparent,
+            ),
+            keyboardActions = keyboardActions,
+            textStyle = if (isNotCenter) textStyle else textStyle.copy(textAlign = TextAlign.Center)
+        )
+        if (isError) {
+            Text(
+                text = errorValue,
+                color = Color.Red,
+                style = AppTheme.typography.bodySmall,
+            )
+        }
     }
 }

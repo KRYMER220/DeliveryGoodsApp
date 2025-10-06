@@ -52,9 +52,20 @@
     <string name="del_confirm">Вы уверены, что хотите удалить?</string>
     <string name="copy_confirm">Вы уверены, что хотите скопировать заявки?</string>
     <string name="empty_data">Список пуст!</string>
+    <string name="empty_input">Поле пусто!</string>
+    <string name="error_num">Введите число!</string>
+    <string name="low_pass">Слишком короткий пароль!</string>
+    <string name="error_phone">Некорректный номер телефона!</string>
+    <string name="error_cord">Некорректныe координаты!</string>
+    <string name="error_email">Некорректный ввод почты!</string>
+
     //Other
     <string name="yes">Да</string>
     <string name="no">Нет</string>
+    <string name="hide">Скрыть</string>
+    <string name="show">Показать</string>
+    <string name="exit">Выход</string>
+
 
     <string name="box_office">Касса</string>
     <string name="cash">Нал</string>
@@ -78,4 +89,9 @@
     <string name="sort">Сортировка</string>
     <string name="asc">по возврастанию</string>
     <string name="desc">по убыванию</string>
+    <string name="old_price">Старая цена</string>
+    <string name="del_shop">Удалить магазин</string>
+    <string name="send_message">Отправить сообщение</string>
+    <string name="another_pay">Смешанный</string>
+
 </resources>

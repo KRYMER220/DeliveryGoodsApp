@@ -23,7 +23,6 @@ import ru.krymer.delivery.data.model.utilModel.Error
 import ru.krymer.delivery.ui.components.CommonTextField
 import ru.krymer.delivery.ui.screens.product.models.ProductViewState
 import ru.krymer.delivery.ui.theme.AppTheme
-import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.startsWithDigit
 
 
@@ -41,6 +40,10 @@ fun UpdateProductView(
         var price by remember { mutableStateOf("${product.price.toInt()}") }
         var errorPrice by remember { mutableStateOf(Error()) }
         var isActive by remember { mutableStateOf(product.isActive) }
+        val errorEmpty = stringResource(R.string.empty_input)
+        val errorNum = stringResource(R.string.error_num)
+
+
         Column {
             CommonTextField(
                 isError = errorName.visible,
@@ -52,7 +55,7 @@ fun UpdateProductView(
                 changerText = { str ->
                     name = str
                     errorName = when {
-                        str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
+                        str == "" -> Error(visible = true, error = errorEmpty)
                         else -> {
                             changeName(str)
                             Error()
@@ -75,8 +78,8 @@ fun UpdateProductView(
                 changerText = { str ->
                     price = str
                     errorPrice = when {
-                        str == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
-                        !startsWithDigit(str) -> Error(visible = true, error = Constants.ERROR.ERROR_NUMBER_INPUT)
+                        str == "" -> Error(visible = true, error = errorEmpty)
+                        !startsWithDigit(str) -> Error(visible = true, error = errorNum)
                         else -> {
                             changePrice(str)
                             Error()
@@ -91,7 +94,7 @@ fun UpdateProductView(
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = if (isActive) Constants.ACTIONS.HIDE else Constants.ACTIONS.SHOW,
+                    text = if (isActive) stringResource(R.string.hide) else stringResource(R.string.show),
                     color = AppTheme.colors.onSecondary
                 )
                 Checkbox(

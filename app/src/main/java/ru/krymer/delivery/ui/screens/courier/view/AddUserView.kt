@@ -18,7 +18,6 @@ import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.utilModel.Error
 import ru.krymer.delivery.ui.components.CommonTextField
 import ru.krymer.delivery.ui.screens.courier.models.CourierViewState
-import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.isValidEmail
 
 @Composable
@@ -35,6 +34,9 @@ fun BottomSheetDialogAddUser(
     var errorName by remember { mutableStateOf(Error()) }
     var errorEmail by remember { mutableStateOf(Error()) }
     var errorPass by remember { mutableStateOf(Error()) }
+    val errorEmpty = stringResource(R.string.empty_input)
+    val errorUncorrectEmail = stringResource(R.string.error_email)
+    val errorUncorrectPass = stringResource(R.string.low_pass)
 
     Column {
         CommonTextField(
@@ -47,7 +49,7 @@ fun BottomSheetDialogAddUser(
             changerText = {
                 name = it
                 errorName = when {
-                    it == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
+                    it == "" -> Error(visible = true, error = errorEmpty)
                     else -> {
                         changeName(it)
                         Error()
@@ -71,8 +73,8 @@ fun BottomSheetDialogAddUser(
             changerText = {
                 email = it
                 errorEmail = when {
-                    it == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
-                    !isValidEmail(it) -> Error(visible = true, error = Constants.ERROR.EMAIL_INVALID)
+                    it == "" -> Error(visible = true, error = errorEmpty)
+                    !isValidEmail(it) -> Error(visible = true, error = errorUncorrectEmail)
                     else -> {
                         changeEmail(it)
                         Error()
@@ -96,8 +98,8 @@ fun BottomSheetDialogAddUser(
 
                 pass = it
                 errorPass = when {
-                    it == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
-                    it.length < 8 -> Error(visible = true, error = Constants.ERROR.PASS_INVALID)
+                    it == "" -> Error(visible = true, error = errorEmpty)
+                    it.length < 8 -> Error(visible = true, error = errorUncorrectPass)
                     else -> {
                         changePass(it)
                         Error()

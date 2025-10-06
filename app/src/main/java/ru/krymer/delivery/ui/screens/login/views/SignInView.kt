@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,7 +23,6 @@ import ru.krymer.delivery.data.model.utilModel.Error
 import ru.krymer.delivery.ui.components.AuthField
 import ru.krymer.delivery.ui.screens.login.models.LoginViewState
 import ru.krymer.delivery.ui.screens.main.views.CustomButton
-import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.isValidEmail
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -44,6 +42,10 @@ fun SignInView(
     }
     var errorEmail by remember { mutableStateOf(Error()) }
     var errorPass by remember { mutableStateOf(Error()) }
+    val errorEmpty = stringResource(R.string.empty_input)
+    val errorUnPass = stringResource(R.string.low_pass)
+    val errorUnEmail = stringResource(R.string.error_email)
+
 
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         AuthField(
@@ -52,8 +54,8 @@ fun SignInView(
             changerText = {
                 email = it
                 errorEmail = when {
-                    it == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
-                    !isValidEmail(it) -> Error(visible = true, error = Constants.ERROR.EMAIL_INVALID)
+                    it == "" -> Error(visible = true, error = errorEmpty)
+                    !isValidEmail(it) -> Error(visible = true, error = errorUnEmail)
                     else -> {
                         changeEmail(it)
                         Error()
@@ -71,8 +73,8 @@ fun SignInView(
             changerText = {
                 pass = it
                 errorPass = when {
-                    it == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
-                    it.length < 8 -> Error(visible = true, error = Constants.ERROR.PASS_INVALID)
+                    it == "" -> Error(visible = true, error = errorEmpty)
+                    it.length < 8 -> Error(visible = true, error = errorUnPass)
                     else -> {
                         changePass(it)
                         Error()

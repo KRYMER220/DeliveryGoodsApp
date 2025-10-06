@@ -18,7 +18,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,7 +35,6 @@ import ru.krymer.delivery.ui.components.CommonTextField
 import ru.krymer.delivery.ui.screens.courier.models.CourierEvent
 import ru.krymer.delivery.ui.screens.courier.models.CourierViewState
 import ru.krymer.delivery.ui.theme.AppTheme
-import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.startsWithDigit
 
 @Composable
@@ -54,6 +52,8 @@ fun UpdateCourierView(
         var errorPercent by remember { mutableStateOf(Error()) }
         val roles = RoleModel.entries.toList() - RoleModel.SYSTEM
         var toggleDropDownMenuRole by remember { mutableStateOf(false) }
+        val errorEmpty = stringResource(R.string.empty_input)
+        val errorNum = stringResource(R.string.error_num)
 
         Column {
             CommonTextField(
@@ -69,8 +69,7 @@ fun UpdateCourierView(
                     .fillMaxWidth()
                     .height(60.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                isError = username.isEmpty(),
-                errorValue = Constants.EMPTY.EMPTY_FIELD
+                isError = username.isEmpty(), errorValue = errorEmpty
             )
             Spacer(modifier = Modifier.height(10.dp))
             CommonTextField(
@@ -81,10 +80,9 @@ fun UpdateCourierView(
                 changerText = {
                     percent = it
                     errorPercent = when {
-                        it == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
+                        it == "" -> Error(visible = true, error = errorEmpty)
                         !startsWithDigit(it) -> Error(
-                            visible = true,
-                            error = Constants.ERROR.ERROR_NUMBER_INPUT
+                            visible = true, error = errorNum
                         )
 
                         else -> {
@@ -110,10 +108,9 @@ fun UpdateCourierView(
                 changerText = {
                     salary = it
                     errorSalary = when {
-                        it == "" -> Error(visible = true, error = Constants.EMPTY.EMPTY_FIELD)
+                        it == "" -> Error(visible = true, error = errorEmpty)
                         !startsWithDigit(it) -> Error(
-                            visible = true,
-                            error = Constants.ERROR.ERROR_NUMBER_INPUT
+                            visible = true, error = errorNum
                         )
 
                         else -> {

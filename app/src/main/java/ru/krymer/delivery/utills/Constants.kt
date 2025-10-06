@@ -1,22 +1,9 @@
 package ru.krymer.delivery.utills
 
-import okio.Timeout
-
 class Constants {
-
-
-    object MENU {
-        const val ROUTE = "Маршруты"
-        const val TRIP = "Рейсы"
-        const val PRODUCT = "Товары"
-        const val COURIER = "Курьеры"
-        const val ANALITIC = "Аналитика"
-    }
 
     object KEYS {
         const val FILTER = "filter"
-        const val UID = "uid"
-        const val RUI = "routeId"
         const val SORT = "sort"
         const val SETTINGS = "settings"
         const val AUTH = "auth"
@@ -43,7 +30,6 @@ class Constants {
         const val LAST_DATE = "lastDate"
         const val LIMIT = "limit"
         const val TOKEN_TITLE = "Authorization"
-        const val SORT = "sortBy"
     }
 
     object SORT {
@@ -73,36 +59,14 @@ class Constants {
     }
 
     object EMPTY {
-        const val EMPTY_NAME = "Введите название!"
-        const val EMPTY_SALARY = "Введите зарплату!"
-        const val EMPTY_DATA = "Данные отсутствуют!"
-        const val EMPTY_PRICE = "Заполните цену!"
-        const val EMPTY_STRING = ""
-        const val EMPTY_FIELD = "Поле пусто!"
-        const val EMPTY_PRICE_MILLAGE = "Введите цену километража!"
-        const val EMPTY_USER_NAME = "Введите имя!"
-        const val EMPTY_ARREARS = "Введите долг!"
-        const val EMPTY_USER_PERCENT = "Введите процент курьера!"
-        const val FIELD_IMPORTANT = "Обязательное поле! "
-        const val EMPTY_LIST = "Список пуст! Вам нужно добавить "
-    }
-
-    object ADD {
-        const val COURIER = "курьера, во вкладке Курьеры!"
-        const val CLIENT = "клиента! В данный маршрут."
-        const val ROUTE = "маршрут, во вкладке Маршруты!"
+        const val EMPTY_LIST = "Список пуст! Вам нужно добавить"
     }
 
     object ERROR {
-        const val ERROR_NUMBER_INPUT = "Введите целое или дробное число!"
         const val SERVER_ERROR_RESPONSE = "Ошибка при получении ответа от сервера. Повторите снова!"
         const val ERROR = "Непредвиденная ошибка!"
         const val AGAIN = "Ошибка! Попробуйте снова!"
         const val RESRTRAINT = "Ограничено!"
-        const val PHONE = "Не корректный номер телефона!"
-        const val CORD = "Не корректные координаты!"
-        const val EMAIL_INVALID = "Введен не корректный адрес электронной почты!"
-        const val PASS_INVALID = "Пароль меньше 8 символов!"
         const val GENERAL_ERROR = "Что-то пошло не так!"
         const val USER_BANNED = "Доступ ограничен! Ваш профиль заблокирован!"
         const val MISSING_CORDS = "Гео-точка отсутствует!"
@@ -112,16 +76,5 @@ class Constants {
         const val NOT_FOUND = "Данные не найдены!"
         const val TIMEOUT = "Время исполнения запроса истекло!"
         const val CANCEL_OPERATION = "Вызов операции отменен!"
-    }
-
-    object ACTIONS {
-        const val EXIT = "Выход"
-        const val INFO = "Инфо: "
-        const val ERROR = "Ошибка: "
-        const val SUCCEED = "Выполнено: "
-        const val AGAIN = "Повторить"
-        const val SAVE = "Сохранить"
-        const val HIDE = "Скрыть"
-        const val SHOW = "Показать"
     }
 }
