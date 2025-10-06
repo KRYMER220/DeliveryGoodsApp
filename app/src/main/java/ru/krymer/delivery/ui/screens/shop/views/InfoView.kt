@@ -3,9 +3,9 @@ package ru.krymer.delivery.ui.screens.shop.views
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -18,11 +18,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.RequestModel
-import ru.krymer.delivery.data.model.ShopModel
+import ru.krymer.delivery.data.model.ShopServerModel
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
 import ru.krymer.delivery.ui.theme.AppTheme
 import ru.krymer.delivery.utills.convertToTextDate
@@ -76,11 +77,8 @@ fun InfoContentProductItem(product: RequestModel, state: ShopViewState) {
     }
 }
 
-
-
-
 @Composable
-fun ItemInfoShop(shop: ShopModel, copyInfoData: (ShopModel) -> Unit = {}) {
+fun InfoAboutShopForCreate(shop: ShopServerModel, copyInfoData: (ShopServerModel) -> Unit = {}) {
     Column(
         modifier = Modifier
             .combinedClickable(onClick = {}, onLongClick = { copyInfoData(shop) })
@@ -89,12 +87,16 @@ fun ItemInfoShop(shop: ShopModel, copyInfoData: (ShopModel) -> Unit = {}) {
             .padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
-        val sumDept = shop.listRequest.sumOf { it.price * it.count - it.price * it.exchange }
+        val sumDept =
+            shop.listRequest.sumOf { it.price * it.count - it.price * it.exchange }.toInt()
+        val sumGet = (shop.cash + shop.noCash).toInt()
+        val newArrears = (shop.arrears - (shop.cash + shop.noCash) + sumDept + shop.addSum).toInt()
+        val arrear = shop.arrears.toInt()
+
         Text(
             style = AppTheme.typography.bodySmall,
             text = convertToTextDate(shop.date),
             modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
             color = AppTheme.colors.onSecondary
         )
         Text(
@@ -105,43 +107,43 @@ fun ItemInfoShop(shop: ShopModel, copyInfoData: (ShopModel) -> Unit = {}) {
         )
         Text(
             style = AppTheme.typography.bodySmall,
-            text = "Заявка: " + sumDept.toInt(),
+            text = "${stringResource(R.string.request)}: $sumDept",
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
         Text(
             style = AppTheme.typography.bodySmall,
-            text = "Получено: " + (shop.cash + shop.noCash).toInt(),
+            text = "${stringResource(R.string.get_money)}: $sumGet",
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
         Text(
             style = AppTheme.typography.bodySmall,
-            text = "Долг: " + shop.arrears.toInt() + "  Новый долг: " + (shop.arrears - (shop.cash + shop.noCash) + sumDept + shop.addSum).toInt(),
+            text = "${stringResource(R.string.arrears)}: $arrear",
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
         Text(
             style = AppTheme.typography.bodySmall,
-            text = "Новый долг: " + (shop.arrears - (shop.cash + shop.noCash) + sumDept + shop.addSum).toInt(),
+            text = "${stringResource(R.string.new_arrears)}: $newArrears",
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
         Text(
             style = AppTheme.typography.bodySmall,
-            text = "Нал: " + shop.cash.toInt(),
+            text = "${stringResource(R.string.cash)}: ${shop.cash.toInt()}",
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
         Text(
             style = AppTheme.typography.bodySmall,
-            text = "Без/Нал: ${shop.noCash.toInt()}",
+            text = "${stringResource(R.string.noCash)}: ${shop.noCash.toInt()}",
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
         Text(
             style = AppTheme.typography.bodySmall,
-            text = "Доп. сумма: " + shop.addSum.toInt(),
+            text = "${stringResource(R.string.add_sum)}: " + shop.addSum.toInt(),
             modifier = Modifier.fillMaxWidth(),
             color = AppTheme.colors.onSecondary
         )
@@ -151,53 +153,32 @@ fun ItemInfoShop(shop: ShopModel, copyInfoData: (ShopModel) -> Unit = {}) {
             modifier = Modifier
                 .fillMaxWidth()
         ) {
-            Box(
-                modifier = Modifier
-                    .weight(0.40f)
-            ) {}
+            Spacer(modifier = Modifier.weight(0.40f))
             if (shop.isBonus) {
-                Box(
-                    modifier = Modifier
-                        .weight(0.20f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        style = AppTheme.typography.bodySmall,
-                        text = "Бонус",
-                        modifier = Modifier.align(Alignment.Center),
-                        color = AppTheme.colors.onSecondary
-                    )
-                }
+                Text(
+                    style = AppTheme.typography.bodySmall,
+                    text = stringResource(R.string.bonus),
+                    textAlign = TextAlign.Center,
+                    color = AppTheme.colors.onSecondary,
+                    modifier = Modifier.weight(0.20f)
+                )
             } else {
-                Box(
-                    modifier = Modifier
-                        .weight(0.20f)
-                ) {}
+                Spacer(modifier = Modifier.weight(0.20f))
             }
-            Box(
-                modifier = Modifier
-                    .weight(0.20f),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    style = AppTheme.typography.bodySmall,
-                    text = "Заявка",
-                    modifier = Modifier.align(Alignment.Center),
-                    color = AppTheme.colors.onSecondary
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .weight(0.20f),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    style = AppTheme.typography.bodySmall,
-                    text = "Обмен",
-                    modifier = Modifier.align(Alignment.Center),
-                    color = AppTheme.colors.onSecondary
-                )
-            }
+            Text(
+                style = AppTheme.typography.bodySmall,
+                text = stringResource(R.string.arrears),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(0.20f),
+                color = AppTheme.colors.onSecondary
+            )
+            Text(
+                style = AppTheme.typography.bodySmall,
+                text = stringResource(R.string.exchange),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(0.20f),
+                color = AppTheme.colors.onSecondary
+            )
         }
         LazyColumn(
             modifier =
@@ -223,52 +204,34 @@ fun RequestInfoItem(requestModel: RequestModel) {
                 .background(AppTheme.colors.secondary, shape = RoundedCornerShape(5.dp))
                 .fillMaxWidth()
         ) {
-            Box(
+            Text(
+                style = AppTheme.typography.bodySmall,
+                text = requestModel.name,
+                color = AppTheme.colors.onSecondary,
                 modifier = Modifier
                     .weight(0.40f)
-            ) {
-                Text(
-                    style = AppTheme.typography.bodySmall,
-                    text = requestModel.name,
-                    color = AppTheme.colors.onSecondary
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .weight(0.20f),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    style = AppTheme.typography.bodySmall,
-                    text = if (requestModel.bonus != 0) "${requestModel.bonus}" else "",
-                    modifier = Modifier.align(Alignment.Center),
-                    color = AppTheme.colors.onSecondary
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .weight(0.20f),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    style = AppTheme.typography.bodySmall,
-                    text = if (requestModel.count != 0) "${requestModel.count}" else "",
-                    modifier = Modifier.align(Alignment.Center),
-                    color = AppTheme.colors.onSecondary
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .weight(0.20f),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    style = AppTheme.typography.bodySmall,
-                    text = if (requestModel.exchange != 0) "${requestModel.exchange}" else "",
-                    modifier = Modifier.align(Alignment.Center),
-                    color = AppTheme.colors.onSecondary
-                )
-            }
+            )
+            Text(
+                style = AppTheme.typography.bodySmall,
+                text = if (requestModel.bonus != 0) "${requestModel.bonus}" else "",
+                modifier = Modifier.weight(0.20f),
+                textAlign = TextAlign.Center,
+                color = AppTheme.colors.onSecondary
+            )
+            Text(
+                style = AppTheme.typography.bodySmall,
+                text = if (requestModel.count != 0) "${requestModel.count}" else "",
+                modifier = Modifier.weight(0.20f),
+                textAlign = TextAlign.Center,
+                color = AppTheme.colors.onSecondary
+            )
+            Text(
+                style = AppTheme.typography.bodySmall,
+                text = if (requestModel.exchange != 0) "${requestModel.exchange}" else "",
+                modifier = Modifier.weight(0.20f),
+                textAlign = TextAlign.Center,
+                color = AppTheme.colors.onSecondary
+            )
         }
     }
 }

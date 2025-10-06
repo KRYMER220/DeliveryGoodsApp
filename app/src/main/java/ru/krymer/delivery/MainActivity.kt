@@ -16,6 +16,7 @@ import androidx.navigation3.runtime.NavKey
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.serialization.Serializable
 import ru.krymer.delivery.data.model.RouteModel
+import ru.krymer.delivery.data.model.ShopModel
 import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.ui.screens.ApplicationScreen
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
@@ -52,6 +53,9 @@ sealed class Screens: NavKey {
     data object Product: Screens()
     @Serializable
     data object Ban: Screens()
+
+    @Serializable
+    data class Request(val shop: ShopModel) : Screens()
 }
 
 @ExperimentalMaterial3Api

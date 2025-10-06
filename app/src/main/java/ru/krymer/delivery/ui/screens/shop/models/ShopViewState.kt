@@ -6,6 +6,7 @@ import ru.krymer.delivery.data.model.MessageModel
 import ru.krymer.delivery.data.model.ProductModel
 import ru.krymer.delivery.data.model.RequestModel
 import ru.krymer.delivery.data.model.ShopModel
+import ru.krymer.delivery.data.model.ShopServerModel
 import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.utilModel.TypePayModel
 
@@ -17,15 +18,16 @@ sealed class ShopAction {
 data class ShopViewState(
     val shopAction: ShopAction = ShopAction.None,
 
-    val listUIShop: List<ShopModel> = emptyList(),
+    val shops: List<ShopModel> = emptyList(),
+    val shopsAnalitic: List<ShopServerModel> = emptyList(),
 
     val listProduct: List<ProductModel> = emptyList(),
     val listProductRequest: List<ProductModel> = emptyList(),
 
 
     val listClient: List<ClientModel> = emptyList(),
-    val isShowDialogWithListCurrentClients: Boolean = false,
-    val isShowDialogWithListAllClients: Boolean = false,
+    val toggleDialogCurrentClients: Boolean = false,
+    val toggleDialogAllClients: Boolean = false,
     val toggleAddDialog: Boolean = false,
     val currentClient: ClientModel? = null,
     val arrear: Double = 0.0,
@@ -45,7 +47,7 @@ data class ShopViewState(
     val isDataShopForCourierLoad: Boolean = false,
 
     val currentTrip: TripModel? = null,
-
+    val copyShop: ShopServerModel? = null,
     val currentShop: ShopModel? = null,
     val toggleRequestDialog: Boolean = false,
     val listDataRequests: List<RequestModel> = emptyList(),
@@ -70,7 +72,7 @@ data class ShopViewState(
 
 
     val toggleCurrentShopInfo: Boolean = false,
-    val listCurrentShopInfo: List<ShopModel> = emptyList(),
+    val listCurrentShopInfo: List<ShopServerModel> = emptyList(),
     val stateSwitchPrice: Boolean = false,
 
     val messages: List<MessageModel> = emptyList(),

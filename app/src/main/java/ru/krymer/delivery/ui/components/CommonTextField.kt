@@ -34,6 +34,7 @@ fun CommonTextField(
     errorValue: String = "",
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     textStyle: TextStyle = AppTheme.typography.titleMedium,
+    isNotCenter: Boolean = false
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused = interactionSource.collectIsFocusedAsState().value
@@ -74,7 +75,7 @@ fun CommonTextField(
             errorIndicatorColor = Color.Transparent,
         ),
         keyboardActions = keyboardActions,
-        textStyle = textStyle.copy(textAlign = TextAlign.Center)
+        textStyle = if (isNotCenter) textStyle else textStyle.copy(textAlign = TextAlign.Center)
     )
     if (isError) {
         Text(

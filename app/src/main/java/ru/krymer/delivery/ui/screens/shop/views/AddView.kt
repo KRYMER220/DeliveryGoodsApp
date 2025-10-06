@@ -18,12 +18,7 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,12 +30,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.MessageModel
 import ru.krymer.delivery.data.model.ProductModel
+import ru.krymer.delivery.ui.components.GenericDropdown
 import ru.krymer.delivery.ui.components.KeyBoardDialog
 import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
@@ -55,7 +51,7 @@ fun AddShopAndRequestView(
     val clients = state.listClient
     val listShop = state.listCurrentShopInfo
     val products = state.listProduct
-    var toggleSelectorClients by remember { mutableStateOf(false) }
+    var toggleMenuClients by remember { mutableStateOf(false) }
     if (clients.isNotEmpty() && products.isNotEmpty()) {
         LazyColumn(
             modifier = Modifier
@@ -63,56 +59,18 @@ fun AddShopAndRequestView(
         ) {
 
             item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 10.dp)
-                        .background(
-                            color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)
-                        )
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(60.dp)
-                            .clickable {
-                                toggleSelectorClients = true
-                            }, verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = state.currentClient?.name ?: Constants.EMPTY.EMPTY_DATA,
-                            modifier = Modifier.padding(start = 15.dp),
-                            color = AppTheme.colors.onSecondary,
-                            style = AppTheme.typography.titleMedium
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                        Icon(
-                            imageVector = Icons.Filled.ArrowDropDown,
-                            contentDescription = null,
-                            modifier = Modifier.padding(end = 15.dp),
-                            tint = AppTheme.colors.onSecondary
-                        )
-                        DropdownMenu(
-                            expanded = toggleSelectorClients,
-                            onDismissRequest = {
-                                toggleSelectorClients = false
-                            }) {
-                            clients.forEach {
-                                DropdownMenuItem(text = {
-                                    Text(
-                                        text = it.name,
-                                        style = AppTheme.typography.titleSmall
-                                    )
-                                }, onClick = {
-                                    event(
-                                        ShopEvent.DropDownSelectClient(it)
-                                    )
-                                    toggleSelectorClients = false
-                                })
-                            }
-                        }
-                    }
-                }
+                GenericDropdown(
+                    selectedItem = state.currentClient,
+                    items = clients,
+                    expanded = toggleMenuClients,
+                    onExpandedChange = {
+                        toggleMenuClients = !toggleMenuClients
+                    },
+                    itemLabel = { it.name },
+                    placeholder = stringResource(R.string.not_select_client),
+                    onItemSelected = { client ->
+                        event(ShopEvent.SelectClient(client))
+                    })
             }
 
             item {
@@ -122,31 +80,23 @@ fun AddShopAndRequestView(
                         .fillMaxWidth()
                         .padding(5.dp)
                 ) {
-                    Box(modifier = Modifier.weight(0.4f))
-                    Box(
+                    Spacer(modifier = Modifier.weight(0.6f))
+                    Text(
+                        style = AppTheme.typography.bodySmall,
+                        text = stringResource(R.string.bonus),
                         modifier = Modifier
+                            .weight(0.2f)
                             .clickable(onClick = {
                                 event(ShopEvent.SwitchBonusState)
-                            })
-                            .weight(0.2f)
-                    ) {
-                        Text(
-                            style = AppTheme.typography.bodySmall,
-                            text = "Бонусы",
-                            modifier = Modifier.align(Alignment.Center),
-                            color = AppTheme.colors.onSecondary
-                        )
-                    }
-                    Box(
-                        modifier = Modifier.weight(0.2f)
-                    ) {
-                        Text(
-                            style = AppTheme.typography.bodySmall,
-                            text = "Заявка",
-                            modifier = Modifier.align(Alignment.Center),
-                            color = AppTheme.colors.onSecondary
-                        )
-                    }
+                            }),
+                        color = AppTheme.colors.onSecondary
+                    )
+                    Text(
+                        style = AppTheme.typography.bodySmall,
+                        text = stringResource(R.string.request),
+                        modifier = Modifier.weight(0.2f),
+                        color = AppTheme.colors.onSecondary
+                    )
                 }
             }
 
@@ -176,11 +126,11 @@ fun AddShopAndRequestView(
 
             if (listShop.isNotEmpty()) {
                 items(listShop) { shop ->
-                    ItemInfoShop(shop, copyInfoData = {
-                        event(ShopEvent.ChangeStateIsCopyDialog)
+                    InfoAboutShopForCreate(shop, copyInfoData = {
+                        event(ShopEvent.ToggleConfirmCopyAndSave)
                         event(ShopEvent.SelectShop(it))
                     })
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(5.dp))
                 }
             }
         }
@@ -225,80 +175,11 @@ fun MessageItem(messageModel: MessageModel, deleteMessage: (MessageModel) -> Uni
                 Text(modifier = Modifier.fillMaxWidth(), text = messageModel.text, color = AppTheme.colors.onSecondary)
             }
             Image(
-                contentDescription = "delete message",
+                contentDescription = null,
                 painter = painterResource(id = R.drawable.delete),
                 modifier = Modifier
                     .size(40.dp)
                     .clickable(onClick = { deleteMessage(messageModel) })
-            )
-        }
-    }
-}
-
-@Composable
-fun AddRequestView(
-    state: ShopViewState, event: (ShopEvent) -> Unit
-) {
-    val products = state.listProduct
-    if (products.isNotEmpty()) {
-        Column {
-            Row(
-                horizontalArrangement = Arrangement.End,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(3.dp)
-            ) {
-                Spacer(modifier = Modifier.weight(0.6f))
-                Box(
-                    modifier = Modifier.weight(0.2f)
-                ) {
-                    Text(
-                        style = AppTheme.typography.titleSmall,
-                        text = "Бонусы",
-                        fontSize = 12.sp,
-                        modifier = Modifier.align(Alignment.Center),
-                        color = AppTheme.colors.onSecondary
-                    )
-                }
-                Box(
-                    modifier = Modifier.weight(0.2f)
-                ) {
-                    Text(
-                        style = AppTheme.typography.titleSmall,
-                        text = "Заявка",
-                        fontSize = 12.sp,
-                        modifier = Modifier.align(Alignment.Center),
-                        color = AppTheme.colors.onSecondary
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(5.dp))
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                items(state.listProductRequest) { product ->
-                    ProductAddShopWithOrderItem(product = product, onVCCount = {
-                        event(
-                            ShopEvent.ChangeCountProduct(
-                                product = product, count = it
-                            )
-                        )
-                    }, onVCCountBonus = {
-                        event(
-                            ShopEvent.ChangeCountBonusProduct(
-                                product = product, bonus = it
-                            )
-                        )
-                    })
-                }
-            }
-        }
-    } else {
-        Box(modifier = Modifier.fillMaxSize()) {
-            CircularProgressIndicator(
-                modifier = Modifier
-                    .size(30.dp)
-                    .align(Alignment.Center),
-                strokeWidth = 2.dp,
-                color = AppTheme.colors.onSecondary
             )
         }
     }
@@ -334,7 +215,7 @@ fun ProductAddShopWithOrderItem(
                 editCount = false
                 count = it.toString()
                 onVCCount(count)
-            }, text = "Заявка: " + product.name, value = count
+            }, text = "${stringResource(R.string.request)}: " + product.name, value = count
             )
         }
         if (editBonus) {
@@ -346,7 +227,7 @@ fun ProductAddShopWithOrderItem(
                 editBonus = false
                 countBonus = it.toString()
                 onVCCountBonus(countBonus)
-            }, text = "Бонус: " + product.name, value = countBonus
+            }, text = "${stringResource(R.string.bonus)}: " + product.name, value = countBonus
             )
         }
     }

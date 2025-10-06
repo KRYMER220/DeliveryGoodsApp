@@ -23,9 +23,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardColors
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -33,7 +30,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -41,20 +37,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.ShopModel
 import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.data.model.utilModel.StatusModel
+import ru.krymer.delivery.data.model.utilModel.toStatusModel
 import ru.krymer.delivery.ui.components.CommonAlertAddDialog
 import ru.krymer.delivery.ui.components.CommonConfirmDialog
-import ru.krymer.delivery.ui.components.CommonDeleteDialog
 import ru.krymer.delivery.ui.components.CommonInfoAlertDialog
-import ru.krymer.delivery.ui.components.CommonInfoBottomSheet
-import ru.krymer.delivery.ui.components.CommonSaveDialog
-import ru.krymer.delivery.ui.components.ConfirmView
+import ru.krymer.delivery.ui.components.CustomCircularProgressIndicator
 import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
 import ru.krymer.delivery.ui.theme.AppTheme
@@ -64,11 +56,14 @@ import ru.krymer.delivery.utills.convertToTextDate
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ShopView(
-    state: ShopViewState, event: (ShopEvent) -> Unit, user: UserModel
+    state: ShopViewState,
+    event: (ShopEvent) -> Unit,
+    user: UserModel,
+    routeToRequest: (ShopModel) -> Unit
 ) {
 
     val context = LocalContext.current
-    val shops = state.listUIShop
+    val shops = state.shops
     val lazyListState = rememberLazyListState()
     state.currentTrip?.let { trip ->
 
@@ -108,15 +103,7 @@ fun ShopView(
 
                 if (shops.isEmpty()) {
                     item {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            CircularProgressIndicator(
-                                modifier = Modifier
-                                    .size(30.dp)
-                                    .align(Alignment.Center),
-                                strokeWidth = 2.dp,
-                                color = Color.White
-                            )
-                        }
+                        CustomCircularProgressIndicator()
                     }
                 } else {
                     itemsIndexed(shops, key = { _, item -> item.id }) { index, shop ->
@@ -124,7 +111,7 @@ fun ShopView(
                         ShopsItem(
                             shop = shop,
                             openShop = {
-                                event(ShopEvent.OpenRequest(shop = it))
+                                routeToRequest(it)
                             },
                             openLocate = {
                                 event(
@@ -135,6 +122,7 @@ fun ShopView(
                                 )
                             },
                             openInfoCurrentShop = {
+                                event(ShopEvent.ToggleInfoCurrentShopDialog)
                                 event(ShopEvent.OpenInfoShopDialog(shop = it))
                             },
                             modifier = Modifier.animateItem(
@@ -146,8 +134,7 @@ fun ShopView(
                             user = user,
                             openInfoShop = {
                                 event(ShopEvent.ToggleLogsShopDialog(it))
-                            },
-                            trip = trip
+                            }
                         )
 
                         Spacer(modifier = Modifier.height(3.dp))
@@ -188,7 +175,7 @@ fun ShopView(
                             )
                             Text(
                                 style = AppTheme.typography.titleMedium,
-                                text = "${log.log} \nПользователь: ${log.nameCourier}",
+                                text = "${log.log} \n${stringResource(R.string.user)}: ${log.nameCourier}",
                                 color = AppTheme.colors.onSecondary,
                             )
                             Spacer(modifier = Modifier.height(5.dp))
@@ -204,29 +191,21 @@ fun ShopView(
                     }
                 } else {
                     item {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            CircularProgressIndicator(
-                                modifier = Modifier
-                                    .size(30.dp)
-                                    .align(Alignment.Center),
-                                strokeWidth = 2.dp,
-                                color = AppTheme.colors.onSecondary
-                            )
-                        }
+                        CustomCircularProgressIndicator()
                     }
                 }
             }
         })
-
     }
 
     if (state.toggleMillageDialog) {
         CommonInfoAlertDialog(onDismissRequest = {
-            event(ShopEvent.DismissMillageDialog)
+            event(ShopEvent.ToggleMillageDialog)
         }, content = {
             val count = state.allCountRequestsInfo
             val exchange = state.allExchangeRequestsInfo
             val requests = state.listInfoRequests
+            val isBonus = requests.any { it.bonus > 0 }
             LazyColumn(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 item {
                     Column(
@@ -235,16 +214,17 @@ fun ShopView(
                     ) {
                         Text(
                             style = AppTheme.typography.titleSmall,
-                            text = "Общее: $count",
+                            text = "${stringResource(R.string.count_all)}: $count",
                             color = AppTheme.colors.onSecondary
                         )
                         Spacer(modifier = Modifier.height(5.dp))
                         Text(
                             style = AppTheme.typography.titleSmall,
-                            text = "Обмены: $exchange",
+                            text = "${stringResource(R.string.exchange)}: $exchange",
                             color = AppTheme.colors.onSecondary
                         )
                     }
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
@@ -255,15 +235,15 @@ fun ShopView(
                         )
                         Text(
                             style = AppTheme.typography.bodySmall,
-                            text = "Цена",
+                            text = stringResource(R.string.price),
                             color = AppTheme.colors.onSecondary,
                             modifier = Modifier.weight(0.15f),
                             textAlign = TextAlign.Center,
                         )
-                        if (!state.lightVersion) {
+                        if (isBonus) {
                             Text(
                                 style = AppTheme.typography.bodySmall,
-                                text = "Бонус",
+                                text = stringResource(R.string.bonus),
                                 color = AppTheme.colors.onSecondary,
                                 modifier = Modifier.weight(0.15f),
                                 textAlign = TextAlign.Center,
@@ -271,37 +251,31 @@ fun ShopView(
                         }
                         Text(
                             style = AppTheme.typography.bodySmall,
-                            text = "Заявка",
+                            text = stringResource(R.string.request),
                             color = AppTheme.colors.onSecondary,
                             modifier = Modifier.weight(0.15f),
                             textAlign = TextAlign.Center,
                         )
                         Text(
                             style = AppTheme.typography.bodySmall,
-                            text = "Возврат",
+                            text = stringResource(R.string.exchange),
                             color = AppTheme.colors.onSecondary,
                             modifier = Modifier.weight(0.15f),
                             textAlign = TextAlign.Center,
                         )
                     }
                 }
+
                 if (requests.isNotEmpty()) {
                     items(requests) { product ->
                         InfoContentProductItem(product = product, state = state)
                     }
                 } else {
                     item {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            CircularProgressIndicator(
-                                modifier = Modifier
-                                    .size(30.dp)
-                                    .align(Alignment.Center),
-                                strokeWidth = 2.dp,
-                                color = AppTheme.colors.onSecondary
-                            )
-                        }
+                        CustomCircularProgressIndicator()
                     }
                 }
+
                 item {
                     if (user.isSysOrAdmin() && !state.lightVersion) {
                         Box(
@@ -310,7 +284,7 @@ fun ShopView(
                         ) {
                             Image(
                                 painter = painterResource(id = R.drawable.folow),
-                                contentDescription = "clip",
+                                contentDescription = null,
                                 modifier = Modifier
                                     .clickable(onClick = {
                                         event(ShopEvent.CopyInfoData(context = context))
@@ -322,7 +296,7 @@ fun ShopView(
                 }
 
                 item {
-                    MillageAndInfoView(state = state, onMillageTFC = {
+                    MillageView(state = state, onMillageTFC = {
                         event(ShopEvent.ValueChangeMillage(millage = if (it.isEmpty()) 0.0 else it.toDouble()))
                     }, event = event)
                 }
@@ -333,10 +307,10 @@ fun ShopView(
     if (state.toggleAnaliticOfTrip) {
         CommonInfoAlertDialog(
             content = {
-                InfoShopContent(shops = state.listUIShop)
+                InfoShopContent(shops = state.shopsAnalitic)
             },
             onDismissRequest = {
-                event(ShopEvent.ShowHideDialogAnalitic)
+                event(ShopEvent.ToggleAnaliticShopsCurrentTrip)
             },
             modifier = Modifier.fillMaxSize()
         )
@@ -354,22 +328,10 @@ fun ShopView(
         })
     }
 
-    if (state.toggleAddRequestDialog) {
-        CommonAlertAddDialog(onDismiss = {
-            event(ShopEvent.DismissDialogAddRequest)
-        }, confirm = {
-            event(ShopEvent.RequestAddAction)
-        }, content = {
-            AddRequestView(
-                state = state, event = event
-            )
-        })
-    }
-
     if (state.isCopyAndSave) {
         CommonConfirmDialog(
             onDismiss = {
-                event(ShopEvent.ChangeStateIsCopyDialog)
+                event(ShopEvent.ToggleConfirmCopyAndSave)
             }, onConfirm = {
                 event(ShopEvent.CopyAndSaveShop)
             },
@@ -377,102 +339,12 @@ fun ShopView(
         )
     }
 
-    if (state.toggleRequestDialog) {
-        Dialog(onDismissRequest = { event(ShopEvent.DismissRequestDialog) },
-            properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            decorFitsSystemWindows = false
-        )) {
-            Card(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(AppTheme.colors.onPrimary), colors = CardColors(
-                    containerColor = AppTheme.colors.onPrimary,
-                    contentColor = AppTheme.colors.onPrimary,
-                    disabledContentColor = AppTheme.colors.onPrimary,
-                    disabledContainerColor = AppTheme.colors.onPrimary
-                )
-            ) {
-                AlertDialogRequestShop(
-                    event = event, state = state, user = user
-                )
-            }
-        }
-    }
-
     if (state.toggleCurrentShopInfo) {
         CommonInfoAlertDialog(
-            onDismissRequest = { event(ShopEvent.DismissInfoShopDialog) },
+            onDismissRequest = { event(ShopEvent.ToggleInfoCurrentShopDialog) },
             content = {
                 InfoShopContent(shops = state.listCurrentShopInfo)
             })
-    }
-
-    if (state.toggleAddSumDialog) {
-        CommonInfoBottomSheet(
-            onDismissRequest = { event(ShopEvent.DismissAddSumDialog) },
-            content = {
-                ChangeAddSumView(changeAddSum = {
-                    event(ShopEvent.ChangeAddSum(it))
-                }, saveAddSum = {
-                    event(ShopEvent.SaveAddSum)
-                })
-            })
-    }
-
-    if (state.toggleMessageDialog) {
-        CommonSaveDialog(
-            dismiss = {
-                event(ShopEvent.ToggleMessageDialog(false))
-            },
-            confirm = {
-                event(ShopEvent.SendMessage)
-            },
-            content = {
-                MessageTextView(
-                    changeTextMessage = {
-                        event(ShopEvent.ChangeMessage(it))
-                    },
-                    deleteMessage = {
-                        event(ShopEvent.DeleteMessage(it))
-                    },
-                    state = state,
-                )
-            }
-        )
-    }
-
-
-    if (state.toggleArrearsDialog) {
-        CommonInfoBottomSheet(
-            onDismissRequest = { event(ShopEvent.DismissDialogChangeArrears) },
-            content = {
-                ChangeArrearsView(changeArrears = {
-                    event(ShopEvent.ChangeArrears(it))
-                }, saveArrear = { event(ShopEvent.SaveArrears) })
-            })
-    }
-
-    if (state.toggleDeleteDialog) {
-        state.currentShop?.let {
-            CommonDeleteDialog(
-                itemName = it.nameShop,
-                isVisible = true,
-                onDismiss = { event(ShopEvent.DismissDeleteDialog) },
-                onConfirm = { event(ShopEvent.DeleteShop) })
-        }
-    }
-
-    if (state.toggleConfirmRequestDialog) {
-        CommonInfoAlertDialog(
-            onDismissRequest = { event(ShopEvent.DismissConfirmRequestDialog) },
-            content = {
-                ConfirmView(
-                    onSubmit = { event(ShopEvent.RequestSaveAction) },
-                    onDismiss = { event(ShopEvent.DismissConfirmRequestDialog) }
-                )
-            }
-        )
     }
 }
 
@@ -493,9 +365,10 @@ fun HeaderContentShop(
             contentDescription = "courier millage",
             modifier = Modifier
                 .combinedClickable(onClick = {
-                    event(ShopEvent.OpenMillageDialog)
+                    event(ShopEvent.ToggleMillageDialog)
+                    event(ShopEvent.GetDataRequestsByTrip)
                 }, onLongClick = {
-                    event(ShopEvent.ShowHideDialogAnalitic)
+                    event(ShopEvent.ToggleAnaliticShopsCurrentTrip)
                 })
                 .size(60.dp)
         )
@@ -507,7 +380,7 @@ fun HeaderContentShop(
         if (user.isModOrAdminOrSys()) {
             Image(
                 painter = painterResource(id = R.drawable.add),
-                contentDescription = "add shop",
+                contentDescription = null,
                 modifier = Modifier
                     .combinedClickable(onClick = {
                         event(ShopEvent.ShowAddDialogShopCurrentRoute)
@@ -531,8 +404,7 @@ fun ShopsItem(
     modifier: Modifier,
     index: Int,
     user: UserModel,
-    openInfoShop: (ShopModel) -> Unit,
-    trip: TripModel
+    openInfoShop: (ShopModel) -> Unit
 ) {
     Box(modifier = modifier
         .heightIn(min = 60.dp, max = Dp.Unspecified)
@@ -573,20 +445,20 @@ fun ShopsItem(
                         openInfoShop(shop)
                     }), contentAlignment = Alignment.Center) {
                     Image(
-                        contentDescription = "info",
+                        contentDescription = null,
                         painter = painterResource(R.drawable.info_shop),
                         modifier = Modifier.size(20.dp)
                     )
                 }
             }
             Image(
-                contentDescription = "status",
+                contentDescription = null,
                 painter = when {
-                    !shop.status && shop.statusServer == StatusModel.NOT_CHANGE -> painterResource(
+                    !shop.status && shop.statusServer.toStatusModel() == StatusModel.NOT_CHANGE -> painterResource(
                         id = R.drawable.inactive_circle
                     )
 
-                    shop.statusServer == StatusModel.UN_SYNC -> painterResource(id = R.drawable.unsync_circle)
+                    shop.statusServer.toStatusModel() == StatusModel.UN_SYNC -> painterResource(id = R.drawable.unsync_circle)
                     else -> painterResource(id = R.drawable.active_circle)
                 },
                 modifier = Modifier

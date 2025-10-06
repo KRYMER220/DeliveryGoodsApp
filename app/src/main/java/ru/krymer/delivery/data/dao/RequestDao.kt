@@ -6,7 +6,6 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
-import org.jetbrains.annotations.ApiStatus
 import ru.krymer.delivery.data.model.RequestModel
 
 @Dao
@@ -28,6 +27,9 @@ interface RequestDao {
 
     @Query("DELETE FROM request WHERE idShop IN (:shopIds)")
     suspend fun deleteRequestsByShopIds(shopIds: List<Long>)
+
+    @Query("DELETE FROM request WHERE idShop = :shopId AND idTrip = :tripId")
+    suspend fun deleteRequestsByShopId(shopId: Long, tripId: Long)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRequests(requests: List<RequestModel>)

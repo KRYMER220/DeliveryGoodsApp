@@ -18,7 +18,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import ru.krymer.delivery.R
 import ru.krymer.delivery.ui.theme.AppTheme
 
 @Composable
@@ -29,7 +31,7 @@ fun <T> GenericDropdown(
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
     itemLabel: (T) -> String,
-    placeholder: String = "Не выбран",
+    placeholder: String = stringResource(R.string.not_select),
     contentDescription: String? = null,
     onItemSelected: (T?) -> Unit
 ) {
@@ -67,7 +69,7 @@ fun <T> GenericDropdown(
                 DropdownMenuItem(
                     text = {
                         Text(
-                            text = "Не выбран",
+                            text = placeholder,
                             style = AppTheme.typography.titleSmall
                         )
                     },

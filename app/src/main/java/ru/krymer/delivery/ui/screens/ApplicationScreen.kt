@@ -66,6 +66,7 @@ import ru.krymer.delivery.data.model.utilModel.MessageModel
 import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
 import ru.krymer.delivery.ui.components.CommonInfoAlertDialog
 import ru.krymer.delivery.ui.components.CommonTextField
+import ru.krymer.delivery.ui.request.RequestScreen
 import ru.krymer.delivery.ui.screens.analitic.AnaliticScreen
 import ru.krymer.delivery.ui.screens.client.ClientScreen
 import ru.krymer.delivery.ui.screens.courier.CourierScreen
@@ -157,8 +158,9 @@ fun ApplicationScreen(
             }
 
             entry<Screens.Shop> { key ->
-                ShopScreen(user = user, trip = key.trip
-                )
+                ShopScreen(user = user, trip = key.trip, routeToRequest = { shop ->
+                    backStack.add(Screens.Request(shop = shop))
+                })
             }
 
             entry<Screens.Trip> {
@@ -191,6 +193,14 @@ fun ApplicationScreen(
                     backStack.add(Screens.Auth)
                     event(SharedEvents.LogOut)
                 })
+            }
+
+            entry<Screens.Request> { key ->
+                RequestScreen(
+                    shop = key.shop, user = user, backStack = {
+                        backStack.removeLastOrNull()
+                    }
+                )
             }
         })
     ToasterMessages(sharedState.value, event = event)

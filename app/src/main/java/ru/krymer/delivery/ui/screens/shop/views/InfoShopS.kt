@@ -4,20 +4,16 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,18 +24,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.RequestModel
-import ru.krymer.delivery.data.model.ShopModel
+import ru.krymer.delivery.data.model.ShopServerModel
 import ru.krymer.delivery.data.model.utilModel.TypePayModel
+import ru.krymer.delivery.ui.components.CustomCircularProgressIndicator
 import ru.krymer.delivery.ui.theme.AppTheme
 import ru.krymer.delivery.utills.convertToTextDate
 
 @Composable
-fun InfoShopContent(shops: List<ShopModel>) {
+fun InfoShopContent(shops: List<ShopServerModel>) {
     if (shops.isNotEmpty()) {
         LazyColumn(modifier = Modifier.fillMaxHeight()) {
             items(shops) { shop ->
@@ -79,7 +77,7 @@ fun InfoShopContent(shops: List<ShopModel>) {
                         if (shop.isBonus) {
                             Text(
                                 style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
-                                text = "Бонус",
+                                text = stringResource(R.string.bonus),
                                 modifier = Modifier.weight(0.2f),
                                 color = AppTheme.colors.onSecondary,
                                 textAlign = TextAlign.Center
@@ -87,14 +85,14 @@ fun InfoShopContent(shops: List<ShopModel>) {
                         }
                         Text(
                             style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
-                            text = "Заявка",
+                            text = stringResource(R.string.request),
                             modifier = Modifier.weight(0.2f),
                             color = AppTheme.colors.onSecondary,
                             textAlign = TextAlign.Center
                         )
                         Text(
                             style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
-                            text = "Обмены",
+                            text = stringResource(R.string.exchange),
                             modifier = Modifier.weight(0.2f),
                             color = AppTheme.colors.onSecondary,
                             textAlign = TextAlign.Center
@@ -119,7 +117,7 @@ fun InfoShopContent(shops: List<ShopModel>) {
                         ) {
                             Text(
                                 style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 4).sp),
-                                text = "Долг",
+                                text = stringResource(R.string.arrears),
                                 color = AppTheme.colors.onSecondary
                             )
                             Text(
@@ -137,7 +135,7 @@ fun InfoShopContent(shops: List<ShopModel>) {
                             ) {
                                 Text(
                                     style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
-                                    text = "Доп",
+                                    text = stringResource(R.string.add_sum_short),
                                     color = AppTheme.colors.onSecondary
                                 )
                                 Text(
@@ -155,7 +153,7 @@ fun InfoShopContent(shops: List<ShopModel>) {
                         ) {
                             Text(
                                 style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
-                                text = "Заявка",
+                                text = stringResource(R.string.request),
                                 color = AppTheme.colors.onSecondary
                             )
                             Text(
@@ -189,7 +187,7 @@ fun InfoShopContent(shops: List<ShopModel>) {
                                     ) {
                                         Text(
                                             style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
-                                            text = "Нал",
+                                            text = stringResource(R.string.cash),
                                             color = AppTheme.colors.onSecondary
                                         )
                                         Text(
@@ -206,7 +204,7 @@ fun InfoShopContent(shops: List<ShopModel>) {
                                     ) {
                                         Text(
                                             style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
-                                            text = "Без/нал",
+                                            text = stringResource(R.string.noCash),
                                             color = AppTheme.colors.onSecondary
                                         )
                                         Text(
@@ -234,7 +232,7 @@ fun InfoShopContent(shops: List<ShopModel>) {
                                 ) {
                                     Text(
                                         style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
-                                        text = "Нал",
+                                        text = stringResource(R.string.cash),
                                         color = AppTheme.colors.onSecondary
                                     )
                                     Text(
@@ -265,7 +263,7 @@ fun InfoShopContent(shops: List<ShopModel>) {
                                 ) {
                                     Text(
                                         style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
-                                        text = "Без/нал",
+                                        text = stringResource(R.string.noCash),
                                         color = AppTheme.colors.onSecondary
                                     )
                                     Text(
@@ -284,7 +282,7 @@ fun InfoShopContent(shops: List<ShopModel>) {
                     ) {
                         Text(
                             style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
-                            text = "Новый долг",
+                            text = stringResource(R.string.new_arrears),
                             color = AppTheme.colors.onSecondary
                         )
                         Text(
@@ -299,38 +297,18 @@ fun InfoShopContent(shops: List<ShopModel>) {
             }
         }
     } else {
-        Box(modifier = Modifier.fillMaxSize()) {
-            CircularProgressIndicator(
-                modifier = Modifier
-                    .size(30.dp)
-                    .align(Alignment.Center),
-                strokeWidth = 2.dp,
-                color = AppTheme.colors.onSecondary
-            )
-        }
+        CustomCircularProgressIndicator()
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ProductRequestItemInfo(
-    request: RequestModel,
-    shop: ShopModel
+    request: RequestModel, shop: ShopServerModel
 ) {
-
-
-    var count by remember {
-        mutableStateOf(request.count.toString())
-    }
-
-    var countBonus by remember {
-        mutableStateOf(request.bonus.toString())
-    }
-
-    var countExchange by remember {
-        mutableStateOf(request.exchange.toString())
-    }
-
+    var count by remember { mutableStateOf(request.count.toString()) }
+    var countBonus by remember { mutableStateOf(request.bonus.toString()) }
+    var countExchange by remember { mutableStateOf(request.exchange.toString()) }
 
     Row(
         modifier = Modifier
@@ -349,46 +327,24 @@ fun ProductRequestItemInfo(
             color = AppTheme.colors.onSecondary
         )
         if (shop.isBonus) {
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .weight(0.2f)
-                    .padding(end = 5.dp)
-            ) {
-                Text(
-                    style = AppTheme.typography.titleSmall,
-                    text = if (countBonus == "0") "" else countBonus,
-                    modifier = Modifier.align(Alignment.Center),
-                    color = AppTheme.colors.onSecondary
-                )
-            }
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .weight(0.2f)
-                .padding(end = 5.dp)
-        ) {
             Text(
                 style = AppTheme.typography.titleSmall,
-                text = if (count == "0") "" else count,
-                modifier = Modifier
-                    .align(Alignment.Center),
+                text = if (countBonus == "0") "" else countBonus,
+                modifier = Modifier.weight(0.2f),
                 color = AppTheme.colors.onSecondary
             )
         }
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .weight(0.2f)
-                .padding(end = 5.dp)
-        ) {
-            Text(
-                style = AppTheme.typography.titleSmall,
-                text = if (countExchange == "0") "" else countExchange,
-                modifier = Modifier.align(Alignment.Center),
-                color = AppTheme.colors.onSecondary
-            )
-        }
+        Text(
+            style = AppTheme.typography.titleSmall,
+            text = if (count == "0") "" else count,
+            modifier = Modifier.weight(0.2f),
+            color = AppTheme.colors.onSecondary
+        )
+        Text(
+            style = AppTheme.typography.titleSmall,
+            text = if (countExchange == "0") "" else countExchange,
+            modifier = Modifier.weight(0.2f),
+            color = AppTheme.colors.onSecondary
+        )
     }
 }

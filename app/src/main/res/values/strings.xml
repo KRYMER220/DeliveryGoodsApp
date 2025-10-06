@@ -55,4 +55,27 @@
     //Other
     <string name="yes">Да</string>
     <string name="no">Нет</string>
+
+    <string name="box_office">Касса</string>
+    <string name="cash">Нал</string>
+    <string name="noCash">Без/Нал</string>
+    <string name="remains">Остаток</string>
+    <string name="request">Заявка</string>
+    <string name="get_money">Получено</string>
+    <string name="new_arrears">Новый долг</string>
+    <string name="add_sum">Доп. сумма</string>
+    <string name="add_sum_short">Доп</string>
+    <string name="bonus">Бонус</string>
+    <string name="exchange">Обмен</string>
+    <string name="type_pay">Способ оплаты</string>
+    <string name="not_select">Не выбран</string>
+    <string name="not_select_client">Не выбран клиент</string>
+    <string name="not_select_courier">Не выбран курьер</string>
+    <string name="not_select_route">Не выбран маршрут</string>
+    <string name="user">Пользователь</string>
+    <string name="count_all">Всего</string>
+    <string name="filter">Включить фильтрацию</string>
+    <string name="sort">Сортировка</string>
+    <string name="asc">по возврастанию</string>
+    <string name="desc">по убыванию</string>
 </resources>

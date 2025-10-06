@@ -6,14 +6,13 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Query
 import ru.krymer.delivery.data.model.RequestModel
-import ru.krymer.delivery.data.request.CreateRequestShopRequest
-import ru.krymer.delivery.data.request.UpdateRequestShopRequest
+import ru.krymer.delivery.data.request.RequestShopRequest
 import ru.krymer.delivery.data.response.BaseResponse
 import ru.krymer.delivery.utills.Constants
 
 interface RequestApi {
     @POST("request/create")
-    suspend fun add(@Body request: CreateRequestShopRequest): BaseResponse<RequestModel>
+    suspend fun add(@Body request: RequestShopRequest): BaseResponse<RequestModel>
 
     @GET("requests/get/trip")
     suspend fun getRequestsByTrip(
@@ -22,7 +21,7 @@ interface RequestApi {
     ): BaseResponse<List<RequestModel>>
 
     @POST("request/update")
-    suspend fun update(@Body request: UpdateRequestShopRequest): BaseResponse<RequestModel>
+    suspend fun update(@Body request: RequestShopRequest): BaseResponse<RequestModel>
 
     @DELETE("request/delete")
     suspend fun delete(

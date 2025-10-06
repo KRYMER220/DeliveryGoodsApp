@@ -6,26 +6,21 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
-import ru.krymer.delivery.data.model.ShopLocalModel
 import ru.krymer.delivery.data.model.ShopModel
-import ru.krymer.delivery.data.model.utilModel.getStringByTypePay
 
 @Dao
 interface ShopDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertShop(shop: ShopLocalModel)
+    suspend fun insertShop(shop: ShopModel)
 
     @Delete
-    suspend fun deleteShop(shop: ShopLocalModel)
-
-    @Update
-    suspend fun updateShop(shop: ShopLocalModel)
+    suspend fun deleteShop(shop: ShopModel)
 
     @Query("SELECT * FROM shop WHERE idTrip = :idTrip")
-    suspend fun getShops(idTrip: Long): List<ShopLocalModel>
+    suspend fun getShops(idTrip: Long): List<ShopModel>
 
     @Query("SELECT * FROM shop WHERE id = :id")
-    suspend fun getShopsById(id: Long): List<ShopLocalModel>
+    suspend fun getShopsById(id: Long): List<ShopModel>
 
     @Query("DELETE FROM shop WHERE idTrip = :idTrip")
     suspend fun deleteShopsByTrip(idTrip: Long)
@@ -34,13 +29,13 @@ interface ShopDao {
     suspend fun deleteShopsByIds(ids: List<Long>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertShops(shops: List<ShopLocalModel>)
+    suspend fun insertShops(shops: List<ShopModel>)
 
     @Update
-    suspend fun updateShops(shops: List<ShopLocalModel>)
+    suspend fun updateShops(shops: List<ShopModel>)
 
     @Query("SELECT * FROM shop WHERE idTrip = :idTrip AND statusServer == :status")
-    suspend fun getStatusShops(idTrip: Long, status: String): List<ShopLocalModel>
+    suspend fun getStatusShops(idTrip: Long, status: String): List<ShopModel>
 
     @Query("UPDATE shop SET statusServer = :status WHERE id = :shopId")
     suspend fun markShopAsSynced(shopId: Long, status: String)

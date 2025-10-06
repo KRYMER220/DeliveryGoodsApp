@@ -41,4 +41,26 @@
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="pass_old">Old password</string>
+    <string name="box_office">Box office</string>
+    <string name="cash">Cash</string>
+    <string name="noCash">No Cash</string>
+    <string name="remains">Remains</string>
+    <string name="request">Request</string>
+    <string name="get_money">Get money</string>
+    <string name="new_arrears">New arrears</string>
+    <string name="add_sum">Add sum</string>
+    <string name="add_sum_short">Add</string>
+    <string name="bonus">Bonus</string>
+    <string name="exchange">Exchange</string>
+    <string name="type_pay">Method pay</string>
+    <string name="not_select">Not selected</string>
+    <string name="not_select_client">Not selected client</string>
+    <string name="not_select_courier">Not selected courier</string>
+    <string name="not_select_route">Not selected route</string>
+    <string name="user">User</string>
+    <string name="count_all">Total</string>
+    <string name="filter">Enable filter</string>
+    <string name="sort">Sort</string>
+    <string name="asc">ascending</string>
+    <string name="desc">descendig</string>
 </resources>

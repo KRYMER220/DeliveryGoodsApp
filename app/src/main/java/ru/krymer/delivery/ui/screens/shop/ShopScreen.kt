@@ -5,13 +5,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import ru.krymer.delivery.data.model.ShopModel
 import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.ui.screens.shop.views.ShopView
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ShopScreen(user: UserModel?, trip: TripModel) {
+fun ShopScreen(user: UserModel?, trip: TripModel, routeToRequest: (ShopModel) -> Unit) {
     user?.let {
         val viewModel = hiltViewModel<ShopViewModel>()
         LaunchedEffect(Unit) {
@@ -20,7 +21,8 @@ fun ShopScreen(user: UserModel?, trip: TripModel) {
         ShopView(
             state = viewModel.viewState.collectAsState().value,
             event = viewModel::obtainEvent,
-            user = it
+            user = it,
+            routeToRequest = routeToRequest
         )
     }
 }
