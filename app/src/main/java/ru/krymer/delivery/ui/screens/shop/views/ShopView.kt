@@ -32,11 +32,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.activity.compose.BackHandler
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.ShopModel
 import ru.krymer.delivery.data.model.TripModel
@@ -59,102 +61,135 @@ fun ShopView(
     state: ShopViewState,
     event: (ShopEvent) -> Unit,
     user: UserModel,
-    routeToRequest: (ShopModel) -> Unit
+    routeToRequest: (List<ShopModel>, ShopModel) -> Unit
 ) {
-
     val context = LocalContext.current
     val shops = state.shops
     val lazyListState = rememberLazyListState()
-    state.currentTrip?.let { trip ->
 
-        val showStickyHeader by remember {
-            derivedStateOf {
-                lazyListState.firstVisibleItemIndex > 1 ||
-                        (lazyListState.firstVisibleItemIndex == 1 && lazyListState.firstVisibleItemScrollOffset > 0)
-            }
-        }
+    if (state.isSettingsInstall) {
+        state.currentTrip?.let { trip ->
 
-        Box(modifier = Modifier.fillMaxSize()) {
-            LazyColumn(
-                state = lazyListState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(7.dp)
-            ) {
-                item {
-                    Spacer(
-                        modifier = Modifier
-                            .fillParentMaxHeight(0.5f)
-                            .fillMaxWidth()
-                    )
-                }
-
-                item {
-                    HeaderContentShop(
-                        user = user,
-                        event = event,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.TopCenter),
-                        trip = trip
-                    )
-                }
-
-                if (shops.isEmpty()) {
-                    item {
-                        CustomCircularProgressIndicator()
-                    }
-                } else {
-                    itemsIndexed(shops, key = { _, item -> item.id }) { index, shop ->
-
-                        ShopsItem(
-                            shop = shop,
-                            openShop = {
-                                routeToRequest(it)
-                            },
-                            openLocate = {
-                                event(
-                                    ShopEvent.OpenGeoPoint(
-                                        context = context,
-                                        cord = it.cord
-                                    )
-                                )
-                            },
-                            openInfoCurrentShop = {
-                                event(ShopEvent.ToggleInfoCurrentShopDialog)
-                                event(ShopEvent.OpenInfoShopDialog(shop = it))
-                            },
-                            modifier = Modifier.animateItem(
-                                fadeInSpec = null,
-                                fadeOutSpec = null,
-                                placementSpec = tween(durationMillis = 400)
-                            ),
-                            index = index + 1,
-                            user = user,
-                            openInfoShop = {
-                                event(ShopEvent.ToggleLogsShopDialog(it))
-                            }
-                        )
-
-                        Spacer(modifier = Modifier.height(3.dp))
-                    }
+            val showStickyHeader by remember {
+                derivedStateOf {
+                    lazyListState.firstVisibleItemIndex > 1 ||
+                            (lazyListState.firstVisibleItemIndex == 1 && lazyListState.firstVisibleItemScrollOffset > 0)
                 }
             }
-            if (showStickyHeader) {
-                HeaderContentShop(
-                    user = user,
-                    event = event,
+
+            Box(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    state = lazyListState,
                     modifier = Modifier
-                        .background(color = AppTheme.colors.onPrimary)
-                        .fillMaxWidth()
-                        .align(Alignment.TopCenter)
-                        .padding(10.dp)
-                        .pointerInput(Unit) {},
-                    trip = trip
-                )
+                        .fillMaxSize()
+                        .padding(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    item {
+                        Spacer(
+                            modifier = Modifier
+                                .fillParentMaxHeight(0.5f)
+                                .fillMaxWidth()
+                        )
+                    }
+
+                    item {
+                        if (state.lightVersion) {
+                            HeaderLeftContentShop(
+                                user = user,
+                                event = event,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .align(Alignment.TopCenter)
+                                    .padding(10.dp)
+                                    .pointerInput(Unit) {},
+                                trip = trip
+                            )
+                        } else {
+                            HeaderContentShop(
+                                user = user,
+                                event = event,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .align(Alignment.TopCenter)
+                                    .padding(10.dp)
+                                    .pointerInput(Unit) {},
+                                trip = trip
+                            )
+                        }
+                    }
+
+                    if (shops.isEmpty()) {
+                        item {
+                            CustomCircularProgressIndicator()
+                        }
+                    } else {
+                        itemsIndexed(shops, key = { _, item -> item.id }) { index, shop ->
+
+                            ShopsItem(
+                                shop = shop,
+                                openShop = {
+                                    routeToRequest(shops, it)
+                                },
+                                openLocate = {
+                                    event(
+                                        ShopEvent.OpenGeoPoint(
+                                            context = context,
+                                            cord = it.cord
+                                        )
+                                    )
+                                },
+                                openInfoCurrentShop = {
+                                    event(ShopEvent.ToggleInfoCurrentShopDialog)
+                                    event(ShopEvent.OpenInfoShopDialog(shop = it))
+                                },
+                                modifier = Modifier.animateItem(
+                                    fadeInSpec = null,
+                                    fadeOutSpec = null,
+                                    placementSpec = tween(durationMillis = 400)
+                                ),
+                                index = index + 1,
+                                user = user,
+                                openInfoShop = {
+                                    event(ShopEvent.ToggleLogsShopDialog(it))
+                                }
+                            )
+
+                            Spacer(modifier = Modifier.height(3.dp))
+                        }
+                    }
+                }
+                if (showStickyHeader) {
+                    if (state.lightVersion) {
+                        HeaderLeftContentShop(
+                            user = user,
+                            event = event,
+                            modifier = Modifier
+                                .background(color = AppTheme.colors.onPrimary)
+                                .fillMaxWidth()
+                                .align(Alignment.TopCenter)
+                                .padding(10.dp)
+                                .pointerInput(Unit) {},
+                            trip = trip
+                        )
+                    } else {
+                        HeaderContentShop(
+                            user = user,
+                            event = event,
+                            modifier = Modifier
+                                .background(color = AppTheme.colors.onPrimary)
+                                .fillMaxWidth()
+                                .align(Alignment.TopCenter)
+                                .padding(10.dp)
+                                .pointerInput(Unit) {},
+                            trip = trip
+                        )
+                    }
+                }
             }
         }
+    } else {
+        CustomCircularProgressIndicator()
     }
 
     if (state.toggleLogShop) {
@@ -208,23 +243,6 @@ fun ShopView(
             val isBonus = requests.any { it.bonus > 0 }
             LazyColumn(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 item {
-                    Column(
-                        Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            style = AppTheme.typography.titleSmall,
-                            text = "${stringResource(R.string.count_all)}: $count",
-                            color = AppTheme.colors.onSecondary
-                        )
-                        Spacer(modifier = Modifier.height(5.dp))
-                        Text(
-                            style = AppTheme.typography.titleSmall,
-                            text = "${stringResource(R.string.exchange)}: $exchange",
-                            color = AppTheme.colors.onSecondary
-                        )
-                    }
-
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
@@ -263,6 +281,13 @@ fun ShopView(
                             modifier = Modifier.weight(0.15f),
                             textAlign = TextAlign.Center,
                         )
+                        Text(
+                            style = AppTheme.typography.bodySmall,
+                            text = stringResource(R.string.remains),
+                            color = AppTheme.colors.onSecondary,
+                            modifier = Modifier.weight(0.15f),
+                            textAlign = TextAlign.Center,
+                        )
                     }
                 }
 
@@ -273,6 +298,25 @@ fun ShopView(
                 } else {
                     item {
                         CustomCircularProgressIndicator()
+                    }
+                }
+
+                item {
+                    Column(
+                        Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            style = AppTheme.typography.titleSmall,
+                            text = "${stringResource(R.string.count_all)}: $count",
+                            color = AppTheme.colors.onSecondary
+                        )
+                        Spacer(modifier = Modifier.height(5.dp))
+                        Text(
+                            style = AppTheme.typography.titleSmall,
+                            text = "${stringResource(R.string.exchange)}: $exchange",
+                            color = AppTheme.colors.onSecondary
+                        )
                     }
                 }
 
@@ -296,6 +340,7 @@ fun ShopView(
                 }
 
                 item {
+                    Spacer(modifier = Modifier.height(10.dp))
                     MillageView(state = state, onMillageTFC = {
                         event(ShopEvent.ValueChangeMillage(millage = if (it.isEmpty()) 0.0 else it.toDouble()))
                     }, event = event)
@@ -353,7 +398,7 @@ fun HeaderContentShop(
     user: UserModel,
     event: (ShopEvent) -> Unit,
     modifier: Modifier = Modifier,
-    trip: TripModel
+    trip: TripModel,
 ) {
     Row(
         modifier = modifier,
@@ -390,6 +435,51 @@ fun HeaderContentShop(
                     .size(60.dp)
             )
         }
+    }
+}
+
+@Composable
+fun HeaderLeftContentShop(
+    user: UserModel,
+    event: (ShopEvent) -> Unit,
+    modifier: Modifier = Modifier,
+    trip: TripModel,
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (user.isModOrAdminOrSys()) {
+            Image(
+                painter = painterResource(id = R.drawable.add),
+                contentDescription = null,
+                modifier = Modifier
+                    .combinedClickable(onClick = {
+                        event(ShopEvent.ShowAddDialogShopCurrentRoute)
+                    }, onLongClick = {
+                        event(ShopEvent.ShowAddDialogShopAllRoutes)
+                    })
+                    .size(60.dp)
+            )
+        }
+        Text(
+            style = AppTheme.typography.titleSmall,
+            text = convertToTextDate(trip.date),
+            color = AppTheme.colors.onSecondary
+        )
+        Image(
+            painter = painterResource(id = R.drawable.car_info),
+            contentDescription = "courier millage",
+            modifier = Modifier
+                .combinedClickable(onClick = {
+                    event(ShopEvent.ToggleMillageDialog)
+                    event(ShopEvent.GetDataRequestsByTrip)
+                }, onLongClick = {
+                    event(ShopEvent.ToggleAnaliticShopsCurrentTrip)
+                })
+                .size(60.dp)
+        )
     }
 }
 

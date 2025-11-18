@@ -51,7 +51,7 @@ fun InfoContentProductItem(product: RequestModel, state: ShopViewState) {
             color = AppTheme.colors.onSecondary,
             modifier = Modifier.weight(0.15f)
         )
-        if (!state.lightVersion) {
+        if (!state.lightVersion && product.bonus > 0) {
             Text(
                 style = AppTheme.typography.bodySmall,
                 text = "${product.bonus}",
@@ -70,6 +70,13 @@ fun InfoContentProductItem(product: RequestModel, state: ShopViewState) {
         Text(
             style = AppTheme.typography.bodySmall,
             text = "${product.exchange}",
+            textAlign = TextAlign.Center,
+            color = AppTheme.colors.onSecondary,
+            modifier = Modifier.weight(0.15f)
+        )
+        Text(
+            style = AppTheme.typography.bodySmall,
+            text = "${product.countRemain}",
             textAlign = TextAlign.Center,
             color = AppTheme.colors.onSecondary,
             modifier = Modifier.weight(0.15f)

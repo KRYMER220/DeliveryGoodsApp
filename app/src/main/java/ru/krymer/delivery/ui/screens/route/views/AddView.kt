@@ -41,6 +41,7 @@ fun AddRouteView(
                     }
                 }
             },
+            infoValue = stringResource(R.string.name),
             modifier = Modifier
                 .fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),

@@ -8,10 +8,11 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import ru.krymer.delivery.BuildConfig
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
-const val BASE_URL = "https://monolit.containerapps.ru/api/v1/"
+const val BASE_URL = BuildConfig.BASE_URL
 
 @Module
 @InstallIn(SingletonComponent::class)

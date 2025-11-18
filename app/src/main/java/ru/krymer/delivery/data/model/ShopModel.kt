@@ -50,6 +50,27 @@ data class ShopServerModel(
     var isChanged: Boolean,
 )
 
+data class ShopUIModel(
+    val id: Long,
+    var idTrip: Long,
+    val idFactory: Long,
+    val nameShop: String,
+    var arrears: Double,
+    var addSum: Double,
+    var status: Boolean,
+    var date: Long,
+    var typePay: TypePayModel,
+    var cash: Double,
+    val counter: Int,
+    var noCash: Double,
+    var isOldPrice: Boolean,
+    val cord: String,
+    var listRequest: List<RequestModel>,
+    var isBonus: Boolean,
+    var isChanged: Boolean,
+    val statusServer: String = StatusModel.NOT_CHANGE.toStr(),
+)
+
 fun ShopServerModel.toUiModel() = ShopModel(
     id = id,
     idTrip = idTrip,

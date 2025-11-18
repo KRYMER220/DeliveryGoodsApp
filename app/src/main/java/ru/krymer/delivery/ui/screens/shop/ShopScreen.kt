@@ -12,7 +12,7 @@ import ru.krymer.delivery.ui.screens.shop.views.ShopView
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ShopScreen(user: UserModel?, trip: TripModel, routeToRequest: (ShopModel) -> Unit) {
+fun ShopScreen(user: UserModel?, trip: TripModel, routeToRequest: (List<ShopModel>, ShopModel) -> Unit) {
     user?.let {
         val viewModel = hiltViewModel<ShopViewModel>()
         LaunchedEffect(Unit) {

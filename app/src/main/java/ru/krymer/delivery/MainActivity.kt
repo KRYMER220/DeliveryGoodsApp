@@ -55,7 +55,7 @@ sealed class Screens: NavKey {
     data object Ban: Screens()
 
     @Serializable
-    data class Request(val shop: ShopModel) : Screens()
+    data class Request(val shop: ShopModel, val shops: List<ShopModel>) : Screens()
 }
 
 @ExperimentalMaterial3Api
@@ -63,13 +63,14 @@ sealed class Screens: NavKey {
 class MainActivity : ComponentActivity() {
 
     private lateinit var updateManager: RuStoreAppUpdateManager
-
+    private var installStateListener: ru.rustore.sdk.appupdate.listener.InstallStateUpdateListener? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         updateManager = RuStoreAppUpdateManagerFactory.create(this)
         checkForUpdate(updateManager)
         enableEdgeToEdge()
+
         setContent {
             val sharedViewModel = hiltViewModel<SharedViewModel>()
             val state = sharedViewModel.viewState.collectAsState()
@@ -82,6 +83,20 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.navigationBarsPadding()
                 )
             },fontSizeIndex = state.value.fontSizeIndex)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::updateManager.isInitialized) {
+            updateManager.getAppUpdateInfo().addOnSuccessListener { appUpdateInfo ->
+                if (appUpdateInfo.updateAvailability == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS) {
+                    val options = AppUpdateOptions.Builder()
+                        .appUpdateType(AppUpdateType.IMMEDIATE)
+                        .build()
+                    updateManager.startUpdateFlow(appUpdateInfo, options)
+                }
+            }
         }
     }
 
@@ -128,6 +143,16 @@ class MainActivity : ComponentActivity() {
             }
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        installStateListener?.let { listener ->
+            if (::updateManager.isInitialized) {
+                updateManager.unregisterListener(listener)
+            }
+        }
+        installStateListener = null
+    }
+
     private fun startUpdateFlow(
         updateManager: RuStoreAppUpdateManager,
         appUpdateInfo: AppUpdateInfo,
@@ -154,7 +179,8 @@ class MainActivity : ComponentActivity() {
         updateManager: RuStoreAppUpdateManager,
         options: AppUpdateOptions
     ) {
-        updateManager.registerListener { state ->
+        // Сохраняем listener в переменную
+        val listener = ru.rustore.sdk.appupdate.listener.InstallStateUpdateListener { state ->
             when (state.installStatus) {
                 InstallStatus.DOWNLOADING -> {
                     val percent = if (state.totalBytesToDownload > 0) {
@@ -167,10 +193,11 @@ class MainActivity : ComponentActivity() {
 
                 InstallStatus.DOWNLOADED -> {
                     Log.d("Updater", "Update downloaded, ready to install")
-
                     updateManager.completeUpdate(options)
                         .addOnSuccessListener {
                             Log.d("Updater", "Update completed successfully")
+                            installStateListener?.let { updateManager.unregisterListener(it) }
+                            installStateListener = null
                         }
                         .addOnFailureListener { throwable ->
                             Log.e("Updater", "completeUpdate error", throwable)
@@ -179,16 +206,25 @@ class MainActivity : ComponentActivity() {
 
                 InstallStatus.FAILED -> {
                     Log.e("Updater", "Update failed with status: ${state.installErrorCode}")
+                    installStateListener?.let { updateManager.unregisterListener(it) }
+                    installStateListener = null
+                }
+
+                InstallStatus.INSTALLING -> {
+                    Log.d("Updater", "Update is installing...")
                 }
 
                 else -> Unit
             }
         }
+
+        updateManager.registerListener(listener)
+        installStateListener = listener
     }
 
     private fun isCriticalUpdate(currentVersion: Long, availableVersion: Long): Boolean {
-        val currentMajor = currentVersion / 1000
-        val availableMajor = availableVersion / 1000
+        val currentMajor = currentVersion / 100
+        val availableMajor = availableVersion / 100
         return availableMajor > currentMajor
     }
 

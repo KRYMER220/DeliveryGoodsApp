@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ru.krymer.delivery.AppDatabase
+import ru.krymer.delivery.data.model.TripModel
+import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
 import ru.krymer.delivery.data.repositoryImpl.CourierRepositoryImpl
 import ru.krymer.delivery.data.repositoryImpl.RouteRepositoryImpl
@@ -26,8 +28,9 @@ import ru.krymer.delivery.ui.screens.trip.models.TripViewState
 import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.MyResult
 import ru.krymer.delivery.utills.getStartOfNextDay
+import java.io.IOException
+import java.net.UnknownHostException
 import javax.inject.Inject
-import kotlin.random.Random
 
 @HiltViewModel
 class TripViewModel @Inject constructor(
@@ -40,22 +43,41 @@ class TripViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _events = MutableSharedFlow<TripEvent>(extraBufferCapacity = 64)
+    companion object {
+        private const val PAGINATION_LIMIT = 10
+    }
 
     private fun launchCoroutine(block: suspend () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 block()
+            } catch (_: UnknownHostException) {
+                sharedViewModel.message("Отсутствует интернет соединение")
+            } catch (e: IOException) {
+                sharedViewModel.message("Ошибка сети: ${e.message}")
             } catch (e: CancellationException) {
-                throw e
                 _events.emit(TripEvent.Error(Constants.ERROR.CANCEL_OPERATION))
+                throw e
             } catch (e: TimeoutCancellationException) {
-                throw e
                 _events.emit(TripEvent.Error(Constants.ERROR.TIMEOUT))
-            } catch (e: Exception) {
                 throw e
+            } catch (e: Exception) {
                 _events.emit(TripEvent.Error(e.message))
+                throw e
             }
         }
+    }
+
+    private fun getCurrentUser(): UserModel? {
+        return sharedViewModel.viewState.value.user
+    }
+
+    private suspend fun getCurrentUserOrEmitError(): UserModel? {
+        val user = getCurrentUser()
+        if (user == null) {
+            _events.emit(TripEvent.Error(Constants.ERROR.GENERAL_ERROR))
+        }
+        return user
     }
 
     val viewState: StateFlow<TripViewState> = _events
@@ -74,13 +96,20 @@ class TripViewModel @Inject constructor(
 
                 is TripEvent.ToggleDeleteDialog -> state.copy(toggleDeleteTrip = !state.toggleDeleteTrip, trip = event.trip)
 
-                is TripEvent.ToggleUpdateDialog -> state.copy(
-                    toggleUpdateTrip = !state.toggleUpdateTrip,
-                    trip = if (!state.toggleUpdateTrip) event.trip else null,
-                    salary = if (!state.toggleUpdateTrip) event.trip?.salary?.toInt().toString() else "",
-                    currentRoute = if (!state.toggleUpdateTrip) state.listRoute.first { it.id == event.trip?.idRoute} else null,
-                    currentCourier = if (!state.toggleUpdateTrip) state.listCourier.first { it.id == event.trip?.idCourier} else null,
-                )
+                is TripEvent.ToggleUpdateDialog -> {
+                    val isOpening = !state.toggleUpdateTrip
+                    state.copy(
+                        toggleUpdateTrip = !state.toggleUpdateTrip,
+                        trip = if (isOpening) event.trip else null,
+                        salary = if (isOpening) event.trip?.salary?.toInt().toString() else "",
+                        currentRoute = if (isOpening) {
+                            state.listRoute.firstOrNull { it.id == event.trip?.idRoute }
+                        } else null,
+                        currentCourier = if (isOpening) {
+                            state.listCourier.firstOrNull { it.id == event.trip?.idCourier }
+                        } else null,
+                    )
+                }
 
                 TripEvent.RefreshTrips -> {
                     launchCoroutine { loadTrips() }
@@ -111,7 +140,7 @@ class TripViewModel @Inject constructor(
                 is TripEvent.ChangeSalaryTrip -> state.copy(salary = event.salary)
 
                 is TripEvent.ChangeSort -> {
-                    val newSort = !event.boolean
+                    val newSort = event.boolean
                     manager.saveBoolean(Constants.KEYS.SORT, newSort)
                     state.copy(sort = newSort)
                 }
@@ -148,7 +177,7 @@ class TripViewModel @Inject constructor(
                     currentDate = getStartOfNextDay(),
                 )
 
-                is TripEvent.TripsLoaded -> state.copy(trips = event.trips, isLoading = false, hasMore = event.hasMore)
+                is TripEvent.TripsLoaded -> state.copy(trips = event.trips, isLoading = false, hasMore = event.hasMore, isInitialLoad = false )
 
                 is TripEvent.ListCouriersLoaded -> state.copy(listCourier = event.couriers)
 
@@ -170,7 +199,7 @@ class TripViewModel @Inject constructor(
                     launchCoroutine {
                         loadLocalData()
                     }
-                    state
+                    state.copy(isInitialLoad = true)
                 }
             }
         }
@@ -181,21 +210,22 @@ class TripViewModel @Inject constructor(
     }
 
     private suspend fun loadLocalData() {
-        val user = sharedViewModel.viewState.value.user ?: run {
-            _events.emit(TripEvent.Error(Constants.ERROR.GENERAL_ERROR))
-            return
-        }
-
-        val isFilter = viewState.value.isFilter
-        val isSorted = viewState.value.sort
-        val localTrips = if (!isFilter) {
-            if (isSorted) {
-                database.tripDao().getTrips().sortedBy { it.date }
+        val user = getCurrentUserOrEmitError() ?: return
+        val currentState = viewState.value
+        val isFilter = currentState.isFilter
+        val isSorted = currentState.sort
+        
+        val localTrips = database.tripDao().getTrips().let { trips ->
+            val filtered = if (isFilter) {
+                trips.filter { it.idCourier == user.id }
             } else {
-                database.tripDao().getTrips().sortedByDescending { it.date }
+                trips
             }
-        } else {
-            database.tripDao().getTrips().filter { it.idCourier == user.id }.sortedByDescending { it.date }
+            if (isSorted) {
+                filtered.sortedBy { it.date }
+            } else {
+                filtered.sortedByDescending { it.date }
+            }
         }
 
         if (localTrips.isNotEmpty()) {
@@ -206,15 +236,12 @@ class TripViewModel @Inject constructor(
     }
 
     private suspend fun loadTrips() {
-        val user = sharedViewModel.viewState.value.user ?: run {
-            _events.emit(TripEvent.Error(Constants.ERROR.GENERAL_ERROR))
-            return
-        }
-
-        val uid = viewState.value.filterUid
-        val routeId = viewState.value.filterRouteId
-        val sort = viewState.value.sort
-        val isFilter = viewState.value.isFilter
+        val user = getCurrentUserOrEmitError() ?: return
+        val currentState = viewState.value
+        val uid = currentState.filterUid
+        val routeId = currentState.filterRouteId
+        val sort = currentState.sort
+        val isFilter = currentState.isFilter
 
         if (isFilter) {
             when (val response = repository.getTrips(
@@ -224,6 +251,7 @@ class TripViewModel @Inject constructor(
                 sortBy = if (sort) Constants.SORT.ASC else Constants.SORT.DESC
             )) {
                 is MyResult.Success -> {
+                    syncLocalDatabase(response.data, clearAll = true)
                     _events.emit(TripEvent.TripsLoaded(trips = response.data, hasMore = false))
                 }
                 is MyResult.Error -> _events.emit(TripEvent.Error(message = response.message))
@@ -233,153 +261,182 @@ class TripViewModel @Inject constructor(
         }
     }
 
+    private suspend fun syncLocalDatabase(
+        serverTrips: List<TripModel>,
+        clearAll: Boolean = false
+    ) {
+        try {
+            if (clearAll) {
+                val localTrips = database.tripDao().getTrips()
+                val serverTripIds = serverTrips.map { it.id }.toSet()
+                
+                val tripsToDelete = localTrips.filter { localTrip ->
+                    !serverTripIds.contains(localTrip.id)
+                }
+                
+                tripsToDelete.forEach { trip ->
+                    database.tripDao().deleteTrip(trip)
+                }
+            }
+
+            serverTrips.forEach { serverTrip ->
+                database.tripDao().upsertTrip(serverTrip)
+            }
+        } catch (e: Exception) {
+            println("Ошибка при синхронизации локальной базы: ${e.message}")
+        }
+    }
+
     private suspend fun createTrip() {
         val factory = sharedViewModel.viewState.value.factory ?: run {
             _events.emit(TripEvent.Error(Constants.ERROR.AGAIN))
             return
         }
-        val curRoute = viewState.value.currentRoute
-        val curCourier = viewState.value.currentCourier
-        val date = viewState.value.currentDate + Random.nextInt(from = 1, until = 1000)
+        val currentState = viewState.value
+        val curRoute = currentState.currentRoute
+        val curCourier = currentState.currentCourier
+        val date = currentState.currentDate
 
-        if (curRoute != null && curCourier != null) {
-            val tripRequest = TripRequest(
-                factoryId = factory.id,
-                date = date,
-                courierId = curCourier.id,
-                routeId = curRoute.id,
-                salary = curCourier.salary,
-                percentCourier = curCourier.percentSalary,
-                priceMillage = factory.priceMillage,
-                nameRoute = curRoute.name,
-                nameCourier = curCourier.name
-            )
-
-            when (val response = repository.add(trip = tripRequest)) {
-                is MyResult.Success -> {
-                    _events.emit(TripEvent.ToggleAddDialog)
-                    _events.emit(TripEvent.RefreshTrips)
-                }
-                is MyResult.Error -> _events.emit(TripEvent.Error(message = response.message))
-            }
-        } else {
+        if (curRoute == null || curCourier == null) {
             _events.emit(TripEvent.Error(Constants.ERROR.AGAIN))
+            return
+        }
+
+        val tripRequest = TripRequest(
+            factoryId = factory.id,
+            date = date,
+            courierId = curCourier.id,
+            routeId = curRoute.id,
+            salary = curCourier.salary,
+            percentCourier = curCourier.percentSalary,
+            priceMillage = factory.priceMillage,
+            nameRoute = curRoute.name,
+            nameCourier = curCourier.name
+        )
+
+        when (repository.add(trip = tripRequest)) {
+            is MyResult.Success -> {
+                _events.emit(TripEvent.ToggleAddDialog)
+                _events.emit(TripEvent.RefreshTrips)
+            }
+            is MyResult.Error -> _events.emit(TripEvent.Error(message = "Ошибка создания рейса!"))
         }
     }
 
     private suspend fun updateTrip() {
-        val trip = viewState.value.trip
-        val route = viewState.value.currentRoute
-        val courier = viewState.value.currentCourier
-        val date = viewState.value.currentDate
-        val salary = viewState.value.salary
+        val currentState = viewState.value
+        val trip = currentState.trip
+        val route = currentState.currentRoute
+        val courier = currentState.currentCourier
+        val date = currentState.currentDate
+        val salary = currentState.salary
 
-        if (route != null && courier != null && trip != null) {
-            val tripRequest = TripRequest(
-                id = trip.id,
-                factoryId = trip.idFactory,
-                date = date + Random.nextInt(from = 1, until = 1000),
-                courierId = courier.id,
-                routeId = route.id,
-                salary = if (salary == "") courier.salary else salary.toDouble(),
-                percentCourier = courier.percentSalary,
-                priceMillage = trip.priceMillage,
-                millage = trip.millage,
-                nameCourier = courier.name,
-                nameRoute = route.name,
-            )
+        if (route == null || courier == null || trip == null) {
+            _events.emit(TripEvent.Error(Constants.ERROR.GENERAL_ERROR))
+            return
+        }
 
-            when (val response = repository.update(trip = tripRequest)) {
-                is MyResult.Success -> {
-                    _events.emit(TripEvent.RefreshTrips)
-                    _events.emit(TripEvent.ToggleUpdateDialog(trip = null))
-                }
-                is MyResult.Error -> _events.emit(TripEvent.Error(message = response.message))
+        val tripRequest = TripRequest(
+            id = trip.id,
+            factoryId = trip.idFactory,
+            date = date,
+            courierId = courier.id,
+            routeId = route.id,
+            salary = salary.ifBlank { courier.salary.toString() }.toDoubleOrNull() ?: courier.salary,
+            percentCourier = courier.percentSalary,
+            priceMillage = trip.priceMillage,
+            millage = trip.millage,
+            nameCourier = courier.name,
+            nameRoute = route.name,
+        )
+
+        when (repository.update(trip = tripRequest)) {
+            is MyResult.Success -> {
+                _events.emit(TripEvent.RefreshTrips)
+                _events.emit(TripEvent.ToggleUpdateDialog(trip = null))
             }
+            is MyResult.Error -> _events.emit(TripEvent.Error(message = "Ошибка обновления рейса!"))
         }
     }
 
     private suspend fun deleteTrip() {
-        val trip = viewState.value.trip
-        if (trip != null) {
-            when (val response = repository.delete(id = trip.id)) {
-                is MyResult.Success -> {
-                    database.tripDao().deleteTrip(trip)
-                    _events.emit(TripEvent.RefreshTrips)
-                    _events.emit(TripEvent.ToggleDeleteDialog(trip = null))
-                }
-                is MyResult.Error -> _events.emit(TripEvent.Error(message = response.message))
-            }
-        } else {
+        val currentState = viewState.value
+        val trip = currentState.trip
+        if (trip == null) {
             _events.emit(TripEvent.Error(Constants.ERROR.GENERAL_ERROR))
+            return
+        }
+
+        when (repository.delete(id = trip.id)) {
+            is MyResult.Success -> {
+                database.tripDao().deleteTrip(trip)
+                _events.emit(TripEvent.RefreshTrips)
+                _events.emit(TripEvent.ToggleDeleteDialog(trip = null))
+            }
+            is MyResult.Error -> _events.emit(TripEvent.Error(message = "Ошибка удаления рейса!"))
         }
     }
 
     private suspend fun loadListDropMenuRoutes() {
-        val user = sharedViewModel.viewState.value.user ?: run {
-            _events.emit(TripEvent.Error(Constants.ERROR.GENERAL_ERROR))
-            return
-        }
-
+        val user = getCurrentUserOrEmitError() ?: return
         when (val response = repositoryRoute.getRoutes(user.idFactory)) {
             is MyResult.Success -> {
                 _events.emit(TripEvent.ListRoutesLoaded(routes = response.data))
             }
-            is MyResult.Error -> _events.emit(TripEvent.Error(message = response.message))
+            is MyResult.Error -> _events.emit(TripEvent.Error(message = "Ошибка загрузки списка маршрутов!"))
         }
     }
 
     private suspend fun loadListDropMenuCouriers() {
-        val user = sharedViewModel.viewState.value.user ?: run {
-            _events.emit(TripEvent.Error(Constants.ERROR.GENERAL_ERROR))
-            return
-        }
-
+        val user = getCurrentUserOrEmitError() ?: return
         when (val response = repositoryCourier.getUsers(user.idFactory)) {
             is MyResult.Success -> {
-                _events.emit(TripEvent.ListCouriersLoaded(couriers = response.data ))
+                _events.emit(TripEvent.ListCouriersLoaded(couriers = response.data))
             }
-            is MyResult.Error -> _events.emit(TripEvent.Error(message = response.message))
+            is MyResult.Error -> _events.emit(TripEvent.Error(message = "Ошибка загрузки списка курьеров!"))
         }
     }
 
     private suspend fun loadPaginatedTrips(loadMore: Boolean) {
-        val user = sharedViewModel.viewState.value.user ?: run {
-            _events.emit(TripEvent.Error(Constants.ERROR.GENERAL_ERROR))
-            return
-        }
-
-        val limit = 10
-        val lastTrip = if (loadMore && viewState.value.trips.isNotEmpty()) {
-            viewState.value.trips.last()
+        val user = getCurrentUserOrEmitError() ?: return
+        val currentState = viewState.value
+        val lastTrip = if (loadMore && currentState.trips.isNotEmpty()) {
+            currentState.trips.last()
         } else {
             null
         }
 
         when (val response = repository.getPaginatedTrips(
             idFactory = user.idFactory,
-            limit = limit,
+            limit = PAGINATION_LIMIT,
             lastDate = lastTrip?.date,
             lastId = lastTrip?.id
         )) {
             is MyResult.Success -> {
                 val newTrips = response.data
-                val currentTrips = if (loadMore) {
-                    viewState.value.trips.toMutableList().apply { addAll(newTrips) }
+
+                if (!loadMore) {
+                    syncLocalDatabase(newTrips, clearAll = true)
                 } else {
-                    newTrips.toMutableList()
+                    syncLocalDatabase(newTrips, clearAll = false)
                 }
 
-                val newHasMore = newTrips.size == limit
+                val currentTrips = if (loadMore) {
+                    currentState.trips + newTrips
+                } else {
+                    newTrips
+                }
+
+                val newHasMore = newTrips.size == PAGINATION_LIMIT
                 _events.emit(TripEvent.TripsLoaded(trips = currentTrips, hasMore = newHasMore))
             }
-            is MyResult.Error -> _events.emit(TripEvent.Error(message = response.message))
+            is MyResult.Error -> _events.emit(TripEvent.Error(message = "Ошибка загрузки списка рейсов!"))
         }
     }
 
     private suspend fun submitFilter() {
-        val isFilter = viewState.value.isFilter
-        if (!isFilter) {
+        val currentState = viewState.value
+        if (!currentState.isFilter) {
             _events.emit(TripEvent.ChangeCourierFilter(courier = null))
             _events.emit(TripEvent.ChangeRouteFilter(route = null))
             _events.emit(TripEvent.ChangeSort(boolean = false))

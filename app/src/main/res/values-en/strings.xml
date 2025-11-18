@@ -33,6 +33,7 @@
     <string name="range_select">Choose a range</string>
     <string name="shop">Shops</string>
     <string name="km_et">Mileage</string>
+    <string name="mileage">Mileage</string>
     <string name="all_info">All analitic of Factory</string>
     <string name="ok">Ok</string>
     <string name="del_confirm">Are you sure you want to delete?</string>
@@ -76,4 +77,5 @@
     <string name="del_shop">Delete shop</string>
     <string name="send_message">Send message</string>
     <string name="another_pay">Another pay</string>
+    <string name="all_req">All requests</string>
 </resources>

@@ -33,7 +33,7 @@ fun CommonInfoAlertDialog(
             Box(
                 modifier = modifier
                     .fillMaxWidth()
-                    .padding(5.dp)
+                    .padding(4.dp)
             ) {
                 content()
             }

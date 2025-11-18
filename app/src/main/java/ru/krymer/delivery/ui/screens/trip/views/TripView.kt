@@ -20,6 +20,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.user.UserModel
@@ -51,27 +54,43 @@ fun TripView(
     openTrip: (TripModel) -> Unit = {}
 ) {
     val lazyListState = rememberLazyListState()
-    val trips = state.trips
+    
+    val trips = if (state.isInitialLoad) emptyList() else state.trips
+
     val shouldLoadMore by remember {
         derivedStateOf {
             val layoutInfo = lazyListState.layoutInfo
             val totalItems = layoutInfo.totalItemsCount
+            if (totalItems == 0) return@derivedStateOf false
             val visibleItemsInfo = layoutInfo.visibleItemsInfo
-            visibleItemsInfo.any { it.index == totalItems - 1 } && totalItems > 0
+            visibleItemsInfo.any { it.index == totalItems - 1 }
         }
     }
 
     val showStickyHeader by remember {
         derivedStateOf {
-            lazyListState.firstVisibleItemIndex > 1 || (lazyListState.firstVisibleItemIndex == 1 && lazyListState.firstVisibleItemScrollOffset > 0)
+            val firstIndex = lazyListState.firstVisibleItemIndex
+            firstIndex > 1 || (firstIndex == 1 && lazyListState.firstVisibleItemScrollOffset > 0)
         }
     }
 
-    LaunchedEffect(shouldLoadMore) {
-        if (shouldLoadMore) {
+    LaunchedEffect(state.isInitialLoad) {
+        if (state.isInitialLoad) {
+            event(TripEvent.RefreshTrips)
+        }
+    }
+
+    LaunchedEffect(shouldLoadMore, state.hasMore, state.isLoading) {
+        if (shouldLoadMore && state.hasMore && !state.isLoading) {
             event(TripEvent.LoadMoreTrips)
         }
     }
+
+    val currentTime = System.currentTimeMillis()
+    val (futureTrips, pastTrips) = remember(trips, currentTime) {
+        trips.partition { it.date > currentTime }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = lazyListState,
@@ -83,7 +102,7 @@ fun TripView(
             item {
                 Spacer(
                     modifier = Modifier
-                        .fillParentMaxHeight(0.5f)
+                        .fillParentMaxHeight(0.43f)
                         .fillMaxWidth()
                 )
             }
@@ -100,29 +119,82 @@ fun TripView(
                 )
             }
 
-            if (trips.isNotEmpty()) {
-                items(items = trips) { trip ->
-                    TripItem(
-                        trip = trip, updateTrip = {
-                            if (user.isSysOrAdmin()) event(TripEvent.ToggleUpdateDialog(it))
-                        }, deleteTrip = {
-                            event(TripEvent.ToggleDeleteDialog(trip = it))
-                        }, openTrip = {
-                            openTrip(it)
-                        }, user = user
-                    )
-                    Spacer(modifier = Modifier.height(3.dp))
+            when {
+                trips.isEmpty() && state.isLoading -> {
+                    item {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .size(30.dp)
+                                    .align(Alignment.Center),
+                                strokeWidth = 2.dp,
+                                color = Color.White
+                            )
+                        }
+                    }
                 }
-            } else {
-                item {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        CircularProgressIndicator(
-                            modifier = Modifier
-                                .size(30.dp)
-                                .align(Alignment.Center),
-                            strokeWidth = 2.dp,
-                            color = Color.White
-                        )
+                trips.isNotEmpty() -> {
+                    if (futureTrips.isNotEmpty()) {
+                        if (!state.lightVersion) {
+                            item {
+                                Text(
+                                    text = "Предстоящие рейсы",
+                                    style = AppTheme.typography.titleSmall,
+                                    color = AppTheme.colors.onSecondary,
+                                )
+                            }
+                        }
+
+                        items(items = futureTrips, key = { it.id }) { trip ->
+                            TripItem(
+                                trip = trip,
+                                updateTrip = {
+                                    if (user.isSysOrAdmin()) event(TripEvent.ToggleUpdateDialog(it))
+                                },
+                                deleteTrip = {
+                                    event(TripEvent.ToggleDeleteDialog(trip = it))
+                                },
+                                openTrip = openTrip,
+                                user = user
+                            )
+                        }
+
+                        if (pastTrips.isNotEmpty()) {
+                            item {
+                                Spacer(modifier = Modifier.height(5.dp))
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    color = AppTheme.colors.onSecondary.copy(alpha = 0.3f)
+                                )
+                                Spacer(modifier = Modifier.height(5.dp))
+                            }
+                        }
+                    }
+
+                    if (pastTrips.isNotEmpty()) {
+                        if (!state.lightVersion) {
+                            item {
+                                Text(
+                                    text = "Текущие и завершенные рейсы",
+                                    color = AppTheme.colors.onSecondary,
+                                    style = AppTheme.typography.titleSmall,
+                                )
+                            }
+                        }
+
+                        items(items = pastTrips, key = { it.id }) { trip ->
+                            TripItem(
+                                trip = trip,
+                                updateTrip = {
+                                    if (user.isSysOrAdmin()) event(TripEvent.ToggleUpdateDialog(it))
+                                },
+                                deleteTrip = {
+                                    event(TripEvent.ToggleDeleteDialog(trip = it))
+                                },
+                                openTrip = openTrip,
+                                user = user
+                            )
+                        }
                     }
                 }
             }

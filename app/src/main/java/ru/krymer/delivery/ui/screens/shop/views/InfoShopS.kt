@@ -57,14 +57,14 @@ fun InfoShopContent(shops: List<ShopServerModel>) {
                     verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
                     Text(
-                        style = AppTheme.typography.titleMedium,
+                        style = AppTheme.typography.titleSmall,
                         text = convertToTextDate(shop.date),
                         color = AppTheme.colors.onSecondary,
                         textAlign = TextAlign.Center,
                     )
 
                     Text(
-                        style = AppTheme.typography.bodySmall,
+                        style = AppTheme.typography.titleMedium,
                         text = shop.nameShop,
                         textAlign = TextAlign.Center,
                         color = AppTheme.colors.onSecondary,
@@ -72,7 +72,7 @@ fun InfoShopContent(shops: List<ShopServerModel>) {
                             .padding(5.dp)
                     )
 
-                    Row(modifier = Modifier.fillMaxWidth()) {
+                    Row(modifier = Modifier.fillMaxWidth().padding(top = 3.dp, bottom = 3.dp, start = 15.dp, end = 3.dp)) {
                         Spacer(modifier = Modifier.weight(0.4f))
                         if (shop.isBonus) {
                             Text(
@@ -82,6 +82,8 @@ fun InfoShopContent(shops: List<ShopServerModel>) {
                                 color = AppTheme.colors.onSecondary,
                                 textAlign = TextAlign.Center
                             )
+                        } else {
+                            Spacer(modifier = Modifier.weight(0.2f))
                         }
                         Text(
                             style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
@@ -104,7 +106,10 @@ fun InfoShopContent(shops: List<ShopServerModel>) {
                         shop.listRequest.forEach { request ->
                             ProductRequestItemInfo(request = request, shop = shop)
                         }
+                    } else {
+                        CustomCircularProgressIndicator()
                     }
+
                     Row(
                         horizontalArrangement = Arrangement.SpaceAround,
                         modifier = Modifier.fillMaxWidth()
@@ -275,22 +280,27 @@ fun InfoShopContent(shops: List<ShopServerModel>) {
                             }
                         }
                     }
-
-                    Column(
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
-                            text = stringResource(R.string.new_arrears),
-                            color = AppTheme.colors.onSecondary
-                        )
-                        Text(
-                            style = AppTheme.typography.labelSmall,
-                            text = ((shop.addSum + shop.arrears + orderMoney) - (shop.cash + shop.noCash)).toInt()
-                                .toString(),
-                            color = AppTheme.colors.onSecondary
-                        )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                        Spacer(modifier = Modifier.weight(0.333f))
+                        Column(
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.weight(0.333f)
+                        ) {
+                            val newArrear = ((shop.addSum + orderMoney + shop.arrears) - (shop.cash + shop.noCash)).toInt()
+                            Text(
+                                style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
+                                text = stringResource(R.string.new_arrears),
+                                color = AppTheme.colors.onSecondary
+                            )
+                            Text(
+                                style = AppTheme.typography.labelSmall,
+                                text = newArrear
+                                    .toString(),
+                                color = AppTheme.colors.onSecondary
+                            )
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.height(15.dp))
@@ -331,20 +341,25 @@ fun ProductRequestItemInfo(
                 style = AppTheme.typography.titleSmall,
                 text = if (countBonus == "0") "" else countBonus,
                 modifier = Modifier.weight(0.2f),
-                color = AppTheme.colors.onSecondary
+                color = AppTheme.colors.onSecondary,
+                textAlign = TextAlign.Center
             )
+        } else {
+            Spacer(modifier = Modifier.weight(0.2f))
         }
         Text(
             style = AppTheme.typography.titleSmall,
             text = if (count == "0") "" else count,
             modifier = Modifier.weight(0.2f),
-            color = AppTheme.colors.onSecondary
+            color = AppTheme.colors.onSecondary,
+            textAlign = TextAlign.Center
         )
         Text(
             style = AppTheme.typography.titleSmall,
             text = if (countExchange == "0") "" else countExchange,
             modifier = Modifier.weight(0.2f),
-            color = AppTheme.colors.onSecondary
+            color = AppTheme.colors.onSecondary,
+            textAlign = TextAlign.Center
         )
     }
 }

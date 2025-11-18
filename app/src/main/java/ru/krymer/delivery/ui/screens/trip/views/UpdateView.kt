@@ -18,7 +18,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,104 +44,109 @@ fun UpdateTripView(
 ) {
     val routes = state.listRoute
     val couriers = state.listCourier
-    var salary by remember { mutableStateOf(state.salary) }
     var toggleMenuRoute by remember { mutableStateOf(false) }
     var toggleMenuCourier by remember { mutableStateOf(false) }
     var toggleDatePicker by remember { mutableStateOf(false) }
 
-    LaunchedEffect(state.salary) {
-        salary = state.salary
+    if (routes.isEmpty() || couriers.isEmpty() || state.currentRoute == null || state.currentCourier == null) {
+        CustomCircularProgressIndicator()
+        return
     }
 
-    if (routes.isNotEmpty() && couriers.isNotEmpty()) {
-        state.currentRoute?.let { r ->
-            state.currentCourier?.let { c ->
-                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 10.dp)
-                            .height(60.dp)
-                            .background(
-                                color = AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)
-                            )
-                            .clickable { toggleDatePicker = true }) {
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        DatePickerField(
+            date = state.currentDate,
+            onDateClick = { toggleDatePicker = true },
+            showPicker = toggleDatePicker,
+            onDismiss = { toggleDatePicker = false },
+            onDateSelected = { date ->
+                event(TripEvent.ChangeDate(date))
+                toggleDatePicker = false
+            }
+        )
+
+        GenericDropdown(
+            selectedItem = state.currentRoute,
+            items = routes,
+            expanded = toggleMenuRoute,
+            onExpandedChange = { toggleMenuRoute = !toggleMenuRoute },
+            itemLabel = { it.name },
+            placeholder = stringResource(R.string.not_select_route),
+            onItemSelected = { event(TripEvent.SelectRoute(it)) }
+        )
+
+        GenericDropdown(
+            selectedItem = state.currentCourier,
+            items = couriers,
+            expanded = toggleMenuCourier,
+            onExpandedChange = { toggleMenuCourier = !toggleMenuCourier },
+            itemLabel = { it.name },
+            placeholder = stringResource(R.string.not_select_courier),
+            onItemSelected = { event(TripEvent.SelectCourier(it)) }
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+        CommonTextField(
+            modifier = Modifier.fillMaxWidth(),
+            value = state.salary,
+            placeholder = stringResource(R.string.salary),
+            changerText = { event(TripEvent.ChangeSalaryTrip(it)) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DatePickerField(
+    date: Long,
+    onDateClick: () -> Unit,
+    showPicker: Boolean,
+    onDismiss: () -> Unit,
+    onDateSelected: (Long) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 10.dp)
+            .height(60.dp)
+            .background(
+                color = AppTheme.colors.secondary,
+                shape = RoundedCornerShape(10.dp)
+            )
+            .clickable(onClick = onDateClick)
+    ) {
+        Text(
+            text = convertToTextDate(date),
+            modifier = Modifier
+                .padding(start = 15.dp)
+                .align(Alignment.Center),
+            color = AppTheme.colors.onSecondary,
+            style = AppTheme.typography.titleMedium
+        )
+
+        if (showPicker) {
+            val datePickerState = rememberDatePickerState(initialSelectedDateMillis = date)
+            DatePickerDialog(
+                onDismissRequest = onDismiss,
+                confirmButton = {
+                    TextButton(onClick = {
+                        datePickerState.selectedDateMillis?.let(onDateSelected)
+                    }) {
                         Text(
-                            text = convertToTextDate(state.currentDate),
-                            modifier = Modifier
-                                .padding(start = 15.dp)
-                                .align(Alignment.Center),
-                            color = AppTheme.colors.onSecondary,
+                            stringResource(id = R.string.ok),
                             style = AppTheme.typography.titleMedium
-                            )
-                        if (toggleDatePicker) {
-                            val datePickerState = rememberDatePickerState()
-                            DatePickerDialog(onDismissRequest = {
-
-                            }, confirmButton = {
-                                TextButton(onClick = {
-                                    datePickerState.selectedDateMillis?.let {
-                                        event(TripEvent.ChangeDate(it))
-                                        toggleDatePicker = false
-                                    }
-
-                                }) {
-                                    Text(stringResource(id = R.string.ok))
-                                }
-                            }, dismissButton = {
-                                TextButton(onClick = {
-                                    toggleDatePicker = false
-                                }) {
-                                    Text(stringResource(id = R.string.close))
-                                }
-                            }) {
-                                DatePicker(state = datePickerState)
-                            }
-                        }
+                        )
                     }
-
-                    GenericDropdown(
-                        selectedItem = state.currentRoute,
-                        items = routes,
-                        expanded = toggleMenuRoute,
-                        onExpandedChange = { expanded ->
-                            toggleMenuRoute = !toggleMenuRoute
-                        },
-                        itemLabel = { it.name },
-                        placeholder = stringResource(R.string.not_select_route),
-                        onItemSelected = { selectedRoute ->
-                            event(TripEvent.SelectRoute(selectedRoute))
-                        }
-                    )
-
-                    GenericDropdown(
-                        selectedItem = state.currentCourier,
-                        items = state.listCourier,
-                        expanded = toggleMenuCourier,
-                        onExpandedChange = { expanded ->
-                            toggleMenuCourier = !toggleMenuCourier
-                        },
-                        itemLabel = { it.name },
-                        placeholder = stringResource(R.string.not_select_courier),
-                        onItemSelected = { selectedCourier ->
-                            event(TripEvent.SelectCourier(selectedCourier))
-                        }
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-                    CommonTextField(
-                        modifier = Modifier.fillMaxWidth(),
-                        value = salary, placeholder = stringResource(R.string.salary),
-                        changerText = {
-                            event(TripEvent.ChangeSalaryTrip(it))
-                            salary = it
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                    )
+                },
+                dismissButton = {
+                    TextButton(onClick = onDismiss) {
+                        Text(stringResource(id = R.string.close))
+                    }
                 }
+            ) {
+                DatePicker(state = datePickerState)
             }
         }
-    } else {
-        CustomCircularProgressIndicator()
     }
 }

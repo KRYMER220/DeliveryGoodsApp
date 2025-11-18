@@ -26,6 +26,8 @@ import ru.krymer.delivery.di.TokenManager
 import ru.krymer.delivery.ui.screens.shared.models.SharedEvents
 import ru.krymer.delivery.ui.screens.shared.models.SharedViewState
 import ru.krymer.delivery.utills.Constants
+import java.io.IOException
+import java.net.UnknownHostException
 import javax.inject.Inject
 import kotlin.concurrent.atomics.AtomicLong
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -56,6 +58,10 @@ class SharedViewModel @Inject constructor(
             SharedEvents.OpenHideChangerPass -> showHideChangerPass()
             is SharedEvents.ChangePass -> changePass(event.oldPass, event.newPass)
         }
+    }
+
+    fun backFromScreen() {
+        backStack.removeLastOrNull()
     }
 
     private fun changePass(oldPass: String, newPass: String) {
@@ -91,9 +97,13 @@ class SharedViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 block()
+            } catch (e: UnknownHostException) {
+                message("Отсутствует интернет соединение")
+            } catch (e: IOException) {
+                message("Ошибка сети: ${e.message}")
             } catch (e: CancellationException) {
-                throw e
                 message(Constants.ERROR.CANCEL_OPERATION, type = TypeMessageModel.ERROR)
+                throw e
             } catch (e: Exception) {
                 message(e.message, type = TypeMessageModel.ERROR)
             }
@@ -311,6 +321,12 @@ class SharedViewModel @Inject constructor(
 
     private fun loadFactoryData(idFactory: Long) {
         launchCoroutine {
+            val localFactory = database.factoryDao().getFactoryById(idFactory)
+            updateViewState {
+                it.copy(
+                    factory = localFactory
+                )
+            }
             val response = retryWithBackoff(
                 attempts = 4,
                 initialDelayMs = 2000,
@@ -319,7 +335,6 @@ class SharedViewModel @Inject constructor(
             ) {
                 factoryApi.getFactoryById(id = idFactory)
             }
-
             if (response.success) {
                 val factory = response.obj
                 factory?.let {

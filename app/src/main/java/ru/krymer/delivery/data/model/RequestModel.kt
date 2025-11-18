@@ -13,6 +13,7 @@ data class RequestModel(
     val idFactory: Long,
     val count: Int,
     val exchange: Int,
+    val countRemain: Int = 0,
     val bonus: Int,
     val status: Boolean,
     val price: Double,

@@ -42,6 +42,7 @@
     <string name="add_trip">Добавить рейс</string>
     <string name="ok">Ок</string>
     <string name="km_et">Ведите километраж</string>
+    <string name="mileage">Километраж</string>
     <string name="all_info">Общая</string>
     <string name="range_select">Выберите диапазон</string>
     //analitic
@@ -93,5 +94,5 @@
     <string name="del_shop">Удалить магазин</string>
     <string name="send_message">Отправить сообщение</string>
     <string name="another_pay">Смешанный</string>
-
+    <string name="all_req">Все рейсы</string>
 </resources>

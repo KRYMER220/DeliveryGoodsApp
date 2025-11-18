@@ -1,10 +1,9 @@
 package ru.krymer.delivery.ui.screens.product.view
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Text
@@ -44,7 +43,7 @@ fun UpdateProductView(
         val errorNum = stringResource(R.string.error_num)
 
 
-        Column {
+        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
             CommonTextField(
                 isError = errorName.visible,
                 errorValue = errorName.error,
@@ -52,6 +51,7 @@ fun UpdateProductView(
                 placeholder = stringResource(
                     id = R.string.name
                 ),
+                infoValue = stringResource(R.string.name),
                 changerText = { str ->
                     name = str
                     errorName = when {
@@ -63,15 +63,15 @@ fun UpdateProductView(
                     }
                 },
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp),
+                    .fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
             )
-            Spacer(modifier = Modifier.height(10.dp))
+
             CommonTextField(
                 isError = errorPrice.visible,
                 errorValue = errorPrice.error,
                 value = price,
+                infoValue = stringResource(R.string.price),
                 placeholder = stringResource(
                     id = R.string.price
                 ),
@@ -88,10 +88,10 @@ fun UpdateProductView(
 
                 },
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp),
+                    .fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
+
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = if (isActive) stringResource(R.string.hide) else stringResource(R.string.show),

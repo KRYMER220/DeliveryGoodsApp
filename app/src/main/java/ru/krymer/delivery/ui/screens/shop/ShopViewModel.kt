@@ -49,6 +49,8 @@ import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
 import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.copyToClipboard
 import ru.krymer.delivery.utills.isSameDay
+import java.io.IOException
+import java.net.UnknownHostException
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -78,15 +80,19 @@ class ShopViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 block()
+            } catch (_: UnknownHostException) {
+                sharedViewModel.message("Отсутствует интернет соединение")
+            } catch (e: IOException) {
+                sharedViewModel.message("Ошибка сети: ${e.message}")
             } catch (e: CancellationException) {
-                throw e
                 sharedViewModel.message(Constants.ERROR.CANCEL_OPERATION)
+                throw e
             } catch (e: TimeoutCancellationException) {
-                throw e
                 sharedViewModel.message(Constants.ERROR.TIMEOUT)
-            } catch (e: Exception) {
                 throw e
+            } catch (e: Exception) {
                 sharedViewModel.message(e.message)
+                throw e
             }
         }
     }
@@ -169,19 +175,14 @@ class ShopViewModel @Inject constructor(
         }
     }
 
-    init {
-        getDataProduct()
-        initSettings()
-        getDataForCourier()
-    }
-
     private fun initSettings() {
         val value = sharedViewModel.viewState.value.lightVersion
-        updateViewState { it.copy(lightVersion = value) }
+        updateViewState { it.copy(lightVersion = value, isSettingsInstall = true) }
     }
 
     fun initData(trip: TripModel) {
         launchCoroutine {
+            initSettings()
             val localTrip = room.tripDao().getTripById(trip.id)
             val user = sharedViewModel.viewState.value.user
             user?.let {
@@ -228,7 +229,7 @@ class ShopViewModel @Inject constructor(
                         val response = tripApi.getTrip(trip.id)
                         val tripResponse = response.obj
                         if (response.success && tripResponse != null) {
-                            room.tripDao().upsertTrip(tripResponse)
+                            room.tripDao().upsertTrip(tripResponse.copy(isLoaded = true))
                             updateViewState { it.copy(currentTrip = tripResponse) }
                         }
                     }
@@ -250,7 +251,8 @@ class ShopViewModel @Inject constructor(
                     }
                 }
             }
-
+            getDataForCourier()
+            getDataProduct()
         }
     }
 
@@ -326,12 +328,12 @@ class ShopViewModel @Inject constructor(
                     }
                 }
 
-                if (isSameDay(trip.date, System.currentTimeMillis()) && shop.status) {
-                    val sumOrder =
-                        requests.sumOf { it.count * it.price - it.exchange * (if (shop.isOldPrice) it.oldPrice else it.price) }
-                    val arrear = (sumOrder + shop.arrears + shop.addSum) - (shop.cash + shop.noCash)
-                    updateClient(shop.copy(arrears = arrear))
+                val sumOrder = requests.sumOf {
+                    it.count * it.price - it.exchange * (if (shop.isOldPrice) it.oldPrice else it.price)
                 }
+                val arrear = (sumOrder + shop.arrears + shop.addSum) - (shop.cash + shop.noCash)
+                updateClient(shop.copy(arrears = arrear))
+
                 getLocalData(trip.id)
             }
         }
@@ -341,7 +343,7 @@ class ShopViewModel @Inject constructor(
         val shopsLocal = room.shopDao().getShops(idTrip = idTrip)
         updateViewState {
             it.copy(
-                shops = shopsLocal.sortedBy { it.counter },
+                shops = shopsLocal.sortedBy { shop -> shop.counter },
             )
         }
     }
@@ -420,23 +422,21 @@ class ShopViewModel @Inject constructor(
         }
     }
 
-    private fun getDataProduct() {
-        launchCoroutine {
-            val user = sharedViewModel.viewState.value.user
-            if (user != null) {
-                val response = productApi.getProducts(idFactory = user.idFactory)
-                if (response.success) {
-                    val products = response.obj
-                    if (!products.isNullOrEmpty()) {
-                        updateViewState {
-                            it.copy(
-                                listProduct = products,
-                            )
-                        }
+    private suspend fun getDataProduct() {
+        val user = sharedViewModel.viewState.value.user
+        if (user != null) {
+            val response = productApi.getProducts(idFactory = user.idFactory)
+            if (response.success) {
+                val products = response.obj
+                if (!products.isNullOrEmpty()) {
+                    updateViewState {
+                        it.copy(
+                            listProduct = products,
+                        )
                     }
-                } else {
-                    sharedViewModel.message(response.message)
                 }
+            } else {
+                sharedViewModel.message(response.message)
             }
         }
     }
@@ -475,15 +475,12 @@ class ShopViewModel @Inject constructor(
             val localIds = localShops.map { it.id }.toSet()
             val serverIds = shops.map { it.id }.toSet()
 
-            val toDeleteIds = (localIds - serverIds)
-                .filter { id ->
-                    val status = room.shopDao().getShopStatus(id)
-                    status.toStatusModel() == StatusModel.SYNC
-                }
+            val toDeleteIds = localIds - serverIds
+
 
             if (toDeleteIds.isNotEmpty()) {
-                room.requestDao().deleteRequestsByShopIds(toDeleteIds)
-                room.shopDao().deleteShopsByIds(toDeleteIds)
+                room.requestDao().deleteRequestsByShopIds(toDeleteIds.toList())
+                room.shopDao().deleteShopsByIds(toDeleteIds.toList())
             }
 
             val shopsToUpdate = mutableListOf<ShopModel>()
@@ -626,7 +623,7 @@ class ShopViewModel @Inject constructor(
         val messages = getMessages(client.id)
         updateViewState {
             it.copy(
-                listCurrentShopInfo = shops.sortedByDescending { it.date },
+                listCurrentShopInfo = shops.sortedByDescending {shop -> shop.date },
                 messages = messages
             )
         }
@@ -775,7 +772,7 @@ class ShopViewModel @Inject constructor(
                 updateViewState {
                     it.copy(
                         shops = shops.sortedBy { s -> s.counter },
-                        listDataRequests = listRequest.sortedBy { it.counter }
+                        listDataRequests = listRequest.sortedBy { req -> req.counter }
                     )
                 }
             }
@@ -833,7 +830,7 @@ class ShopViewModel @Inject constructor(
             updateViewState {
                 it.copy(
                     shops = shops.sortedBy { s -> s.counter },
-                    listDataRequests = listRequest.sortedBy { it.counter }
+                    listDataRequests = listRequest.sortedBy { req -> req.counter }
                 )
             }
         }
@@ -857,31 +854,29 @@ class ShopViewModel @Inject constructor(
         }
     }
 
-    private fun getDataForCourier() {
-        launchCoroutine {
-            val trip = _viewState.value.currentTrip
-            if (trip != null) {
-                val response =
-                    tripApi.getDataAboutTrip(idTrip = trip.id, idFactory = trip.idFactory)
-                if (response.success) {
-                    val getData = response.obj
-                    if (getData != null) {
-                        updateViewState {
-                            it.copy(
-                                millage = trip.millage,
-                                noCash = getData.noCash,
-                                salary = if (trip.millage > 0.0) getData.salary else 0.0,
-                                cash = getData.cash,
-                                allMoney = getData.allMoney,
-                                remains = if (trip.millage > 0.0) getData.remainCash else 0.0,
-                                salaryFix = trip.salary,
-                                isDataShopForCourierLoad = true
-                            )
-                        }
+    private suspend fun getDataForCourier() {
+        val trip = _viewState.value.currentTrip
+        if (trip != null) {
+            val response =
+                tripApi.getDataAboutTrip(idTrip = trip.id, idFactory = trip.idFactory)
+            if (response.success) {
+                val getData = response.obj
+                if (getData != null) {
+                    updateViewState {
+                        it.copy(
+                            millage = trip.millage,
+                            noCash = getData.noCash,
+                            salary = if (trip.millage > 0.0) getData.salary else 0.0,
+                            cash = getData.cash,
+                            allMoney = getData.allMoney,
+                            remains = if (trip.millage > 0.0) getData.remainCash else 0.0,
+                            salaryFix = trip.salary,
+                            isDataShopForCourierLoad = true
+                        )
                     }
-                } else {
-                    sharedViewModel.message(response.message)
                 }
+            } else {
+                sharedViewModel.message(response.message)
             }
         }
     }
@@ -940,10 +935,33 @@ class ShopViewModel @Inject constructor(
                             count += it.bonus
                             exchange += it.exchange
                         }
+
+                        val updatedRequests = requests.map { req ->
+                            req.copy(
+                                countRemain = req.count + req.bonus,
+                                statusServer = ""
+                            )
+                        }.toMutableList()
+
+                        val shops = room.shopDao().getShops(trip.id)
+                        shops.forEach { shop ->
+                            if (shop.status) {
+                                val localRequests = room.requestDao().getRequests(idShop = shop.id, idTrip = trip.id)
+
+                                localRequests.forEach { req ->
+                                    val index = updatedRequests.indexOfFirst { it.id == req.id }
+                                    if (index != -1) {
+                                        val currentRequest = updatedRequests[index]
+                                        val newCountRemain = currentRequest.countRemain - (req.count + req.bonus)
+                                        updatedRequests[index] = currentRequest.copy(countRemain = newCountRemain, statusServer = "")
+                                    }
+                                }
+                            }
+                        }
                         updateViewState {
                             it.copy(
                                 isLoadDataRequestsInfoDialog = true,
-                                listInfoRequests = requests,
+                                listInfoRequests = updatedRequests,
                                 allCountRequestsInfo = count,
                                 allExchangeRequestsInfo = exchange
                             )

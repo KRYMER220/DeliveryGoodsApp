@@ -1,5 +1,6 @@
 package ru.krymer.delivery.ui.screens.courier.view
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,12 +34,14 @@ fun UpdateSettingsView(
         var errorPrice by remember { mutableStateOf(Error()) }
         val errorEmpty = stringResource(R.string.empty_input)
         val errorNum = stringResource(R.string.error_num)
-        Column {
+
+        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
             CommonTextField(
                 value =  salary,
                 placeholder = stringResource(
                     id = R.string.salary
                 ),
+                infoValue = stringResource(R.string.salary),
                 changerText = {
                     salary = it
                     errorSalary = when {
@@ -51,20 +54,19 @@ fun UpdateSettingsView(
                     }
                 },
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp),
+                    .fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 isError = errorSalary.visible,
                 errorValue = errorSalary.error
             )
-            Spacer(modifier = Modifier.height(10.dp))
+
             CommonTextField(
                 value = priceMillage,
                 placeholder = stringResource(
                     id = R.string.km_price
                 ),
+                infoValue = stringResource(R.string.km_price),
                 changerText = {
-
                     priceMillage = it
                     errorPrice = when {
                         it == "" -> Error(visible = true, error = errorEmpty)
@@ -76,13 +78,11 @@ fun UpdateSettingsView(
                     }
                 },
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp),
+                    .fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 isError = errorPrice.visible,
                 errorValue = errorPrice.error
             )
-            Spacer(modifier = Modifier.height(10.dp))
         }
     }
 }

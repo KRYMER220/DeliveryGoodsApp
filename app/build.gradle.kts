@@ -16,13 +16,14 @@ android {
         applicationId = "ru.krymer.delivery"
         minSdk = 26
         targetSdk = 36
-        versionCode = 44
-        versionName = "1.3.5.5"
+        versionCode = 51
+        versionName = "1.7.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
+        buildConfigField("String", "BASE_URL", project.properties["PRODUCTION_BASE_URL"] as String? ?: "\"\"")
     }
 
     buildTypes {
@@ -37,25 +38,28 @@ android {
 
     tracer {
         create("defaultConfig") {
-            pluginToken = "lvbCFIvUR9aQhO0qz8YmG0SYeX5LF1M5kE9V70vEvKY2"
-            appToken = "fjPNzzrVeSgqHqHyOeWLWjUQE2AiuJcSNvVa1IHtUaw"
+            pluginToken = project.properties["PLUGIN_TOKEN"]?.toString() ?: ""
+            appToken = project.properties["APP_TOKEN"]?.toString() ?: ""
             uploadMapping = true
             uploadNativeSymbols = false
         }
     }
 
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-    buildFeatures {
-        compose = true
+
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
 
     java {
         toolchain {
@@ -110,7 +114,7 @@ dependencies {
     implementation(libs.androidx.datastore)
     implementation(libs.androidx.datastore.core)
     implementation(libs.androidx.datastore.preferences)
-    // --- Navigation3 (альфа) ---
+    // --- Navigation3 (alpha) ---
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
@@ -121,16 +125,14 @@ dependencies {
     // --- Security / Misc ---
     implementation(libs.tink)
     // --- Tracer (ok.tracer) ---
-    implementation(platform("ru.ok.tracer:tracer-platform:1.1.0"))
-    implementation("ru.ok.tracer:tracer-crash-report")
-    implementation("ru.ok.tracer:tracer-crash-report-native")
-    implementation("ru.ok.tracer:tracer-heap-dumps")
-    implementation("ru.ok.tracer:tracer-disk-usage")
-    implementation("ru.ok.tracer:tracer-profiler-sampling")
-    implementation("ru.ok.tracer:tracer-profiler-systrace")
+    implementation(platform(libs.tracer.platform))
+    implementation(libs.tracer.crash.report)
+    implementation(libs.tracer.crash.report.native)
+    implementation(libs.tracer.heap.dumps)
+    implementation(libs.tracer.disk.usage)
+    implementation(libs.tracer.profiler.sampling)
+    implementation(libs.tracer.profiler.systrace)
 
-    implementation(platform("ru.rustore.sdk:bom:2025.08.01"))
-    implementation("ru.rustore.sdk:appupdate")
-
-
+    implementation(platform(libs.bom))
+    implementation(libs.appupdate)
 }

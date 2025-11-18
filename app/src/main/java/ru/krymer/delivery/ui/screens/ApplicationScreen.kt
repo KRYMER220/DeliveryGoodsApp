@@ -50,8 +50,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.runtime.rememberSavedStateNavEntryDecorator
-import androidx.navigation3.scene.rememberSceneSetupNavEntryDecorator
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.dokar.sonner.Toast
 import com.dokar.sonner.ToastType
@@ -66,7 +65,7 @@ import ru.krymer.delivery.data.model.utilModel.MessageModel
 import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
 import ru.krymer.delivery.ui.components.CommonInfoAlertDialog
 import ru.krymer.delivery.ui.components.CommonTextField
-import ru.krymer.delivery.ui.request.RequestScreen
+import ru.krymer.delivery.ui.screens.request.RequestScreen
 import ru.krymer.delivery.ui.screens.analitic.AnaliticScreen
 import ru.krymer.delivery.ui.screens.client.ClientScreen
 import ru.krymer.delivery.ui.screens.courier.CourierScreen
@@ -110,8 +109,7 @@ fun ApplicationScreen(
                 initialContentExit = fadeOut(animationSpec = tween(durationMillis = 0)),
             )
         }, entryDecorators = listOf(
-            rememberSceneSetupNavEntryDecorator(),
-            rememberSavedStateNavEntryDecorator(),
+            rememberSaveableStateHolderNavEntryDecorator(),
             rememberViewModelStoreNavEntryDecorator(),
         ), entryProvider = entryProvider {
 
@@ -124,6 +122,7 @@ fun ApplicationScreen(
                     navigateTo = {
                         when (it) {
                             Screens.Analitic -> backStack.add(Screens.Analitic)
+
                             Screens.Auth -> {
                                 backStack.removeLastOrNull()
                                 backStack.add(Screens.Auth)
@@ -158,8 +157,8 @@ fun ApplicationScreen(
             }
 
             entry<Screens.Shop> { key ->
-                ShopScreen(user = user, trip = key.trip, routeToRequest = { shop ->
-                    backStack.add(Screens.Request(shop = shop))
+                ShopScreen(user = user, trip = key.trip, routeToRequest = {shops, shop ->
+                    backStack.add(Screens.Request(shop = shop, shops = shops))
                 })
             }
 
@@ -197,9 +196,7 @@ fun ApplicationScreen(
 
             entry<Screens.Request> { key ->
                 RequestScreen(
-                    shop = key.shop, backStack = {
-                        backStack.removeLastOrNull()
-                    }
+                    shop = key.shop, shops = key.shops
                 )
             }
         })

@@ -1,6 +1,7 @@
 package ru.krymer.delivery.ui.screens.client.view
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -60,7 +61,7 @@ fun UpdateClientView(
         val route = state.selectedRoute
         val list = state.listRoute
         route?.let {
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 CommonTextField(
                     value = name,
                     placeholder = stringResource(
@@ -76,13 +77,13 @@ fun UpdateClientView(
                             }
                         }
                     },
+                    infoValue = stringResource(R.string.name),
                     modifier = Modifier
                         .fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                     isError = errorName.visible,
                     errorValue = errorName.error
                 )
-                Spacer(modifier = Modifier.height(10.dp))
                 CommonTextField(
                     value = arrears,
                     placeholder = stringResource(
@@ -98,13 +99,13 @@ fun UpdateClientView(
                             }
                         }
                     },
+                    infoValue = stringResource(R.string.arrears),
                     modifier = Modifier
                         .fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     isError = errorArrears.visible,
                     errorValue = errorArrears.error
                 )
-                Spacer(modifier = Modifier.height(10.dp))
                 CommonTextField(
                     value = phone,
                     placeholder = stringResource(
@@ -120,13 +121,13 @@ fun UpdateClientView(
                             }
                         }
                     },
+                    infoValue = stringResource(R.string.phone),
                     modifier = Modifier
                         .fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     isError = errorPhone.visible,
                     errorValue = errorPhone.error
                 )
-                Spacer(modifier = Modifier.height(10.dp))
                 CommonTextField(
                     value = cords,
                     placeholder = stringResource(
@@ -142,14 +143,13 @@ fun UpdateClientView(
                             }
                         }
                     },
+                    infoValue = stringResource(R.string.cords),
                     modifier = Modifier
                         .fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     isError = errorCords.visible,
                     errorValue = errorCords.error
                 )
-                Spacer(modifier = Modifier.height(10.dp))
-
                 if (user.isModOrAdminOrSys()) {
                     Box(
                         modifier = Modifier.fillMaxWidth()

@@ -1,5 +1,7 @@
 package ru.krymer.delivery.ui.screens.client.view
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -42,8 +44,7 @@ fun AddClientView(
     val errorNumPhone = stringResource(R.string.error_phone)
     val errorUncorrectCords = stringResource(R.string.error_cord)
 
-
-    Column {
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         CommonTextField(
             value = name,
             placeholder = stringResource(
@@ -59,18 +60,19 @@ fun AddClientView(
                     }
                 }
             },
+            infoValue = stringResource(R.string.name),
             modifier = Modifier
                 .fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
             isError = errorName.visible,
             errorValue = errorName.error
         )
-        Spacer(modifier = Modifier.height(10.dp))
         CommonTextField(
             value = arrears,
             placeholder = stringResource(
                 id = R.string.arrears
             ),
+            infoValue = stringResource(R.string.arrears),
             changerText = { str ->
                 arrears = str
                 errorArrears = when {
@@ -87,12 +89,12 @@ fun AddClientView(
             isError = errorArrears.visible,
             errorValue = errorArrears.error
         )
-        Spacer(modifier = Modifier.height(10.dp))
         CommonTextField(
             value = phone,
             placeholder = stringResource(
                 id = R.string.phone
             ),
+            infoValue = stringResource(R.string.phone),
             changerText = { str ->
                 phone = str
                 errorPhone = when {
@@ -109,12 +111,12 @@ fun AddClientView(
             isError = errorPhone.visible,
             errorValue = errorPhone.error
         )
-        Spacer(modifier = Modifier.height(10.dp))
         CommonTextField(
             value = cords,
             placeholder = stringResource(
                 id = R.string.cords
             ),
+            infoValue = stringResource(R.string.cords),
             changerText = { str ->
                 cords = str
                 errorCords = when {
@@ -126,6 +128,9 @@ fun AddClientView(
                 }
             },
             modifier = Modifier
+                .clickable(onClick = {
+
+                })
                 .fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             isError = errorCords.visible,

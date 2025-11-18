@@ -1,5 +1,6 @@
 package ru.krymer.delivery.ui.screens.courier.view
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -38,7 +39,7 @@ fun BottomSheetDialogAddUser(
     val errorUncorrectEmail = stringResource(R.string.error_email)
     val errorUncorrectPass = stringResource(R.string.low_pass)
 
-    Column {
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         CommonTextField(
             isError = errorName.visible,
             errorValue = errorName.error,
@@ -46,6 +47,7 @@ fun BottomSheetDialogAddUser(
             placeholder = stringResource(
                 id = R.string.name_user
             ),
+            infoValue = stringResource(R.string.name_user),
             changerText = {
                 name = it
                 errorName = when {
@@ -57,12 +59,9 @@ fun BottomSheetDialogAddUser(
                 }
             },
             modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp),
+                .fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
-
         )
-        Spacer(modifier = Modifier.height(10.dp))
         CommonTextField(
             isError = errorEmail.visible,
             errorValue = errorEmail.error,
@@ -70,6 +69,7 @@ fun BottomSheetDialogAddUser(
             placeholder = stringResource(
                 id = R.string.email_hint
             ),
+            infoValue = stringResource(R.string.email_hint),
             changerText = {
                 email = it
                 errorEmail = when {
@@ -82,11 +82,9 @@ fun BottomSheetDialogAddUser(
                 }
             },
             modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp),
+                .fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
         )
-        Spacer(modifier = Modifier.height(10.dp))
         CommonTextField(
             isError = errorPass.visible,
             errorValue = errorPass.error,
@@ -94,6 +92,7 @@ fun BottomSheetDialogAddUser(
             placeholder = stringResource(
                 id = R.string.pass_hint
             ),
+            infoValue = stringResource(R.string.pass_hint),
             changerText = {
 
                 pass = it
@@ -107,8 +106,7 @@ fun BottomSheetDialogAddUser(
                 }
             },
             modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp),
+                .fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         )
     }

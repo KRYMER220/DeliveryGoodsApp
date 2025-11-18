@@ -2,6 +2,7 @@ package ru.krymer.delivery.ui.screens.courier.view
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -55,28 +56,29 @@ fun UpdateCourierView(
         val errorEmpty = stringResource(R.string.empty_input)
         val errorNum = stringResource(R.string.error_num)
 
-        Column {
+        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
             CommonTextField(
                 value = username,
                 placeholder = stringResource(
                     id = R.string.name
                 ),
+                infoValue = stringResource(R.string.name_user),
                 changerText = {
                     username = it
                     event(CourierEvent.ChangeUsername(it))
                 },
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp),
+                    .fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                 isError = username.isEmpty(), errorValue = errorEmpty
             )
-            Spacer(modifier = Modifier.height(10.dp))
+
             CommonTextField(
                 value = percent,
                 placeholder = stringResource(
                     id = R.string.percent_double
                 ),
+                infoValue = stringResource(R.string.percent_double),
                 changerText = {
                     percent = it
                     errorPercent = when {
@@ -93,18 +95,18 @@ fun UpdateCourierView(
 
                 },
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp),
+                    .fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 isError = errorPercent.visible,
                 errorValue = errorPercent.error
             )
-            Spacer(modifier = Modifier.height(10.dp))
+
             CommonTextField(
                 value = salary,
                 placeholder = stringResource(
                     id = R.string.salary
                 ),
+                infoValue = stringResource(R.string.salary),
                 changerText = {
                     salary = it
                     errorSalary = when {
@@ -120,13 +122,11 @@ fun UpdateCourierView(
                     }
                 },
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp),
+                    .fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 isError = errorSalary.visible,
                 errorValue = errorSalary.error
             )
-            Spacer(modifier = Modifier.height(10.dp))
 
             Box(
                 modifier = Modifier.fillMaxWidth()

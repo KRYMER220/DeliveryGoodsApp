@@ -17,6 +17,7 @@ sealed class ShopAction {
 
 data class ShopViewState(
     val shopAction: ShopAction = ShopAction.None,
+    val isSettingsInstall: Boolean = false,
 
     val shops: List<ShopModel> = emptyList(),
     val shopsAnalitic: List<ShopServerModel> = emptyList(),

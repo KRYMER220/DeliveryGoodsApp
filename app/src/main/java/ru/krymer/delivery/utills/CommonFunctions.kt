@@ -25,7 +25,9 @@ fun isEmptyInput(str: String): Boolean {
 
 fun startsWithDigit(input: String): Boolean {
     if (input.isEmpty()) return false
-    return input.first().isDigit()
+
+    val firstChar = input.first()
+    return firstChar.isDigit() || firstChar == '+' || firstChar == '-'
 }
 
 fun isSameDay(date1: Long, date2: Long): Boolean {

@@ -1,5 +1,6 @@
 package ru.krymer.delivery.ui.screens.product.view
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,7 +34,7 @@ fun AddProductView(
     val errorEmpty = stringResource(R.string.empty_input)
     val errorNum = stringResource(R.string.error_num)
 
-    Column {
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         CommonTextField(
             isError = errorName.visible,
             errorValue = errorName.error,
@@ -51,13 +52,12 @@ fun AddProductView(
                     }
                 }
             },
+            infoValue = stringResource(R.string.name),
             modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp),
+                .fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
 
         )
-        Spacer(modifier = Modifier.height(10.dp))
         CommonTextField(
             isError = errorPrice.visible,
             errorValue = errorPrice.error,
@@ -65,6 +65,7 @@ fun AddProductView(
             placeholder = stringResource(
                 id = R.string.price
             ),
+            infoValue = stringResource(R.string.price),
             changerText = { str ->
                 price = str
                 errorPrice = when {
@@ -78,8 +79,7 @@ fun AddProductView(
 
             },
             modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp),
+                .fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
     }

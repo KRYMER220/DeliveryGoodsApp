@@ -1,16 +1,20 @@
 package ru.krymer.delivery.ui.screens.shop.views
 
+import android.graphics.Rect
+import android.view.ViewTreeObserver
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -18,8 +22,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import ru.krymer.delivery.R
@@ -40,6 +51,8 @@ fun MillageView(
     val allMoney = state.allMoney.toInt()
     val salary = state.salary.toInt()
     val salaryFix = state.salaryFix.toInt()
+    
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(millage) {
         millageInput = if (millage == "0") "" else millage
@@ -79,11 +92,20 @@ fun MillageView(
                     millageInput = newValue
                     onMillageTFC(newValue)
                 },
+                infoValue = stringResource(R.string.mileage) + ":",
                 modifier = Modifier
                     .weight(0.5f)
-                    .fillMaxWidth()
-                    .height(60.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    .fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        focusManager.clearFocus()
+                    }
+                ),
+                autoClearFocus = true
             )
             Image(
                 contentDescription = null,
