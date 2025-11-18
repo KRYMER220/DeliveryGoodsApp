@@ -31,6 +31,7 @@ import ru.krymer.delivery.utills.getStartOfNextDay
 import java.io.IOException
 import java.net.UnknownHostException
 import javax.inject.Inject
+import kotlin.random.Random
 
 @HiltViewModel
 class TripViewModel @Inject constructor(
@@ -98,17 +99,19 @@ class TripViewModel @Inject constructor(
 
                 is TripEvent.ToggleUpdateDialog -> {
                     val isOpening = !state.toggleUpdateTrip
-                    state.copy(
-                        toggleUpdateTrip = !state.toggleUpdateTrip,
-                        trip = if (isOpening) event.trip else null,
-                        salary = if (isOpening) event.trip?.salary?.toInt().toString() else "",
-                        currentRoute = if (isOpening) {
-                            state.listRoute.firstOrNull { it.id == event.trip?.idRoute }
-                        } else null,
-                        currentCourier = if (isOpening) {
-                            state.listCourier.firstOrNull { it.id == event.trip?.idCourier }
-                        } else null,
-                    )
+
+                    if (isOpening) {
+                        state.copy(
+                            trip = event.trip,
+                            salary = event.trip?.salary?.toInt().toString(),
+                            currentRoute = state.listRoute.firstOrNull { it.id == event.trip?.idRoute },
+                            currentCourier = state.listCourier.firstOrNull { it.id == event.trip?.idCourier },
+                            currentDate = event.trip?.date ?: getStartOfNextDay(),
+                            toggleUpdateTrip = true
+                        )
+                    } else {
+                        state.copy( toggleUpdateTrip = false)
+                    }
                 }
 
                 TripEvent.RefreshTrips -> {
@@ -295,7 +298,7 @@ class TripViewModel @Inject constructor(
         val currentState = viewState.value
         val curRoute = currentState.currentRoute
         val curCourier = currentState.currentCourier
-        val date = currentState.currentDate
+        val date = currentState.currentDate + Random.nextInt(from = 1, until = 1000)
 
         if (curRoute == null || curCourier == null) {
             _events.emit(TripEvent.Error(Constants.ERROR.AGAIN))
@@ -328,7 +331,7 @@ class TripViewModel @Inject constructor(
         val trip = currentState.trip
         val route = currentState.currentRoute
         val courier = currentState.currentCourier
-        val date = currentState.currentDate
+        val date = currentState.currentDate + Random.nextInt(from = 1, until = 1000)
         val salary = currentState.salary
 
         if (route == null || courier == null || trip == null) {
