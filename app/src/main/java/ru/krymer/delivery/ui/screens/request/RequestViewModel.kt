@@ -203,8 +203,8 @@ class RequestViewModel @Inject constructor(
                 it.copy(
                     shop = shop,
                     typePay = shop.typePay.getTypePayByString(),
-                    getCash = if (shop.cash > 0.0) shop.cash.toInt().toString() else "",
-                    getNoCash = if (shop.noCash > 0.0) shop.noCash.toInt().toString() else "",
+                    getCash = shop.cash.toInt().toString(),
+                    getNoCash = shop.noCash.toInt().toString(),
                     isOldPrice = shop.isOldPrice,
                     shops = shops
                 )
