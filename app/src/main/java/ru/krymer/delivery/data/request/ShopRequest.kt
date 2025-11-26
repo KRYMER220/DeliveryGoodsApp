@@ -3,7 +3,7 @@ package ru.krymer.delivery.data.request
 import ru.krymer.delivery.data.model.utilModel.TypePayModel
 import ru.krymer.delivery.data.model.utilModel.getStringByTypePay
 
-data class CreateShopRequest(
+data class ShopRequest(
     val id: Long,
     val idTrip: Long,
     val idFactory: Long,

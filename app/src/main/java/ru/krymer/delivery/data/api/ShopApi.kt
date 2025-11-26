@@ -7,14 +7,13 @@ import retrofit2.http.POST
 import retrofit2.http.Query
 import ru.krymer.delivery.data.model.ShopModel
 import ru.krymer.delivery.data.model.ShopServerModel
-import ru.krymer.delivery.data.request.CreateShopRequest
-import ru.krymer.delivery.data.request.UpdateShopRequest
+import ru.krymer.delivery.data.request.ShopRequest
 import ru.krymer.delivery.data.response.BaseResponse
 import ru.krymer.delivery.utills.Constants
 
 interface ShopApi {
     @POST("shop/create")
-    suspend fun add(@Body shop: CreateShopRequest): BaseResponse<ShopModel>
+    suspend fun create(@Body shop: ShopRequest): BaseResponse<ShopModel>
 
     @GET("shops/by/trip")
     suspend fun getShopsByTrip(
@@ -22,7 +21,7 @@ interface ShopApi {
     ): BaseResponse<List<ShopServerModel>>
 
     @POST("shop/update")
-    suspend fun update(@Body shop: UpdateShopRequest): BaseResponse<ShopModel>
+    suspend fun update(@Body shop: ShopRequest): BaseResponse<ShopModel>
 
     @DELETE("shop/delete")
     suspend fun delete(

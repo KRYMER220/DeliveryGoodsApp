@@ -12,7 +12,7 @@ import ru.krymer.delivery.utills.Constants
 
 interface RequestApi {
     @POST("request/create")
-    suspend fun add(@Body request: RequestShopRequest): BaseResponse<RequestModel>
+    suspend fun create(@Body request: RequestShopRequest): BaseResponse<RequestModel>
 
     @GET("requests/get/trip")
     suspend fun getRequestsByTrip(

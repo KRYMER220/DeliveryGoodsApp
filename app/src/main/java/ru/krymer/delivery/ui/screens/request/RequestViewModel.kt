@@ -31,7 +31,7 @@ import ru.krymer.delivery.data.model.utilModel.toStr
 import ru.krymer.delivery.data.request.ClientRequest
 import ru.krymer.delivery.data.request.CreateMessage
 import ru.krymer.delivery.data.request.RequestShopRequest
-import ru.krymer.delivery.data.request.UpdateShopRequest
+import ru.krymer.delivery.data.request.ShopRequest
 import ru.krymer.delivery.data.response.BaseResponse
 import ru.krymer.delivery.ui.screens.request.models.RequestEvent
 import ru.krymer.delivery.ui.screens.request.models.RequestViewState
@@ -394,7 +394,7 @@ class RequestViewModel @Inject constructor(
 
     private suspend fun updaterShop(shop: ShopModel, status: Boolean): BaseResponse<ShopModel> {
           shop.apply {
-              val shopRequest = UpdateShopRequest(
+              val shopRequest = ShopRequest(
                   id = id,
                   idTrip = idTrip,
                   idFactory = idFactory,

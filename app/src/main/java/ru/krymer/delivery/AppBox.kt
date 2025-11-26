@@ -5,6 +5,7 @@ import android.app.Application
 import dagger.hilt.android.HiltAndroidApp
 import ru.ok.tracer.CoreTracerConfiguration
 import ru.ok.tracer.HasTracerConfiguration
+import ru.ok.tracer.TracerApplication
 import ru.ok.tracer.TracerConfiguration
 import ru.ok.tracer.crash.report.CrashFreeConfiguration
 import ru.ok.tracer.crash.report.CrashReportConfiguration

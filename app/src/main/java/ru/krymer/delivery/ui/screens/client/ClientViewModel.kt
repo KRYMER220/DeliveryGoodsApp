@@ -39,20 +39,19 @@ class ClientViewModel @Inject constructor(
             try {
                 block()
             } catch (e: CancellationException) {
-                throw e
                 _events.emit(ClientEvent.Error(Constants.ERROR.CANCEL_OPERATION))
+                throw e
             } catch (e: TimeoutCancellationException) {
-                throw e
                 _events.emit(ClientEvent.Error(Constants.ERROR.TIMEOUT))
-            } catch (e: Exception) {
                 throw e
+            } catch (e: Exception) {
                 _events.emit(ClientEvent.Error(e.message))
+                throw e
             }
         }
     }
 
     val viewState: StateFlow<ClientViewState> = _events
-        .onStart {}
         .runningFold(ClientViewState()) { state, event ->
             when (event) {
                 is ClientEvent.Initialize -> {

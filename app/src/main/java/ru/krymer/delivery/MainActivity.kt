@@ -1,9 +1,14 @@
 package ru.krymer.delivery
 
+import android.app.AlertDialog
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -28,6 +33,7 @@ import ru.rustore.sdk.appupdate.model.AppUpdateOptions
 import ru.rustore.sdk.appupdate.model.AppUpdateType
 import ru.rustore.sdk.appupdate.model.InstallStatus
 import ru.rustore.sdk.appupdate.model.UpdateAvailability
+import androidx.core.net.toUri
 
 @Serializable
 sealed class Screens: NavKey {
@@ -63,7 +69,6 @@ sealed class Screens: NavKey {
 class MainActivity : ComponentActivity() {
 
     private lateinit var updateManager: RuStoreAppUpdateManager
-    private var installStateListener: ru.rustore.sdk.appupdate.listener.InstallStateUpdateListener? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,145 +91,60 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        if (::updateManager.isInitialized) {
-            updateManager.getAppUpdateInfo().addOnSuccessListener { appUpdateInfo ->
-                if (appUpdateInfo.updateAvailability == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS) {
-                    val options = AppUpdateOptions.Builder()
-                        .appUpdateType(AppUpdateType.IMMEDIATE)
-                        .build()
-                    updateManager.startUpdateFlow(appUpdateInfo, options)
-                }
-            }
-        }
-    }
-
     private fun checkForUpdate(updateManager: RuStoreAppUpdateManager) {
         updateManager.getAppUpdateInfo().addOnSuccessListener { appUpdateInfo ->
-                if (appUpdateInfo.updateAvailability == UpdateAvailability.UPDATE_AVAILABLE) {
-                    val currentVersionCode = getCurrentVersionCode()
-                    val availableVersionCode = appUpdateInfo.availableVersionCode
-                    val isCriticalUpdate =
-                        isCriticalUpdate(currentVersionCode, availableVersionCode)
-
-                    val updateType = when {
-                        isCriticalUpdate && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE) -> {
-                            Log.d("Updater", "Critical update detected, using IMMEDIATE")
-                            AppUpdateType.IMMEDIATE
-                        }
-
-                        appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE) -> {
-                            Log.d("Updater", "Standard update, using FLEXIBLE")
-                            AppUpdateType.FLEXIBLE
-                        }
-
-                        appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.SILENT) -> {
-                            Log.d("Updater", "Using SILENT update as fallback")
-                            AppUpdateType.SILENT
-                        }
-
-                        else -> {
-                            Log.w("Updater", "Update available, but no supported types")
-                            return@addOnSuccessListener
-                        }
-                    }
-
-                    startUpdateFlow(
-                        updateManager = updateManager,
-                        appUpdateInfo = appUpdateInfo,
-                        updateType = updateType
-                    )
-                } else {
-                    Log.d("Updater", "No update available")
-                }
-            }.addOnFailureListener { throwable ->
-                Log.e("Updater", "getAppUpdateInfo error", throwable)
+            if (appUpdateInfo.updateAvailability == UpdateAvailability.UPDATE_AVAILABLE) {
+                val currentVersionCode = getCurrentVersionCode()
+                val availableVersionCode = appUpdateInfo.availableVersionCode
+                showUpdateDialog(currentVersionCode, availableVersionCode)
             }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        installStateListener?.let { listener ->
-            if (::updateManager.isInitialized) {
-                updateManager.unregisterListener(listener)
-            }
+        }.addOnFailureListener { throwable ->
+            Log.e("Updater", "getAppUpdateInfo error", throwable)
         }
-        installStateListener = null
     }
 
-    private fun startUpdateFlow(
-        updateManager: RuStoreAppUpdateManager,
-        appUpdateInfo: AppUpdateInfo,
-        updateType: Int
-    ) {
-        val options = AppUpdateOptions.Builder()
-            .appUpdateType(updateType)
-            .build()
+    private fun showUpdateDialog(currentVersion: Long, availableVersion: Long) {
+        val isCriticalUpdate = isCriticalUpdate(currentVersion, availableVersion)
 
-        updateManager.startUpdateFlow(appUpdateInfo, options)
-            .addOnSuccessListener {
-                Log.d("Updater", "Update flow started successfully for type: $updateType")
-
-                if (updateType == AppUpdateType.FLEXIBLE) {
-                    setupFlexibleUpdateListener(updateManager, options)
-                }
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(if (isCriticalUpdate) "Требуется обновление" else "Доступно обновление")
+            .setMessage("Доступна новая версия приложения. Перейдите в RuStore для установки обновления.")
+            .setPositiveButton("Обновить") { _, _ ->
+                openAppInRuStore()
             }
-            .addOnFailureListener { throwable ->
-                Log.e("Updater", "startUpdateFlow error", throwable)
-            }
-    }
 
-    private fun setupFlexibleUpdateListener(
-        updateManager: RuStoreAppUpdateManager,
-        options: AppUpdateOptions
-    ) {
-        // Сохраняем listener в переменную
-        val listener = ru.rustore.sdk.appupdate.listener.InstallStateUpdateListener { state ->
-            when (state.installStatus) {
-                InstallStatus.DOWNLOADING -> {
-                    val percent = if (state.totalBytesToDownload > 0) {
-                        (state.bytesDownloaded * 100 / state.totalBytesToDownload).toInt()
-                    } else {
-                        0
-                    }
-                    Log.d("Updater", "Downloading update: $percent%")
-                }
-
-                InstallStatus.DOWNLOADED -> {
-                    Log.d("Updater", "Update downloaded, ready to install")
-                    updateManager.completeUpdate(options)
-                        .addOnSuccessListener {
-                            Log.d("Updater", "Update completed successfully")
-                            installStateListener?.let { updateManager.unregisterListener(it) }
-                            installStateListener = null
-                        }
-                        .addOnFailureListener { throwable ->
-                            Log.e("Updater", "completeUpdate error", throwable)
-                        }
-                }
-
-                InstallStatus.FAILED -> {
-                    Log.e("Updater", "Update failed with status: ${state.installErrorCode}")
-                    installStateListener?.let { updateManager.unregisterListener(it) }
-                    installStateListener = null
-                }
-
-                InstallStatus.INSTALLING -> {
-                    Log.d("Updater", "Update is installing...")
-                }
-
-                else -> Unit
+        if (!isCriticalUpdate) {
+            dialog.setNegativeButton("Позже") { dialogInterface, _ ->
+                dialogInterface.dismiss()
             }
         }
 
-        updateManager.registerListener(listener)
-        installStateListener = listener
+        dialog.setCancelable(!isCriticalUpdate)
+            .show()
+    }
+
+    private fun openAppInRuStore() {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                data = "rustore://details?id=$packageName".toUri()
+                setPackage("ru.rustore.app")
+            }
+            startActivity(intent)
+        } catch (_: ActivityNotFoundException) {
+            try {
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    data = "https://apps.rustore.ru/app/$packageName".toUri()
+                }
+                startActivity(intent)
+            } catch (_: ActivityNotFoundException) {
+                Toast.makeText(this, "Не удалось открыть RuStore", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun isCriticalUpdate(currentVersion: Long, availableVersion: Long): Boolean {
-        val currentMajor = currentVersion / 100
-        val availableMajor = availableVersion / 100
+        val currentMajor = currentVersion / 10
+        val availableMajor = availableVersion / 10
         return availableMajor > currentMajor
     }
 

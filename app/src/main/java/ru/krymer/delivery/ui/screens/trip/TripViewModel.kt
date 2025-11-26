@@ -24,6 +24,7 @@ import ru.krymer.delivery.data.request.TripRequest
 import ru.krymer.delivery.di.AppPreferencesManager
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.ui.screens.trip.models.TripEvent
+import ru.krymer.delivery.ui.screens.trip.models.TripEvent.*
 import ru.krymer.delivery.ui.screens.trip.models.TripViewState
 import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.MyResult
@@ -57,13 +58,13 @@ class TripViewModel @Inject constructor(
             } catch (e: IOException) {
                 sharedViewModel.message("Ошибка сети: ${e.message}")
             } catch (e: CancellationException) {
-                _events.emit(TripEvent.Error(Constants.ERROR.CANCEL_OPERATION))
+                _events.emit(Error(Constants.ERROR.CANCEL_OPERATION))
                 throw e
             } catch (e: TimeoutCancellationException) {
-                _events.emit(TripEvent.Error(Constants.ERROR.TIMEOUT))
+                _events.emit(Error(Constants.ERROR.TIMEOUT))
                 throw e
             } catch (e: Exception) {
-                _events.emit(TripEvent.Error(e.message))
+                _events.emit(Error(e.message))
                 throw e
             }
         }
@@ -76,28 +77,28 @@ class TripViewModel @Inject constructor(
     private suspend fun getCurrentUserOrEmitError(): UserModel? {
         val user = getCurrentUser()
         if (user == null) {
-            _events.emit(TripEvent.Error(Constants.ERROR.GENERAL_ERROR))
+            _events.emit(Error(Constants.ERROR.GENERAL_ERROR))
         }
         return user
     }
 
     val viewState: StateFlow<TripViewState> = _events
         .onStart {
-            emit(TripEvent.LoadListDropMenuRoutes)
-            emit(TripEvent.LoadListDropMenuCouriers)
-            emit(TripEvent.LoadSettings)
-            emit(TripEvent.LocalData)
+            emit(LoadListDropMenuRoutes)
+            emit(LoadListDropMenuCouriers)
+            emit(LoadSettings)
+            emit(LocalData)
         }
         .runningFold(TripViewState()) { state, event ->
             when (event) {
-                TripEvent.DeleteTrip -> {
+                DeleteTrip -> {
                     launchCoroutine { deleteTrip() }
                     state
                 }
 
-                is TripEvent.ToggleDeleteDialog -> state.copy(toggleDeleteTrip = !state.toggleDeleteTrip, trip = event.trip)
+                is ToggleDeleteDialog -> state.copy(toggleDeleteTrip = !state.toggleDeleteTrip, trip = event.trip)
 
-                is TripEvent.ToggleUpdateDialog -> {
+                is ToggleUpdateDialog -> {
                     val isOpening = !state.toggleUpdateTrip
 
                     if (isOpening) {
@@ -114,51 +115,51 @@ class TripViewModel @Inject constructor(
                     }
                 }
 
-                TripEvent.RefreshTrips -> {
+                RefreshTrips -> {
                     launchCoroutine { loadTrips() }
                     state.copy(isLoading = true)
                 }
 
-                TripEvent.SaveTrip -> {
+                SaveTrip -> {
                     launchCoroutine { createTrip() }
                     state
                 }
 
-                TripEvent.SubmitFilter -> {
+                SubmitFilter -> {
                     launchCoroutine { submitFilter() }
                     state
                 }
 
-                TripEvent.UpdateTrip -> {
+                UpdateTrip -> {
                     launchCoroutine { updateTrip() }
                     state
                 }
 
-                is TripEvent.ChangeCourierFilter -> state.copy(filterUid = event.courier?.id)
+                is ChangeCourierFilter -> state.copy(filterUid = event.courier?.id)
 
-                is TripEvent.ChangeDate -> state.copy(currentDate = event.date)
+                is ChangeDate -> state.copy(currentDate = event.date)
 
-                is TripEvent.ChangeRouteFilter -> state.copy(filterRouteId = event.route?.id)
+                is ChangeRouteFilter -> state.copy(filterRouteId = event.route?.id)
 
-                is TripEvent.ChangeSalaryTrip -> state.copy(salary = event.salary)
+                is ChangeSalaryTrip -> state.copy(salary = event.salary)
 
-                is TripEvent.ChangeSort -> {
+                is ChangeSort -> {
                     val newSort = event.boolean
                     manager.saveBoolean(Constants.KEYS.SORT, newSort)
                     state.copy(sort = newSort)
                 }
 
-                TripEvent.LoadListDropMenuCouriers -> {
+                LoadListDropMenuCouriers -> {
                     launchCoroutine { loadListDropMenuCouriers() }
                     state
                 }
 
-                TripEvent.LoadListDropMenuRoutes -> {
+                LoadListDropMenuRoutes -> {
                     launchCoroutine { loadListDropMenuRoutes() }
                     state
                 }
 
-                TripEvent.LoadMoreTrips -> {
+                LoadMoreTrips -> {
                     val currentState = state
                     if (!currentState.isFilter && currentState.hasMore && !currentState.isLoading) {
                         launchCoroutine { loadPaginatedTrips(loadMore = true) }
@@ -166,39 +167,39 @@ class TripViewModel @Inject constructor(
                     state.copy(isLoading = true)
                 }
 
-                TripEvent.LoadSettings -> {
+                LoadSettings -> {
                     val isFilter = manager.getBooleanData(Constants.KEYS.FILTER) == true
                     val isSorted = manager.getBooleanData(Constants.KEYS.SORT) == true
                     val lightVersion = sharedViewModel.viewState.value.lightVersion
                     state.copy(isFilter = isFilter, sort = isSorted, lightVersion = lightVersion)
                 }
 
-                TripEvent.ToggleFilterDialog -> state.copy(isShowFilterDialog = !state.isShowFilterDialog)
+                ToggleFilterDialog -> state.copy(isShowFilterDialog = !state.isShowFilterDialog)
 
-                TripEvent.ToggleAddDialog -> state.copy(
+                ToggleAddDialog -> state.copy(
                     toggleAddTrip = !state.toggleAddTrip,
                     currentDate = getStartOfNextDay(),
                 )
 
-                is TripEvent.TripsLoaded -> state.copy(trips = event.trips, isLoading = false, hasMore = event.hasMore, isInitialLoad = false )
+                is TripsLoaded -> state.copy(trips = event.trips, isLoading = false, hasMore = event.hasMore, isInitialLoad = false )
 
-                is TripEvent.ListCouriersLoaded -> state.copy(listCourier = event.couriers)
+                is ListCouriersLoaded -> state.copy(listCourier = event.couriers)
 
-                is TripEvent.ListRoutesLoaded -> state.copy(listRoute = event.routes)
+                is ListRoutesLoaded -> state.copy(listRoute = event.routes)
 
-                is TripEvent.Error -> {
+                is Error -> {
                     sharedViewModel.message(event.message, type = TypeMessageModel.ERROR)
                     state.copy(isLoading = false)
                 }
 
-                is TripEvent.IsFilter -> {
+                is IsFilter -> {
                     manager.saveBoolean(Constants.KEYS.FILTER, event.isFilter)
                     state.copy(isFilter = event.isFilter)
                 }
 
-                is TripEvent.SelectCourier -> state.copy(currentCourier = event.courier)
-                is TripEvent.SelectRoute -> state.copy(currentRoute = event.route)
-                TripEvent.LocalData -> {
+                is SelectCourier -> state.copy(currentCourier = event.courier)
+                is SelectRoute -> state.copy(currentRoute = event.route)
+                LocalData -> {
                     launchCoroutine {
                         loadLocalData()
                     }
@@ -232,7 +233,7 @@ class TripViewModel @Inject constructor(
         }
 
         if (localTrips.isNotEmpty()) {
-            _events.emit(TripEvent.TripsLoaded(trips = localTrips, hasMore = false))
+            _events.emit(TripsLoaded(trips = localTrips, hasMore = false))
         }
 
         loadTrips()
@@ -255,9 +256,9 @@ class TripViewModel @Inject constructor(
             )) {
                 is MyResult.Success -> {
                     syncLocalDatabase(response.data, clearAll = true)
-                    _events.emit(TripEvent.TripsLoaded(trips = response.data, hasMore = false))
+                    _events.emit(TripsLoaded(trips = response.data, hasMore = false))
                 }
-                is MyResult.Error -> _events.emit(TripEvent.Error(message = response.message))
+                is MyResult.Error -> _events.emit(Error(message = response.message))
             }
         } else {
             loadPaginatedTrips(loadMore = false)
@@ -292,7 +293,7 @@ class TripViewModel @Inject constructor(
 
     private suspend fun createTrip() {
         val factory = sharedViewModel.viewState.value.factory ?: run {
-            _events.emit(TripEvent.Error(Constants.ERROR.AGAIN))
+            _events.emit(Error(Constants.ERROR.AGAIN))
             return
         }
         val currentState = viewState.value
@@ -301,7 +302,7 @@ class TripViewModel @Inject constructor(
         val date = currentState.currentDate + Random.nextInt(from = 1, until = 1000)
 
         if (curRoute == null || curCourier == null) {
-            _events.emit(TripEvent.Error(Constants.ERROR.AGAIN))
+            _events.emit(Error(Constants.ERROR.AGAIN))
             return
         }
 
@@ -319,10 +320,10 @@ class TripViewModel @Inject constructor(
 
         when (repository.add(trip = tripRequest)) {
             is MyResult.Success -> {
-                _events.emit(TripEvent.ToggleAddDialog)
-                _events.emit(TripEvent.RefreshTrips)
+                _events.emit(ToggleAddDialog)
+                _events.emit(RefreshTrips)
             }
-            is MyResult.Error -> _events.emit(TripEvent.Error(message = "Ошибка создания рейса!"))
+            is MyResult.Error -> _events.emit(Error(message = "Ошибка создания рейса!"))
         }
     }
 
@@ -335,7 +336,7 @@ class TripViewModel @Inject constructor(
         val salary = currentState.salary
 
         if (route == null || courier == null || trip == null) {
-            _events.emit(TripEvent.Error(Constants.ERROR.GENERAL_ERROR))
+            _events.emit(Error(Constants.ERROR.GENERAL_ERROR))
             return
         }
 
@@ -355,10 +356,10 @@ class TripViewModel @Inject constructor(
 
         when (repository.update(trip = tripRequest)) {
             is MyResult.Success -> {
-                _events.emit(TripEvent.RefreshTrips)
-                _events.emit(TripEvent.ToggleUpdateDialog(trip = null))
+                _events.emit(RefreshTrips)
+                _events.emit(ToggleUpdateDialog(trip = null))
             }
-            is MyResult.Error -> _events.emit(TripEvent.Error(message = "Ошибка обновления рейса!"))
+            is MyResult.Error -> _events.emit(Error(message = "Ошибка обновления рейса!"))
         }
     }
 
@@ -366,17 +367,17 @@ class TripViewModel @Inject constructor(
         val currentState = viewState.value
         val trip = currentState.trip
         if (trip == null) {
-            _events.emit(TripEvent.Error(Constants.ERROR.GENERAL_ERROR))
+            _events.emit(Error(Constants.ERROR.GENERAL_ERROR))
             return
         }
 
         when (repository.delete(id = trip.id)) {
             is MyResult.Success -> {
                 database.tripDao().deleteTrip(trip)
-                _events.emit(TripEvent.RefreshTrips)
-                _events.emit(TripEvent.ToggleDeleteDialog(trip = null))
+                _events.emit(RefreshTrips)
+                _events.emit(ToggleDeleteDialog(trip = null))
             }
-            is MyResult.Error -> _events.emit(TripEvent.Error(message = "Ошибка удаления рейса!"))
+            is MyResult.Error -> _events.emit(Error(message = "Ошибка удаления рейса!"))
         }
     }
 
@@ -384,9 +385,9 @@ class TripViewModel @Inject constructor(
         val user = getCurrentUserOrEmitError() ?: return
         when (val response = repositoryRoute.getRoutes(user.idFactory)) {
             is MyResult.Success -> {
-                _events.emit(TripEvent.ListRoutesLoaded(routes = response.data))
+                _events.emit(ListRoutesLoaded(routes = response.data))
             }
-            is MyResult.Error -> _events.emit(TripEvent.Error(message = "Ошибка загрузки списка маршрутов!"))
+            is MyResult.Error -> _events.emit(Error(message = "Ошибка загрузки списка маршрутов!"))
         }
     }
 
@@ -394,9 +395,9 @@ class TripViewModel @Inject constructor(
         val user = getCurrentUserOrEmitError() ?: return
         when (val response = repositoryCourier.getUsers(user.idFactory)) {
             is MyResult.Success -> {
-                _events.emit(TripEvent.ListCouriersLoaded(couriers = response.data))
+                _events.emit(ListCouriersLoaded(couriers = response.data))
             }
-            is MyResult.Error -> _events.emit(TripEvent.Error(message = "Ошибка загрузки списка курьеров!"))
+            is MyResult.Error -> _events.emit(Error(message = "Ошибка загрузки списка курьеров!"))
         }
     }
 
@@ -431,20 +432,20 @@ class TripViewModel @Inject constructor(
                 }
 
                 val newHasMore = newTrips.size == PAGINATION_LIMIT
-                _events.emit(TripEvent.TripsLoaded(trips = currentTrips, hasMore = newHasMore))
+                _events.emit(TripsLoaded(trips = currentTrips, hasMore = newHasMore))
             }
-            is MyResult.Error -> _events.emit(TripEvent.Error(message = "Ошибка загрузки списка рейсов!"))
+            is MyResult.Error -> _events.emit(Error(message = "Ошибка загрузки списка рейсов!"))
         }
     }
 
     private suspend fun submitFilter() {
         val currentState = viewState.value
         if (!currentState.isFilter) {
-            _events.emit(TripEvent.ChangeCourierFilter(courier = null))
-            _events.emit(TripEvent.ChangeRouteFilter(route = null))
-            _events.emit(TripEvent.ChangeSort(boolean = false))
+            _events.emit(ChangeCourierFilter(courier = null))
+            _events.emit(ChangeRouteFilter(route = null))
+            _events.emit(ChangeSort(boolean = false))
         }
-        _events.emit(TripEvent.RefreshTrips)
-        _events.emit(TripEvent.ToggleFilterDialog)
+        _events.emit(RefreshTrips)
+        _events.emit(ToggleFilterDialog)
     }
 }

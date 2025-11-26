@@ -11,19 +11,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.runningFold
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ru.krymer.delivery.AppDatabase
-import ru.krymer.delivery.common.EventHandler
-import ru.krymer.delivery.data.api.ClientApi
-import ru.krymer.delivery.data.api.LoggerApi
 import ru.krymer.delivery.data.api.MessageApi
-import ru.krymer.delivery.data.api.ProductApi
-import ru.krymer.delivery.data.api.RequestApi
-import ru.krymer.delivery.data.api.ShopApi
-import ru.krymer.delivery.data.api.TripApi
 import ru.krymer.delivery.data.model.ClientModel
 import ru.krymer.delivery.data.model.MessageModel
 import ru.krymer.delivery.data.model.ProductModel
@@ -33,20 +29,63 @@ import ru.krymer.delivery.data.model.ShopServerModel
 import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.toServerModel
 import ru.krymer.delivery.data.model.toUiModel
+import ru.krymer.delivery.data.model.user.UserModel
 import ru.krymer.delivery.data.model.utilModel.StatusModel
-import ru.krymer.delivery.data.model.utilModel.TypePayModel.CASH
+import ru.krymer.delivery.data.model.utilModel.TypeMessageModel
+import ru.krymer.delivery.data.model.utilModel.TypePayModel
 import ru.krymer.delivery.data.model.utilModel.getTypePayByString
 import ru.krymer.delivery.data.model.utilModel.toStatusModel
 import ru.krymer.delivery.data.model.utilModel.toStr
+import ru.krymer.delivery.data.repositoryImpl.ShopRepositoryImpl
 import ru.krymer.delivery.data.request.ClientRequest
-import ru.krymer.delivery.data.request.CreateShopRequest
 import ru.krymer.delivery.data.request.RequestShopRequest
+import ru.krymer.delivery.data.request.ShopRequest
 import ru.krymer.delivery.data.request.TripRequest
-import ru.krymer.delivery.data.request.UpdateShopRequest
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.ChangeCountBonusProduct
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.ChangeCountProduct
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.ClientsLoaded
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.CopyAndSaveShop
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.CopyInfoData
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.CourierInfoLoaded
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.DeleteMessage
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.DismissAddDialog
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.Error
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.GetDataRequestsByTrip
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.InitSettings
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.Initialize
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.LoadState
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.MessageLoaded
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.MillageSaveAction
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.OpenGeoPoint
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.OpenInfoShopDialog
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.ProductsLoaded
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.ProductsRequestLoaded
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.RefreshShops
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.RequestAddAction
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.SaveCurrentTrip
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.SelectClient
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.SelectShop
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.ShopAddAction
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.ShopsAnaliticLoaded
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.ShopsForCreateShopLoaded
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.ShopsLoaded
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.ShowAddDialogShopAllRoutes
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.ShowAddDialogShopCurrentRoute
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.ShowLogsShop
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.SwitchBonusState
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.ToggleAnaliticShopsCurrentTrip
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.ToggleConfirmCopyAndSave
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.ToggleInfoDialogAboutCurrentShop
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.ToggleLogsShopDialog
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.ToggleMillageDialog
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.ValueChangeCash
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.ValueChangeMillage
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.ValueChangeNoCashMoney
 import ru.krymer.delivery.ui.screens.shop.models.ShopViewState
 import ru.krymer.delivery.utills.Constants
+import ru.krymer.delivery.utills.MyResult
 import ru.krymer.delivery.utills.copyToClipboard
 import ru.krymer.delivery.utills.isSameDay
 import java.io.IOException
@@ -58,22 +97,247 @@ enum class RequestUpdateType { COUNT, BONUS, EXCHANGE }
 
 @HiltViewModel
 class ShopViewModel @Inject constructor(
-    private val shopApi: ShopApi,
-    private val productApi: ProductApi,
     private val sharedViewModel: SharedViewModel,
-    private val clientApi: ClientApi,
-    private val tripApi: TripApi,
-    private val requestApi: RequestApi,
     private val room: AppDatabase,
-    private val messageApi: MessageApi,
-    private val loggerApi: LoggerApi
-) : ViewModel(), EventHandler<ShopEvent> {
+    private val messageApi: MessageApi, private val repository: ShopRepositoryImpl
+) : ViewModel() {
 
-    private val _viewState = MutableStateFlow(ShopViewState())
-    val viewState = _viewState.asStateFlow()
+    private val _events = MutableSharedFlow<ShopEvent>(extraBufferCapacity = 64)
 
-    private fun updateViewState(update: (ShopViewState) -> ShopViewState) {
-        _viewState.update(update)
+    private fun getCurrentUser(): UserModel? {
+        return sharedViewModel.viewState.value.user
+    }
+
+    private suspend fun getCurrentUserOrEmitError(): UserModel? {
+        val user = getCurrentUser()
+        if (user == null) {
+            _events.emit(Error(Constants.ERROR.GENERAL_ERROR))
+        }
+        return user
+    }
+
+    val viewState: StateFlow<ShopViewState> = _events.onStart {
+        emit(InitSettings)
+        launchCoroutine { getDataProduct() }
+    }.runningFold(ShopViewState()) { state, event ->
+        when (event) {
+            is Initialize -> {
+                val trip = event.trip
+                launchCoroutine {
+                    val shops =
+                        room.shopDao().getShops(idTrip = trip.id).sortedBy { shop -> shop.counter }
+                    _events.emit(ShopsLoaded(shops = shops))
+                    initData(trip = trip)
+                }
+                state.copy(currentTrip = trip, isLoading = true)
+            }
+
+            is ToggleLogsShopDialog -> {
+                val shop = event.shop
+                if (!state.toggleLogShop) {
+                    shop?.let {
+                        getLogsCurrentShop(shop = shop)
+                    } ?: run {
+                        sharedViewModel.message(Constants.ERROR.AGAIN)
+                    }
+                }
+                state.copy(toggleLogShop = !state.toggleLogShop)
+            }
+
+            is ShowLogsShop -> {
+                val logs = event.logs
+                state.copy(logShop = logs)
+            }
+
+            InitSettings -> state.copy(
+                lightVersion = sharedViewModel.viewState.value.lightVersion,
+                isSettingsInstall = true
+            )
+
+            is RefreshShops -> {
+                val trip = event.trip
+                getDataShops(trip = trip)
+                state
+            }
+
+            is ShopsLoaded -> {
+                val shops = event.shops
+                state.copy(isLoading = false, shops = shops)
+            }
+
+            is ChangeCountBonusProduct -> {
+                launchCoroutine {
+                    changeRequestBonusProduct(bonus = event.bonus, editProduct = event.product)
+                }
+                state
+            }
+
+            is ChangeCountProduct -> {
+                launchCoroutine {
+                    changeRequestCountProduct(count = event.count, editProduct = event.product)
+                }
+                state
+            }
+
+            CopyAndSaveShop -> {
+                launchCoroutine {
+                    initCopyAndSaveShopWithData()
+                }
+                state
+            }
+
+            is CopyInfoData -> {
+                copyToClip(context = event.context)
+                state
+            }
+
+            is DeleteMessage -> {
+                deleteMessage(message = event.message)
+                state
+            }
+
+            DismissAddDialog -> state.copy(
+                toggleAddDialog = false,
+                currentClient = null,
+                isBonusState = false,
+                toggleDialogAllClients = false,
+                toggleDialogCurrentClients = false
+            )
+
+            GetDataRequestsByTrip -> {
+                getListRequestsInfo()
+                state
+            }
+
+            MillageSaveAction -> {
+                saveMillage()
+                state
+            }
+
+            is OpenGeoPoint -> {
+                openGeoPoint(context = event.context, cord = event.cord)
+                state
+            }
+
+            is OpenInfoShopDialog -> {
+                getDataInfoShop(event.shop)
+                state.copy(currentShop = event.shop, listCurrentShopInfo = emptyList())
+            }
+
+            RequestAddAction -> {
+                initSaveOrUpdateRequest()
+                state
+            }
+
+            is SelectClient -> {
+                changeClient(client = event.client)
+                state.copy(currentClient = event.client)
+            }
+
+            is SelectShop -> state.copy(copyShop = event.shop)
+
+            ShopAddAction -> {
+                launchCoroutine {
+                    initSaveShopWithData()
+                }
+                state
+            }
+
+            ShowAddDialogShopAllRoutes -> {
+                _events.emit(ShopEvent.ProductsRequestLoaded(products = state.products.filter { p -> p.isActive }
+                    .map { p -> p.copy() }))
+                getAllDataClient()
+                state.copy(toggleAddDialog = true)
+            }
+
+            ShowAddDialogShopCurrentRoute -> {
+                _events.emit(ShopEvent.ProductsRequestLoaded(products = state.products.filter { p -> p.isActive }
+                    .map { p -> p.copy() }))
+                getDataClientCurrentRoute()
+                state.copy(toggleAddDialog = true)
+            }
+
+            SwitchBonusState -> state.copy(isBonusState = !state.isBonusState)
+
+            ToggleAnaliticShopsCurrentTrip -> state.copy(toggleAnaliticOfTrip = !state.toggleAnaliticOfTrip)
+
+            ToggleConfirmCopyAndSave -> {
+                state.copy(isCopyAndSave = !viewState.value.isCopyAndSave)
+            }
+
+            ToggleInfoDialogAboutCurrentShop -> {
+                state.copy(toggleInfoDialogAboutCurrentShop = !state.toggleInfoDialogAboutCurrentShop)
+            }
+
+            ToggleMillageDialog -> {
+                state.copy(toggleMillageDialog = !state.toggleMillageDialog)
+            }
+
+            is ValueChangeCash -> state.copy(getCash = event.money)
+
+            is ValueChangeMillage -> state.copy(millage = event.millage)
+
+            is ValueChangeNoCashMoney -> state.copy(getNoCash = event.money)
+
+            is Error -> {
+                sharedViewModel.message(event.message, type = TypeMessageModel.ERROR)
+                state.copy(isLoading = false)
+            }
+
+            is ProductsLoaded -> state.copy(products = event.products)
+
+            is CourierInfoLoaded -> {
+                val trip = event.trip
+                val dataCourier = event.info
+                state.copy(
+                    millage = trip.millage,
+                    noCash = dataCourier.noCash,
+                    salary = if (trip.millage > 0.0) dataCourier.salary else 0.0,
+                    cash = dataCourier.cash,
+                    allMoney = dataCourier.allMoney,
+                    remains = if (trip.millage > 0.0) dataCourier.remainCash else 0.0,
+                    salaryFix = trip.salary,
+                    isDataShopForCourierLoad = true
+                )
+            }
+
+            is ShopsAnaliticLoaded -> state.copy(shopsAnalitic = event.shops)
+
+            is ClientsLoaded -> state.copy(clients = event.clients)
+
+            is MessageLoaded -> state.copy(messages = event.messages)
+
+            is ShopsForCreateShopLoaded -> state.copy(listCurrentShopInfo = event.shops)
+
+            is SaveCurrentTrip -> {
+                state.copy(currentTrip = event.trip)
+            }
+
+            is LoadState -> event.state
+
+            is ProductsRequestLoaded -> state.copy(listProductRequest = event.products)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ShopViewState())
+
+    private suspend fun getLogsCurrentShop(shop: ShopModel) {
+        when (val response = repository.getLogsCurrentShop(
+            idShop = shop.id, idTrip = shop.idTrip, idFactory = shop.idFactory
+        )) {
+            is MyResult.Error -> _events.emit(Error(message = response.message))
+            is MyResult.Success -> {
+                val logs = response.data
+                if (logs.isNotEmpty()) {
+                    _events.emit(ShowLogsShop(logs = logs))
+                } else {
+                    _events.emit(ShowLogsShop(logs = emptyList()))
+                    sharedViewModel.message(Constants.ERROR.LIST_EMPTY)
+                }
+            }
+        }
+    }
+
+    fun obtainEvent(event: ShopEvent) {
+        _events.tryEmit(event)
     }
 
     private fun launchCoroutine(block: suspend () -> Unit) {
@@ -97,162 +361,125 @@ class ShopViewModel @Inject constructor(
         }
     }
 
-    override fun obtainEvent(event: ShopEvent) {
-        when (event) {
-            is ShopEvent.ShowAddDialogShopCurrentRoute -> toggleAddDialog(isAll = false)
-            is ShopEvent.ShowAddDialogShopAllRoutes -> toggleAddDialog(isAll = true)
-            is ShopEvent.SelectClient -> launchCoroutine { changeClient(event.client) }
-            is ShopEvent.ChangeCountProduct -> changeRequestCountProduct(
-                count = event.count, editProduct = event.product
-            )
-            is ShopEvent.ChangeCountBonusProduct -> changeRequestCountBonusProduct(
-                bonus = event.bonus, editProduct = event.product
-            )
-            is ShopEvent.ShopAddAction -> initSaveShopWithData()
-            is ShopEvent.OpenGeoPoint -> openGeoPoint(event.context, event.cord)
-            is ShopEvent.ToggleMillageDialog -> {
-                updateViewState { it.copy(toggleMillageDialog = !it.toggleMillageDialog) }
+    private suspend fun getDataProduct() {
+        val user = getCurrentUserOrEmitError() ?: return
+        when (val response = repository.getProducts(idFactory = user.idFactory)) {
+            is MyResult.Error -> _events.emit(Error(message = "Ошибка загрузки товаров!"))
+            is MyResult.Success -> {
+                val products = response.data
+                _events.emit(ProductsLoaded(products = products))
             }
-            is ShopEvent.MillageSaveAction -> saveMillage()
-            is ShopEvent.ValueChangeMillage -> updateViewState { it.copy(millage = event.millage) }
-            is ShopEvent.DismissAddDialog -> updateViewState {
-                it.copy(
-                    toggleAddDialog = false,
-                    currentClient = null,
-                    isBonusState = false,
-                    toggleDialogAllClients = false,
-                    toggleDialogCurrentClients = false
-                )
-            }
-
-            is ShopEvent.ValueChangeCash -> updateViewState { it.copy(getCash = event.money) }
-            is ShopEvent.ValueChangeNoCashMoney -> updateViewState { it.copy(getNoCash = event.money) }
-
-            is ShopEvent.ToggleInfoCurrentShopDialog -> {
-                updateViewState { it.copy(toggleCurrentShopInfo = !it.toggleCurrentShopInfo) }
-            }
-            is ShopEvent.OpenInfoShopDialog -> openInfoShopDialog(event.shop)
-
-            is ShopEvent.RequestAddAction -> initSaveOrUpdateRequest()
-            is ShopEvent.CopyInfoData -> copyToClip(event.context)
-            is ShopEvent.SwitchBonusState -> updateViewState { it.copy(isBonusState = !viewState.value.isBonusState) }
-            ShopEvent.ToggleAnaliticShopsCurrentTrip -> updateViewState {
-                it.copy(
-                    toggleAnaliticOfTrip = !viewState.value.toggleAnaliticOfTrip
-                )
-            }
-
-            is ShopEvent.CopyAndSaveShop -> initCopyAndSaveShopWithData()
-            is ShopEvent.ToggleLogsShopDialog -> toggleLogsShopDialog(shop = event.shop)
-            ShopEvent.ToggleConfirmCopyAndSave -> updateViewState { it.copy(isCopyAndSave = !viewState.value.isCopyAndSave) }
-            is ShopEvent.SelectShop -> {
-                updateViewState { it.copy(copyShop = event.shop) }
-            }
-
-            is ShopEvent.DeleteMessage -> launchCoroutine { deleteMessage(message = event.message) }
-            ShopEvent.GetDataRequestsByTrip -> getListRequestsInfo()
         }
     }
 
-    private fun toggleLogsShopDialog(shop: ShopModel?) {
-        updateViewState { it.copy(toggleLogShop = !viewState.value.toggleLogShop) }
-        if (viewState.value.toggleLogShop) shop?.let { getLogsShop(shop) }
-        else updateViewState { it.copy(logShop = emptyList()) }
+    private suspend fun getDataForCourier(trip: TripModel) {
+        when (val response =
+            repository.getDataAboutCourier(idTrip = trip.id, idFactory = trip.idFactory)) {
+            is MyResult.Error -> _events.emit(Error(message = "Ошибка загрузки информации о курьере!"))
+            is MyResult.Success -> {
+                val getData = response.data ?: return
+                _events.emit(CourierInfoLoaded(getData, trip = trip))
+            }
+        }
     }
 
     private suspend fun deleteMessage(message: MessageModel) {
         messageApi.delete(message.id)
-        val list = viewState.value.messages - message
-        updateViewState { it.copy(messages = list) }
+        _events.emit(MessageLoaded(viewState.value.messages - message))
     }
 
-    private fun getLogsShop(shop: ShopModel) {
-        launchCoroutine {
-            val logs = loggerApi.getLogsShop(idShop = shop.id, idTrip = shop.idTrip, idFactory = shop.idFactory).obj
-            if (logs != null) {
-                updateViewState { it.copy(logShop = logs) }
+    private suspend fun initData(trip: TripModel) {
+        val user = getCurrentUserOrEmitError() ?: return
+        getDataForCourier(trip = trip)
+        val localTrip = room.tripDao().getTripById(tripId = trip.id)
+        if (localTrip != null) {
+            if (user.id == trip.idCourier && localTrip.isLoaded) {
+                if (isSameDay(trip.date, System.currentTimeMillis())) {
+                    updateShops(trip = trip)
+                    if (localTrip.millage > 0) {
+                        val updateTrip = TripRequest(
+                            id = localTrip.id,
+                            factoryId = localTrip.idFactory,
+                            date = localTrip.date,
+                            courierId = localTrip.idCourier,
+                            routeId = localTrip.idRoute,
+                            salary = localTrip.salary,
+                            percentCourier = localTrip.percentCourier,
+                            priceMillage = localTrip.priceMillage,
+                            millage = localTrip.millage,
+                            nameCourier = localTrip.nameCourier,
+                            nameRoute = localTrip.nameRoute,
+                            salaryCourier = localTrip.salaryCourier
+                        )
+                        when (val response = repository.updateTrip(trip = updateTrip)) {
+                            is MyResult.Error -> _events.emit(Error(message = "Не удалось обновить оффлайн данные рейса!"))
+                            is MyResult.Success -> {
+                                var newTrip = response.data
+                                    ?: return _events.emit(Error(message = "Данные о рейсе не найдены!"))
+                                newTrip = newTrip.copy(isLoaded = true)
+                                room.tripDao().upsertTrip(newTrip)
+                                _events.emit(SaveCurrentTrip(trip = newTrip))
+                            }
+                        }
+                    } else {
+                        val updatedTrip = trip.copy(isLoaded = true)
+                        _events.emit(SaveCurrentTrip(trip = updatedTrip))
+                        getDataShops(trip = trip)
+                    }
+                } else {
+                    val updatedTrip = localTrip.copy(isLoaded = true)
+                    _events.emit(SaveCurrentTrip(trip = updatedTrip))
+                    getDataShops(trip = trip)
+                }
+            } else {
+                room.tripDao().upsertTrip(trip)
+                getDataShops(trip = trip)
+                when (val response = repository.getTrip(trip.id)) {
+                    is MyResult.Error -> _events.emit(Error(message = "Не удалось обновить рейс!"))
+                    is MyResult.Success -> {
+                        var newTrip = response.data
+                            ?: return _events.emit(Error(message = "Данные о рейсе не найдены!"))
+                        newTrip = newTrip.copy(isLoaded = true)
+                        room.tripDao().upsertTrip(trip = newTrip)
+                        _events.emit(SaveCurrentTrip(trip = newTrip))
+                    }
+                }
+            }
+        } else {
+            room.tripDao().upsertTrip(trip)
+            _events.emit(SaveCurrentTrip(trip = trip))
+            getDataShops(trip = trip)
+            if (user.id == trip.idCourier) {
+                val updatedTrip = trip.copy(isLoaded = true)
+                room.tripDao().upsertTrip(updatedTrip)
+                _events.emit(SaveCurrentTrip(trip = updatedTrip))
+            } else {
+                when (val response = repository.getTrip(trip.id)) {
+                    is MyResult.Error -> _events.emit(Error(message = "Не удалось обновить рейс!"))
+                    is MyResult.Success -> {
+                        val newTrip = response.data
+                            ?: return _events.emit(Error(message = "Данные о рейсе не найдены!"))
+                        room.tripDao().upsertTrip(newTrip)
+                        _events.emit(SaveCurrentTrip(trip = newTrip))
+                    }
+                }
             }
         }
     }
 
-    private fun initSettings() {
-        val value = sharedViewModel.viewState.value.lightVersion
-        updateViewState { it.copy(lightVersion = value, isSettingsInstall = true) }
-    }
-
-    fun initData(trip: TripModel) {
-        launchCoroutine {
-            initSettings()
-            val localTrip = room.tripDao().getTripById(trip.id)
-            val user = sharedViewModel.viewState.value.user
-            user?.let {
-                if (localTrip != null) {
-                    updateViewState { it.copy(currentTrip = localTrip) }
-                    getLocalData(idTrip = trip.id)
-                    if (user.id == trip.idCourier && localTrip.isLoaded) {
-                        if (isSameDay(trip.date, System.currentTimeMillis())) {
-                            updateShops(trip)
-                            if (localTrip.millage > 0) {
-                                val tripNew = tripApi.update(trip = TripRequest(
-                                    id = localTrip.id,
-                                    factoryId = localTrip.idFactory,
-                                    date = localTrip.date,
-                                    courierId = localTrip.idCourier,
-                                    routeId = localTrip.idRoute,
-                                    salary = localTrip.salary,
-                                    percentCourier = localTrip.percentCourier,
-                                    priceMillage = localTrip.priceMillage,
-                                    millage = localTrip.millage,
-                                    nameCourier = localTrip.nameCourier,
-                                    nameRoute = localTrip.nameRoute,
-                                    salaryCourier = localTrip.salaryCourier
-                                )).obj
-                                tripNew?.let {
-                                    val updatedTrip = tripNew.copy(isLoaded = true)
-                                    room.tripDao().upsertTrip(updatedTrip)
-                                    updateViewState { it.copy(currentTrip = updatedTrip) }
-                                    getDataShops()
-                                }
-                            } else {
-                                val updatedTrip = trip.copy(isLoaded = true)
-                                updateViewState { it.copy(currentTrip = updatedTrip) }
-                                getDataShops()
-                            }
-                        } else {
-                            val updatedTrip = localTrip.copy(isLoaded = true)
-                            updateViewState { it.copy(currentTrip = updatedTrip) }
-                            getDataShops()
-                        }
-                    } else {
-                        room.tripDao().upsertTrip(trip)
-                        getDataShops()
-                        val response = tripApi.getTrip(trip.id)
-                        val tripResponse = response.obj
-                        if (response.success && tripResponse != null) {
-                            room.tripDao().upsertTrip(tripResponse.copy(isLoaded = true))
-                            updateViewState { it.copy(currentTrip = tripResponse) }
-                        }
-                    }
+    private suspend fun getDataShops(trip: TripModel) {
+        when (val response = repository.getShops(idTrip = trip.id)) {
+            is MyResult.Error -> _events.emit(Error(message = response.message))
+            is MyResult.Success -> {
+                val shops = response.data
+                if (shops.isNotEmpty()) {
+                    databaseInit(shops, trip)
                 } else {
-                    room.tripDao().upsertTrip(trip)
-                    updateViewState { it.copy(currentTrip = trip) }
-                    getDataShops()
-                    if (user.id == trip.idCourier) {
-                        val updatedTrip = trip.copy(isLoaded = true)
-                        room.tripDao().upsertTrip(updatedTrip)
-                        updateViewState { it.copy(currentTrip = updatedTrip) }
-                    } else {
-                        val response = tripApi.getTrip(trip.id)
-                        val tripResponse = response.obj
-                        if (response.success && tripResponse != null) {
-                            room.tripDao().upsertTrip(tripResponse)
-                            updateViewState { it.copy(currentTrip = tripResponse) }
-                        }
-                    }
+                    clearLocalShopsForTrip(trip.id)
+                    _events.emit(ShopsLoaded(shops = emptyList()))
+                    sharedViewModel.message(Constants.ERROR.LIST_EMPTY)
                 }
             }
-            getDataForCourier()
-            getDataProduct()
         }
     }
 
@@ -268,7 +495,7 @@ class ShopViewModel @Inject constructor(
                 ensureActive()
                 var shop = local
                 if (shop.statusServer.toStatusModel() == StatusModel.UN_SYNC) {
-                    val shopReq = UpdateShopRequest(
+                    val shopReq = ShopRequest(
                         id = shop.id,
                         idTrip = shop.idTrip,
                         idFactory = shop.idFactory,
@@ -285,14 +512,13 @@ class ShopViewModel @Inject constructor(
                         nameShop = shop.nameShop,
                         isChanged = shop.isChanged
                     )
+                    when (repository.update(shop = shopReq)) {
+                        is MyResult.Success -> {
+                            shop = shop.copy(status = true, statusServer = StatusModel.SYNC.toStr())
+                            room.shopDao().insertShop(shop)
+                        }
 
-                    val shopResp = shopApi.update(shopReq)
-
-                    if (shopResp.success) {
-                        shop = shop.copy(status = true, statusServer = StatusModel.SYNC.toStr())
-                        room.shopDao().insertShop(shop)
-                    } else {
-                        sharedViewModel.message(shopResp.message)
+                        is MyResult.Error -> sharedViewModel.message("Ошибка обновления магазина!")
                     }
                 }
 
@@ -318,35 +544,22 @@ class ShopViewModel @Inject constructor(
                             name = req.name,
                             counter = req.counter
                         )
-                        val reqResp = requestApi.update(reqReq)
-                        if (reqResp.success) {
-                            room.requestDao()
+                        when (repository.updateRequest(request = reqReq)) {
+                            is MyResult.Error -> _events.emit(Error(message = "Ошибка обновления заявки"))
+                            is MyResult.Success -> room.requestDao()
                                 .upsertRequest(req.copy(statusServer = StatusModel.SYNC.toStr()))
-                        } else {
-                            sharedViewModel.message(reqResp.message)
                         }
                     }
                 }
-
                 val sumOrder = requests.sumOf {
                     it.count * it.price - it.exchange * (if (shop.isOldPrice) it.oldPrice else it.price)
                 }
                 val arrear = (sumOrder + shop.arrears + shop.addSum) - (shop.cash + shop.noCash)
                 updateClient(shop.copy(arrears = arrear))
-
-                getLocalData(trip.id)
             }
         }
     }
 
-    private suspend fun getLocalData(idTrip: Long) {
-        val shopsLocal = room.shopDao().getShops(idTrip = idTrip)
-        updateViewState {
-            it.copy(
-                shops = shopsLocal.sortedBy { shop -> shop.counter },
-            )
-        }
-    }
 
     private fun copyToClip(context: Context) {
         var text = ""
@@ -359,6 +572,7 @@ class ShopViewModel @Inject constructor(
         text += "Всего: $counter"
         copyToClipboard(context = context, text = text)
     }
+
 
     private fun initSaveOrUpdateRequest() {
         val shop = viewState.value.currentShop
@@ -373,24 +587,16 @@ class ShopViewModel @Inject constructor(
         val trip = viewState.value.currentTrip
         val list = viewState.value.shops.map { it.copy() }
         if (trip != null) {
-            val response = clientApi.getClientsByFactory(
+            when (val response = repository.getClientsByFactory(
                 idFactory = trip.idFactory
-            )
-            if (response.success) {
-                val clients =
-                    response.obj?.filterNot { p -> list.any { pr -> pr.id == p.id } }
-                        ?.sortedBy { s -> s.name }
-                if (clients != null) {
-                    updateViewState {
-                        it.copy(
-                            listClient = clients,
-                            currentClient = clients[0]
-                        )
-                    }
+            )) {
+                is MyResult.Error -> _events.emit(Error(message = "Ошибка получения списка клиентов!"))
+                is MyResult.Success -> {
+                    val clients = response.data.filterNot { p -> list.any { pr -> pr.id == p.id } }
+                        .sortedBy { s -> s.name }
+                    _events.emit(ClientsLoaded(clients = clients))
                     changeClient(client = clients[0])
                 }
-            } else {
-                sharedViewModel.message(response.message)
             }
         }
     }
@@ -399,68 +605,20 @@ class ShopViewModel @Inject constructor(
         val trip = viewState.value.currentTrip
         val list = viewState.value.shops.map { it.copy() }
         if (trip != null) {
-            val response = clientApi.getClientsByRoute(
+            when (val response = repository.getClientsByRoute(
                 idRoute = trip.idRoute
-            )
-            if (response.success) {
-                val clients =
-                    response.obj?.filterNot { p -> list.any { pr -> pr.id == p.id } }
-                        ?.sortedBy { s -> s.counter }
-                if (clients != null) {
-                    updateViewState {
-                        it.copy(
-                            listClient = clients,
-                            currentClient = clients[0]
-                        )
-                    }
+            )) {
+                is MyResult.Error -> _events.emit(Error(message = "Ошибка получения списка клиентов!"))
+                is MyResult.Success -> {
+                    val clients = response.data.filterNot { p -> list.any { pr -> pr.id == p.id } }
+                        .sortedBy { s -> s.counter }
+                    _events.emit(ClientsLoaded(clients = clients))
                     changeClient(client = clients[0])
                 }
-            } else {
-                sharedViewModel.message(response.message)
-            }
-
-        }
-    }
-
-    private suspend fun getDataProduct() {
-        val user = sharedViewModel.viewState.value.user
-        if (user != null) {
-            val response = productApi.getProducts(idFactory = user.idFactory)
-            if (response.success) {
-                val products = response.obj
-                if (!products.isNullOrEmpty()) {
-                    updateViewState {
-                        it.copy(
-                            listProduct = products,
-                        )
-                    }
-                }
-            } else {
-                sharedViewModel.message(response.message)
             }
         }
     }
 
-    private suspend fun getDataShops() {
-        val trip = _viewState.value.currentTrip
-        if (trip != null) {
-            val response = shopApi.getShopsByTrip(idTrip = trip.id)
-            if (response.success) {
-                val shops = response.obj
-                if (!shops.isNullOrEmpty()) {
-                    databaseInit(shops, trip.id)
-                } else {
-                    clearLocalShopsForTrip(trip.id)
-                    updateViewState { it.copy(shops = emptyList()) }
-                    sharedViewModel.message(Constants.ERROR.LIST_EMPTY)
-                }
-            } else {
-                sharedViewModel.message(response.message)
-            }
-        } else {
-            sharedViewModel.message("Рейс не найден")
-        }
-    }
 
     private suspend fun clearLocalShopsForTrip(idTrip: Long) {
         room.withTransaction {
@@ -469,9 +627,9 @@ class ShopViewModel @Inject constructor(
         }
     }
 
-    private suspend fun databaseInit(shops: List<ShopServerModel>, idTrip: Long) {
+    private suspend fun databaseInit(shops: List<ShopServerModel>, trip: TripModel) {
         room.withTransaction {
-            val localShops = room.shopDao().getShops(idTrip = idTrip)
+            var localShops = room.shopDao().getShops(idTrip = trip.id)
             val localIds = localShops.map { it.id }.toSet()
             val serverIds = shops.map { it.id }.toSet()
 
@@ -567,34 +725,14 @@ class ShopViewModel @Inject constructor(
             if (requestsToInsert.isNotEmpty()) {
                 room.requestDao().insertRequests(requestsToInsert)
             }
-            updateViewState { it.copy(shopsAnalitic = shops) }
-
-            getLocalData(idTrip)
-        }
-    }
-
-    private fun toggleAddDialog(isAll: Boolean) {
-        launchCoroutine {
-            if (isAll) {
-                getAllDataClient()
-                updateViewState { it.copy(toggleDialogAllClients = true) }
-            } else {
-                getDataClientCurrentRoute()
-                updateViewState { it.copy(toggleDialogCurrentClients = true) }
-            }
-            updateViewState { it.copy(toggleAddDialog = true) }
-            updateViewState {
-                it.copy(
-                    listProductRequest = viewState.value.listProduct.filter { p -> p.isActive }
-                        .map { p -> p.copy() },
-                )
-            }
+            localShops = room.shopDao().getShops(idTrip = trip.id).sortedBy { shop -> shop.counter }
+            _events.emit(ShopsLoaded(shops = localShops))
+            _events.emit(ShopsAnaliticLoaded(shops = shops))
         }
     }
 
     private suspend fun changeClient(client: ClientModel?) {
         if (client == null) return
-        updateViewState { it.copy(currentClient = client) }
         val shops = room.shopDao().getShopsById(id = client.id).map { shop ->
             return@map shop.let {
                 val requests =
@@ -619,14 +757,11 @@ class ShopViewModel @Inject constructor(
                     isChanged = shop.isChanged
                 )
             }
-        }
+        }.sortedByDescending { shop -> shop.date }
         val messages = getMessages(client.id)
-        updateViewState {
-            it.copy(
-                listCurrentShopInfo = shops.sortedByDescending {shop -> shop.date },
-                messages = messages
-            )
-        }
+        _events.emit(MessageLoaded(messages = messages))
+        _events.emit(ShopsForCreateShopLoaded(shops = shops))
+
     }
 
     private suspend fun getMessages(id: Long): List<MessageModel> {
@@ -634,7 +769,7 @@ class ShopViewModel @Inject constructor(
         return messages ?: emptyList()
     }
 
-    private fun updateProductRequest(
+    private suspend fun updateProductRequest(
         editProduct: ProductModel,
         transform: (ProductModel) -> ProductModel
     ) {
@@ -642,16 +777,16 @@ class ShopViewModel @Inject constructor(
         val index = list.indexOfFirst { it.id == editProduct.id }
         if (index == -1) return
         list[index] = transform(editProduct)
-        updateViewState { it.copy(listProductRequest = list) }
+        _events.emit(ShopEvent.ProductsRequestLoaded(list))
     }
 
-    private fun changeRequestCountProduct(count: String, editProduct: ProductModel) =
+    private suspend fun changeRequestCountProduct(count: String, editProduct: ProductModel) =
         updateProductRequest(editProduct) { it.copy(count = count.trim().toIntOrNull() ?: 0) }
 
-    private fun changeRequestCountBonusProduct(bonus: String, editProduct: ProductModel) =
+    private suspend fun changeRequestBonusProduct(bonus: String, editProduct: ProductModel) =
         updateProductRequest(editProduct) { it.copy(addCount = bonus.trim().toIntOrNull() ?: 0) }
 
-    private fun initSaveShopWithData() {
+    private suspend fun initSaveShopWithData() {
         saveShop(sendShop = {
             saveRequest(
                 shop = it
@@ -659,13 +794,14 @@ class ShopViewModel @Inject constructor(
         })
     }
 
-    private fun initCopyAndSaveShopWithData() {
-        launchCoroutine {
-            obtainEvent(ShopEvent.ToggleConfirmCopyAndSave)
-            val shop = viewState.value.copyShop
-            if (shop != null) {
-                val client = clientApi.getClientById(shop.id).obj
-                if (client != null) {
+    private suspend fun initCopyAndSaveShopWithData() {
+        _events.emit(ToggleConfirmCopyAndSave)
+        val shop = viewState.value.copyShop
+        if (shop != null) {
+            when (val response = repository.getClientById(shop.id)) {
+                is MyResult.Error -> _events.emit(Error(message = "Ошибка получения клиента!"))
+                is MyResult.Success -> {
+                    val client = response.data ?: return
                     saveShop()
                     saveCopyRequest(shop = shop, client = client)
                 }
@@ -673,36 +809,34 @@ class ShopViewModel @Inject constructor(
         }
     }
 
-    private fun saveShop(sendShop: (ShopModel) -> Unit = {}) {
-        launchCoroutine {
-            val client = viewState.value.currentClient
-            val trip = viewState.value.currentTrip
-            if (client != null && trip != null) {
-                val shopRequest = CreateShopRequest(
-                    id = client.id,
-                    idTrip = trip.id,
-                    idFactory = trip.idFactory,
-                    arrears = client.arrears,
-                    date = trip.date,
-                    counter = client.counter,
-                    isOldPrice = false,
-                    nameShop = client.name,
-                    cord = client.cord,
-                    addSum = viewState.value.add,
-                    cash = viewState.value.dept,
-                    status = false,
-                    isChanged = false
-                )
-                val response = shopApi.add(shop = shopRequest)
-                if (response.success) {
-                    val shop = response.obj
-                    shop?.let {
-                        obtainEvent(ShopEvent.DismissAddDialog)
+    private suspend fun saveShop(sendShop: (ShopModel) -> Unit = {}) {
+        val client = viewState.value.currentClient
+        val trip = viewState.value.currentTrip
+        if (client != null && trip != null) {
+            val shopRequest = ShopRequest(
+                id = client.id,
+                idTrip = trip.id,
+                idFactory = trip.idFactory,
+                arrears = client.arrears,
+                date = trip.date,
+                counter = client.counter,
+                isOldPrice = false,
+                nameShop = client.name,
+                cord = client.cord,
+                addSum = viewState.value.add,
+                cash = viewState.value.dept,
+                status = false,
+                isChanged = false
+            )
+            when (val response = repository.create(shop = shopRequest)) {
+                is MyResult.Error -> _events.emit(Error(message = "Ошибка создания магазина!"))
+                is MyResult.Success -> {
+                    val shop = response.data ?: return
+                    shop.let {
+                        obtainEvent(DismissAddDialog)
                         sendShop(shop.copy(statusServer = StatusModel.NOT_CHANGE.toStr()))
-                        updateViewState { it.copy(listClient = it.listClient - client) }
+                        _events.emit(ClientsLoaded(clients = viewState.value.clients - client))
                     }
-                } else {
-                    sharedViewModel.message(message = response.message)
                 }
             }
         }
@@ -724,7 +858,7 @@ class ShopViewModel @Inject constructor(
                 shop.noCash = 0.0
                 shop.cash = 0.0
                 shop.addSum = 0.0
-                shop.typePay = CASH
+                shop.typePay = TypePayModel.CASH
                 shop.idTrip = trip.id
                 shop.isChanged = false
                 listRequest.forEach { product ->
@@ -743,23 +877,25 @@ class ShopViewModel @Inject constructor(
                             name = product.name,
                             counter = product.counter
                         )
-                        val response = requestApi.add(reqResponse)
-                        if (response.success) {
-                            val requestModel = RequestModel(
-                                id = product.id,
-                                idShop = shop.id,
-                                idTrip = shop.idTrip,
-                                idFactory = shop.idFactory,
-                                count = product.count,
-                                bonus = product.bonus,
-                                status = false,
-                                exchange = product.exchange,
-                                price = product.price,
-                                oldPrice = product.oldPrice,
-                                name = product.name,
-                                counter = product.counter
-                            )
-                            room.requestDao().upsertRequest(requestModel)
+                        when (repository.createRequest(reqResponse)) {
+                            is MyResult.Error -> _events.emit(Error(message = "Ошибка создания заявки!"))
+                            is MyResult.Success -> {
+                                val requestModel = RequestModel(
+                                    id = product.id,
+                                    idShop = shop.id,
+                                    idTrip = shop.idTrip,
+                                    idFactory = shop.idFactory,
+                                    count = product.count,
+                                    bonus = product.bonus,
+                                    status = false,
+                                    exchange = product.exchange,
+                                    price = product.price,
+                                    oldPrice = product.oldPrice,
+                                    name = product.name,
+                                    counter = product.counter
+                                )
+                                room.requestDao().upsertRequest(requestModel)
+                            }
                         }
                     }
                 }
@@ -769,12 +905,7 @@ class ShopViewModel @Inject constructor(
                 } else {
                     shops.add(shop.toUiModel())
                 }
-                updateViewState {
-                    it.copy(
-                        shops = shops.sortedBy { s -> s.counter },
-                        listDataRequests = listRequest.sortedBy { req -> req.counter }
-                    )
-                }
+                _events.emit(ShopsLoaded(shops = shops.sortedBy { s -> s.counter }))
             }
         }
     }
@@ -798,24 +929,26 @@ class ShopViewModel @Inject constructor(
                     name = product.name,
                     counter = product.counter
                 )
-                val response = requestApi.add(reqResponse)
-                if (response.success) {
-                    val requestModel = RequestModel(
-                        id = product.id,
-                        idShop = shop.id,
-                        idTrip = shop.idTrip,
-                        idFactory = shop.idFactory,
-                        count = product.count,
-                        bonus = product.addCount,
-                        status = false,
-                        exchange = product.exchange ?: 0,
-                        price = product.price,
-                        oldPrice = product.oldPrice,
-                        name = product.name,
-                        counter = product.counter
-                    )
-                    room.requestDao().upsertRequest(requestModel)
-                    listRequest.add(requestModel.copy(statusServer = StatusModel.NOT_CHANGE.toStr()))
+                when (repository.createRequest(request = reqResponse)) {
+                    is MyResult.Error -> _events.emit(Error(message = "Ошибка создания заявки!"))
+                    is MyResult.Success -> {
+                        val requestModel = RequestModel(
+                            id = product.id,
+                            idShop = shop.id,
+                            idTrip = shop.idTrip,
+                            idFactory = shop.idFactory,
+                            count = product.count,
+                            bonus = product.addCount,
+                            status = false,
+                            exchange = product.exchange ?: 0,
+                            price = product.price,
+                            oldPrice = product.oldPrice,
+                            name = product.name,
+                            counter = product.counter
+                        )
+                        room.requestDao().upsertRequest(requestModel)
+                        listRequest.add(requestModel.copy(statusServer = StatusModel.NOT_CHANGE.toStr()))
+                    }
                 }
             }
             val hasBonus = listRequest.any { it.bonus > 0 }
@@ -827,16 +960,9 @@ class ShopViewModel @Inject constructor(
             } else {
                 shops.add(shop)
             }
-            updateViewState {
-                it.copy(
-                    shops = shops.sortedBy { s -> s.counter },
-                    listDataRequests = listRequest.sortedBy { req -> req.counter }
-                )
-            }
+            _events.emit(ShopsLoaded(shops = shops.sortedBy { s -> s.counter }))
         }
     }
-
-
 
     private fun openGeoPoint(context: Context, cord: String) {
         launchCoroutine {
@@ -854,136 +980,103 @@ class ShopViewModel @Inject constructor(
         }
     }
 
-    private suspend fun getDataForCourier() {
-        val trip = _viewState.value.currentTrip
-        if (trip != null) {
-            val response =
-                tripApi.getDataAboutTrip(idTrip = trip.id, idFactory = trip.idFactory)
-            if (response.success) {
-                val getData = response.obj
-                if (getData != null) {
-                    updateViewState {
-                        it.copy(
-                            millage = trip.millage,
-                            noCash = getData.noCash,
-                            salary = if (trip.millage > 0.0) getData.salary else 0.0,
-                            cash = getData.cash,
-                            allMoney = getData.allMoney,
-                            remains = if (trip.millage > 0.0) getData.remainCash else 0.0,
-                            salaryFix = trip.salary,
-                            isDataShopForCourierLoad = true
-                        )
+
+    private suspend fun saveMillage() {
+        val millage = viewState.value.millage
+        val trip = viewState.value.currentTrip
+        val user = getCurrentUserOrEmitError()
+        if (trip != null && user != null) {
+            if (user.id == trip.idCourier || user.isModOrAdminOrSys()) {
+                val newTrip = trip.copy(millage = millage)
+                _events.emit(SaveCurrentTrip(trip = newTrip))
+                room.tripDao().upsertTrip(newTrip)
+                val request = TripRequest(
+                    id = trip.id,
+                    factoryId = trip.idFactory,
+                    date = trip.date,
+                    courierId = trip.idCourier,
+                    routeId = trip.idRoute,
+                    salary = trip.salary,
+                    percentCourier = trip.percentCourier,
+                    priceMillage = trip.priceMillage,
+                    millage = millage,
+                    nameRoute = trip.nameRoute,
+                    nameCourier = trip.nameCourier,
+                )
+                when (repository.updateTrip(trip = request)) {
+                    is MyResult.Error -> _events.emit(Error(message = "Ошибка сохранения пробега в рейсе!"))
+                    is MyResult.Success -> {
+                        getDataForCourier(trip = newTrip)
                     }
                 }
             } else {
-                sharedViewModel.message(response.message)
+                sharedViewModel.message(Constants.ERROR.RESRTRAINT)
+                obtainEvent(ToggleMillageDialog)
             }
         }
     }
 
-    private fun saveMillage() {
-        launchCoroutine {
-            val millage = viewState.value.millage
-            val trip = viewState.value.currentTrip
-            val user = sharedViewModel.viewState.value.user
-            if (trip != null && user != null) {
-                if (user.id == trip.idCourier || user.isModOrAdminOrSys()) {
-                    val newTrip = trip.copy(millage = millage)
-                    room.tripDao().upsertTrip(newTrip)
-                    updateViewState { it.copy(currentTrip = newTrip) }
-                    val request = TripRequest(
-                        id = trip.id,
-                        factoryId = trip.idFactory,
-                        date = trip.date,
-                        courierId = trip.idCourier,
-                        routeId = trip.idRoute,
-                        salary = trip.salary,
-                        percentCourier = trip.percentCourier,
-                        priceMillage = trip.priceMillage,
-                        millage = millage,
-                        nameRoute = trip.nameRoute,
-                        nameCourier = trip.nameCourier,
-                    )
-                    val response = tripApi.update(request)
-                    if (response.success) {
-                        getDataForCourier()
-                    } else {
-                        sharedViewModel.message(response.message)
+    private suspend fun getListRequestsInfo() {
+        val trip = viewState.value.currentTrip
+        if (trip != null) {
+            when (val response = repository.getRequestsByTrip(
+                idTrip = trip.id, idFactory = trip.idFactory
+            )) {
+                is MyResult.Error -> _events.emit(Error(message = "Ошибка получения списка заявок по рейсу!"))
+                is MyResult.Success -> {
+                    val requests = response.data.sortedBy { it.price }
+                    var count = 0
+                    var exchange = 0
+                    requests.forEach {
+                        count += it.count
+                        count += it.bonus
+                        exchange += it.exchange
                     }
-                } else {
-                    sharedViewModel.message(Constants.ERROR.RESRTRAINT)
-                    obtainEvent(ShopEvent.ToggleMillageDialog)
-                }
-            }
-        }
-    }
 
-    private fun getListRequestsInfo() {
-        launchCoroutine {
-            val trip = viewState.value.currentTrip
-            if (trip != null) {
-                val response = requestApi.getRequestsByTrip(
-                    idTrip = trip.id, idFactory = trip.idFactory
-                )
-                if (response.success) {
-                    val requests = response.obj?.sortedBy { it.price }
-                    if (requests != null) {
-                        var count = 0
-                        var exchange = 0
-                        requests.forEach {
-                            count += it.count
-                            count += it.bonus
-                            exchange += it.exchange
-                        }
+                    val updatedRequests = requests.map { req ->
+                        req.copy(
+                            countRemain = req.count + req.bonus, statusServer = ""
+                        )
+                    }.toMutableList()
 
-                        val updatedRequests = requests.map { req ->
-                            req.copy(
-                                countRemain = req.count + req.bonus,
-                                statusServer = ""
-                            )
-                        }.toMutableList()
+                    val shops = room.shopDao().getShops(trip.id)
+                    shops.forEach { shop ->
+                        if (shop.status) {
+                            val localRequests =
+                                room.requestDao().getRequests(idShop = shop.id, idTrip = trip.id)
 
-                        val shops = room.shopDao().getShops(trip.id)
-                        shops.forEach { shop ->
-                            if (shop.status) {
-                                val localRequests = room.requestDao().getRequests(idShop = shop.id, idTrip = trip.id)
-
-                                localRequests.forEach { req ->
-                                    val index = updatedRequests.indexOfFirst { it.id == req.id }
-                                    if (index != -1) {
-                                        val currentRequest = updatedRequests[index]
-                                        val newCountRemain = currentRequest.countRemain - (req.count + req.bonus)
-                                        updatedRequests[index] = currentRequest.copy(countRemain = newCountRemain, statusServer = "")
-                                    }
+                            localRequests.forEach { req ->
+                                val index = updatedRequests.indexOfFirst { it.id == req.id }
+                                if (index != -1) {
+                                    val currentRequest = updatedRequests[index]
+                                    val newCountRemain =
+                                        currentRequest.countRemain - (req.count + req.bonus)
+                                    updatedRequests[index] = currentRequest.copy(
+                                        countRemain = newCountRemain, statusServer = ""
+                                    )
                                 }
                             }
                         }
-                        updateViewState {
-                            it.copy(
-                                isLoadDataRequestsInfoDialog = true,
-                                listInfoRequests = updatedRequests,
-                                allCountRequestsInfo = count,
-                                allExchangeRequestsInfo = exchange
-                            )
-                        }
-                    } else {
-                        sharedViewModel.message(Constants.EMPTY.EMPTY_LIST)
                     }
-                } else {
-                    sharedViewModel.message(message = response.message)
+                    val newState = viewState.value.copy(
+                        isLoadDataRequestsInfoDialog = true,
+                        listInfoRequests = updatedRequests,
+                        allCountRequestsInfo = count,
+                        allExchangeRequestsInfo = exchange
+                    )
+                    _events.emit(ShopEvent.LoadState(state = newState))
                 }
             }
         }
     }
 
-
-    private fun updateClient(shop: ShopModel) {
-        launchCoroutine {
-            shop.apply {
-                val responseGetClient = clientApi.getClientById(id = id)
-                if (responseGetClient.success) {
-                    val client = responseGetClient.obj
-                    if (client != null ) {
+    private suspend fun updateClient(shop: ShopModel) {
+        shop.apply {
+            when (val response = repository.getClientById(id = id)) {
+                is MyResult.Error -> _events.emit(Error(message = "Ошибка получения клиента!"))
+                is MyResult.Success -> {
+                    val client = response.data
+                    if (client != null) {
                         val request = ClientRequest(
                             id = client.id,
                             idRoute = client.idRoute,
@@ -995,43 +1088,34 @@ class ShopViewModel @Inject constructor(
                             arrears = arrears,
                             date = client.date
                         )
-                        val response = clientApi.update(request)
-                        if (!response.success) {
-                            sharedViewModel.message(response.message)
+                        when (repository.updateClient(request = request)) {
+                            is MyResult.Error -> _events.emit(Error(message = "Ошибка обновления долга клиента!"))
+                            is MyResult.Success -> {}
                         }
                     }
+
+
                 }
             }
         }
-    }
-
-    private fun openInfoShopDialog(shop: ShopModel) {
-        updateViewState { it.copy(currentShop = shop, listCurrentShopInfo = emptyList()) }
-        getDataInfoShop(shop)
     }
 
     private fun getDataInfoShop(curShop: ShopModel) {
         launchCoroutine {
             val localList = room.shopDao().getShopsById(id = curShop.id).map { it.toServerModel() }
                 .sortedByDescending { it.date }
-            updateViewState { it.copy(listCurrentShopInfo = localList) }
-            val response = shopApi.getCurrentShopsByFactory(
+            val request =
+                room.requestDao().getRequests(idShop = curShop.id, idTrip = curShop.idTrip)
+            _events.emit(ShopsForCreateShopLoaded(shops = localList.map { it.copy(listRequest = request) }))
+            when (val response = repository.getCurrentShopsByFactory(
                 id = curShop.id,
                 idFactory = curShop.idFactory
-            )
-            if (response.success) {
-                val list = response.obj
-                if (list != null) {
-                    updateViewState {
-                        it.copy(
-                            listCurrentShopInfo = list
-                        )
-                    }
-                } else {
-                    sharedViewModel.message(Constants.ERROR.LIST_EMPTY)
+            )) {
+                is MyResult.Error -> _events.emit(Error(message = "Ошибка получения магазинов!"))
+                is MyResult.Success -> {
+                    val list = response.data
+                    _events.emit(ShopsForCreateShopLoaded(shops = list))
                 }
-            } else {
-                sharedViewModel.message(response.message)
             }
         }
     }

@@ -32,13 +32,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.activity.compose.BackHandler
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.ShopModel
 import ru.krymer.delivery.data.model.TripModel
@@ -140,7 +138,7 @@ fun ShopView(
                                     )
                                 },
                                 openInfoCurrentShop = {
-                                    event(ShopEvent.ToggleInfoCurrentShopDialog)
+                                    event(ShopEvent.ToggleInfoDialogAboutCurrentShop)
                                     event(ShopEvent.OpenInfoShopDialog(shop = it))
                                 },
                                 modifier = Modifier.animateItem(
@@ -384,9 +382,9 @@ fun ShopView(
         )
     }
 
-    if (state.toggleCurrentShopInfo) {
+    if (state.toggleInfoDialogAboutCurrentShop) {
         CommonInfoAlertDialog(
-            onDismissRequest = { event(ShopEvent.ToggleInfoCurrentShopDialog) },
+            onDismissRequest = { event(ShopEvent.ToggleInfoDialogAboutCurrentShop) },
             content = {
                 InfoShopContent(shops = state.listCurrentShopInfo)
             })

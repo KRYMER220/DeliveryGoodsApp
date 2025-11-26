@@ -16,17 +16,19 @@ sealed class ShopAction {
 }
 
 data class ShopViewState(
+    val isLoading: Boolean = false,
+
     val shopAction: ShopAction = ShopAction.None,
     val isSettingsInstall: Boolean = false,
 
     val shops: List<ShopModel> = emptyList(),
     val shopsAnalitic: List<ShopServerModel> = emptyList(),
 
-    val listProduct: List<ProductModel> = emptyList(),
+    val products: List<ProductModel> = emptyList(),
     val listProductRequest: List<ProductModel> = emptyList(),
 
 
-    val listClient: List<ClientModel> = emptyList(),
+    val clients: List<ClientModel> = emptyList(),
     val toggleDialogCurrentClients: Boolean = false,
     val toggleDialogAllClients: Boolean = false,
     val toggleAddDialog: Boolean = false,
@@ -72,7 +74,7 @@ data class ShopViewState(
     val toggleConfirmRequestDialog: Boolean = false,
 
 
-    val toggleCurrentShopInfo: Boolean = false,
+    val toggleInfoDialogAboutCurrentShop: Boolean = false,
     val listCurrentShopInfo: List<ShopServerModel> = emptyList(),
     val stateSwitchPrice: Boolean = false,
 

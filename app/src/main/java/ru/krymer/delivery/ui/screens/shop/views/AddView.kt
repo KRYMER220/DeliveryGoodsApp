@@ -48,9 +48,9 @@ import ru.krymer.delivery.utills.convertToTextDate
 fun AddShopAndRequestView(
     state: ShopViewState, event: (ShopEvent) -> Unit
 ) {
-    val clients = state.listClient
+    val clients = state.clients
     val listShop = state.listCurrentShopInfo
-    val products = state.listProduct
+    val products = state.listProductRequest
     var toggleMenuClients by remember { mutableStateOf(false) }
     if (clients.isNotEmpty() && products.isNotEmpty()) {
         LazyColumn(
@@ -100,7 +100,7 @@ fun AddShopAndRequestView(
                 }
             }
 
-            items(state.listProductRequest) { product ->
+            items(products) { product ->
                 ProductAddShopWithOrderItem(product = product, onVCCount = {
                     event(
                         ShopEvent.ChangeCountProduct(
