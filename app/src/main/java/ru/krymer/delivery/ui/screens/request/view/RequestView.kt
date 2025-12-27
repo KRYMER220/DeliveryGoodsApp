@@ -59,94 +59,11 @@ import ru.krymer.delivery.utills.convertToTextDate
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RequestView(state: RequestViewState, event: (RequestEvent) -> Unit) {
-    if (state.toggleSwitchListReq) {
-        ListShops(state = state, event = event)
-    } else {
-        OnceItemShop(state = state, event = event)
-    }
-
-}
-
-@Composable
-fun ListShops(state: RequestViewState, event: (RequestEvent) -> Unit) {
-    val shops = state.shopsUI
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        item {
-            Spacer(
-                modifier = Modifier
-                    .fillParentMaxHeight(0.5f)
-                    .fillMaxWidth()
-            )
-        }
-
-        item {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(5.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Spacer(modifier = Modifier)
-                    Image(
-                        painter = painterResource(R.drawable.back_stack),
-                        contentDescription = null
-                    )
-                }
-            }
-        }
-
-        if (shops.isNotEmpty()) {
-            items(items = shops) { shop ->
-                val typePayState = shop.typePay
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(5.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .border(
-                                width = 2.dp, color = when (typePayState) {
-                                    TypePayModel.CASH -> Color.Transparent
-                                    TypePayModel.NO_CASH -> Color.Magenta
-                                    TypePayModel.ANOTHER -> Color.Green
-                                }, shape = RoundedCornerShape(10.dp)
-                            )
-                            .weight(0.333f)
-                            .height(40.dp)
-                            .clickable(onClick = {
-                                event(RequestEvent.ChangeTypePay)
-                            })
-                            .wrapContentHeight(Alignment.CenterVertically),
-                        text = when (typePayState) {
-                            TypePayModel.CASH -> stringResource(R.string.cash)
-                            TypePayModel.NO_CASH -> stringResource(R.string.noCash)
-                            TypePayModel.ANOTHER -> stringResource(R.string.another_pay)
-                        },
-                        style = AppTheme.typography.titleSmall,
-                        textAlign = TextAlign.Center,
-                        color = AppTheme.colors.onSecondary
-                    )
-
-                }
-            }
-        } else {
-            item {
-                CustomCircularProgressIndicator()
-            }
-        }
-    }
+    OnceItemShop(state = state, event = event)
 }
 
 @Composable
 fun OnceItemShop(state: RequestViewState, event: (RequestEvent) -> Unit) {
-
     state.shop?.let { shop ->
         val listMenu = listOf(
             stringResource(R.string.arrears),
@@ -557,11 +474,14 @@ fun OnceItemShop(state: RequestViewState, event: (RequestEvent) -> Unit) {
                                                         id = R.drawable.submit_unsync
                                                     )
 
+                                                    shop.statusServer.toStatusModel() == StatusModel.SYNC_FAILED -> painterResource(id = R.drawable.submit_failed)
+
+
                                                     else -> painterResource(id = R.drawable.submit_active)
                                                 },
                                                 modifier = Modifier
                                                     .size(60.dp)
-                                                    .clickable {
+                                                    .combinedClickable(onClick = {
                                                         when {
                                                             (cash.isEmpty() && noCash.isEmpty()) -> {
                                                                 errorCash = Error(
@@ -589,7 +509,9 @@ fun OnceItemShop(state: RequestViewState, event: (RequestEvent) -> Unit) {
                                                                 event(RequestEvent.SubmitSaveShop)
                                                             }
                                                         }
-                                                    }
+                                                    }, onDoubleClick = {
+                                                        event(RequestEvent.ToggleStatusShop)
+                                                    })
                                             )
                                         }
                                     }
@@ -641,12 +563,14 @@ fun OnceItemShop(state: RequestViewState, event: (RequestEvent) -> Unit) {
                                                 shop.statusServer.toStatusModel() == StatusModel.UN_SYNC -> painterResource(
                                                     id = R.drawable.submit_unsync
                                                 )
+                                                shop.statusServer.toStatusModel() == StatusModel.SYNC_FAILED -> painterResource(id = R.drawable.submit_failed)
+
 
                                                 else -> painterResource(id = R.drawable.submit_active)
                                             },
                                             modifier = Modifier
                                                 .size(60.dp)
-                                                .clickable {
+                                                .combinedClickable(onClick = {
                                                     if (cash.isEmpty()) {
                                                         errorCash = Error(
                                                             visible = true,
@@ -655,7 +579,9 @@ fun OnceItemShop(state: RequestViewState, event: (RequestEvent) -> Unit) {
                                                     } else {
                                                         event(RequestEvent.SubmitSaveShop)
                                                     }
-                                                }
+                                                }, onDoubleClick = {
+                                                    event(RequestEvent.ToggleStatusShop)
+                                                })
                                         )
                                     }
 
@@ -709,12 +635,16 @@ fun OnceItemShop(state: RequestViewState, event: (RequestEvent) -> Unit) {
                                                 shop.statusServer.toStatusModel() == StatusModel.UN_SYNC -> painterResource(
                                                     id = R.drawable.submit_unsync
                                                 )
+                                                shop.statusServer.toStatusModel() == StatusModel.SYNC_FAILED -> painterResource(id = R.drawable.submit_failed)
+
 
                                                 else -> painterResource(id = R.drawable.submit_active)
                                             },
                                             modifier = Modifier
                                                 .size(60.dp)
-                                                .clickable {
+                                                .combinedClickable(onDoubleClick = {
+                                                    event(RequestEvent.ToggleStatusShop)
+                                                }, onClick = {
                                                     if (noCash.isEmpty()) {
                                                         errorNoCash = Error(
                                                             visible = true,
@@ -723,7 +653,7 @@ fun OnceItemShop(state: RequestViewState, event: (RequestEvent) -> Unit) {
                                                     } else {
                                                         event(RequestEvent.SubmitSaveShop)
                                                     }
-                                                }
+                                                })
                                         )
                                     }
                                 }

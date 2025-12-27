@@ -152,3 +152,10 @@ sealed class MyResult<out T> {
     data class Error(val message: String?): MyResult<Nothing>()
 }
 
+fun String.toSafeDouble(default: Double = 0.0): Double {
+    return try {
+        if (this.isEmpty()) default else this.toDouble()
+    } catch (e: NumberFormatException) {
+        default
+    }
+}

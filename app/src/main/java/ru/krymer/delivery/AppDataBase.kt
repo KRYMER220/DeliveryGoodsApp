@@ -15,7 +15,7 @@ import ru.krymer.delivery.data.model.user.UserModel
 
 @Database(
     entities = [UserModel::class, TripModel::class, FactoryModel::class, ShopModel::class, RequestModel::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

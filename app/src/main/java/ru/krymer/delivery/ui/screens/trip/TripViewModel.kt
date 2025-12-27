@@ -284,7 +284,7 @@ class TripViewModel @Inject constructor(
             }
 
             serverTrips.forEach { serverTrip ->
-                database.tripDao().upsertTrip(serverTrip)
+                database.tripDao().upsertTrip(serverTrip.copy(isLoaded = true))
             }
         } catch (e: Exception) {
             println("Ошибка при синхронизации локальной базы: ${e.message}")

@@ -247,7 +247,7 @@ fun ShopView(
                             .fillMaxWidth()
                     ) {
                         Spacer(
-                            modifier = Modifier.weight(0.4f),
+                            modifier = Modifier.weight(0.4f)
                         )
                         Text(
                             style = AppTheme.typography.bodySmall,
@@ -263,6 +263,10 @@ fun ShopView(
                                 color = AppTheme.colors.onSecondary,
                                 modifier = Modifier.weight(0.15f),
                                 textAlign = TextAlign.Center,
+                            )
+                        } else {
+                            Spacer(
+                                modifier = Modifier.weight(0.15f)
                             )
                         }
                         Text(
@@ -545,8 +549,8 @@ fun ShopsItem(
                     !shop.status && shop.statusServer.toStatusModel() == StatusModel.NOT_CHANGE -> painterResource(
                         id = R.drawable.inactive_circle
                     )
-
                     shop.statusServer.toStatusModel() == StatusModel.UN_SYNC -> painterResource(id = R.drawable.unsync_circle)
+                    shop.statusServer.toStatusModel() == StatusModel.SYNC_FAILED -> painterResource(id = R.drawable.failed_sync_circle)
                     else -> painterResource(id = R.drawable.active_circle)
                 },
                 modifier = Modifier

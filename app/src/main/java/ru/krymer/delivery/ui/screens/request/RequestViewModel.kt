@@ -20,6 +20,7 @@ import ru.krymer.delivery.data.model.MessageModel
 import ru.krymer.delivery.data.model.RequestModel
 import ru.krymer.delivery.data.model.ShopModel
 import ru.krymer.delivery.data.model.ShopServerModel
+import ru.krymer.delivery.data.model.toRequest
 import ru.krymer.delivery.data.model.utilModel.StatusModel
 import ru.krymer.delivery.data.model.utilModel.TypePayModel
 import ru.krymer.delivery.data.model.utilModel.TypePayModel.ANOTHER
@@ -39,6 +40,7 @@ import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.ui.screens.shop.RequestUpdateType
 import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.isSameDay
+import ru.krymer.delivery.utills.toSafeDouble
 import java.io.IOException
 import java.net.UnknownHostException
 import javax.inject.Inject
@@ -87,23 +89,35 @@ class RequestViewModel @Inject constructor(
 
     override fun obtainEvent(event: RequestEvent) {
         when (event) {
-            is RequestEvent.ChangeBonusRequest -> updateRequestValue(
-                item = event.request,
-                value = event.bonus,
-                type = RequestUpdateType.BONUS,
-            )
+            is RequestEvent.ChangeBonusRequest -> {
+                launchCoroutine {
+                    updateRequestValue(
+                        requestToModify = event.request,
+                        value = event.bonus,
+                        type = RequestUpdateType.BONUS,
+                    )
+                }
+            }
 
-            is RequestEvent.ChangeCountRequest -> updateRequestValue(
-                item = event.request,
-                value = event.count,
-                type = RequestUpdateType.COUNT,
-            )
+            is RequestEvent.ChangeCountRequest -> {
+                launchCoroutine {
+                    updateRequestValue(
+                        requestToModify = event.request,
+                        value = event.count,
+                        type = RequestUpdateType.COUNT,
+                    )
+                }
+            }
 
-            is RequestEvent.ChangeExchangeRequest -> updateRequestValue(
-                item = event.request,
-                value = event.exchange,
-                type = RequestUpdateType.EXCHANGE,
-            )
+            is RequestEvent.ChangeExchangeRequest -> {
+                launchCoroutine {
+                    updateRequestValue(
+                        requestToModify = event.request,
+                        value = event.exchange,
+                        type = RequestUpdateType.EXCHANGE,
+                    )
+                }
+            }
 
             is RequestEvent.ChangeCash -> updateViewState { it.copy(getCash = event.cash) }
             is RequestEvent.ChangeNoCash -> updateViewState { it.copy(getNoCash = event.noCash) }
@@ -130,6 +144,7 @@ class RequestViewModel @Inject constructor(
             }
 
             RequestEvent.UpdateShop -> launchCoroutine { updateShop() }
+
             is RequestEvent.ChangeAddSum -> updateShopValue(
                 value = event.addSum,
                 type = ShopUpdateType.ADD_SUM
@@ -158,6 +173,21 @@ class RequestViewModel @Inject constructor(
                         updaterShop(shop = shop, status = false)
                     } ?: run {
                         sharedViewModel.message(message = "Ошибка сохранения магазина!")
+                    }
+                }
+            }
+
+            RequestEvent.ToggleStatusShop -> {
+                launchCoroutine {
+                    val user = sharedViewModel.viewState.value.user ?: return@launchCoroutine
+                    if (!user.isModOrAdminOrSys()) return@launchCoroutine
+                    val shop = viewState.value.shop?.copy(status = false, statusServer = StatusModel.NOT_CHANGE.toStr()) ?: return@launchCoroutine
+                    val response = updaterShop(shop = shop, status = false)
+                    if (response.success) {
+                        room.shopDao().insertShop(shop = shop)
+                        updateViewState { it.copy(shop = shop) }
+                    } else {
+                        sharedViewModel.message(response.message)
                     }
                 }
             }
@@ -238,7 +268,7 @@ class RequestViewModel @Inject constructor(
             val shop = viewState.value.shop
             val user = sharedViewModel.viewState.value.user
             if (shop != null && user != null) {
-                val num = value.toDoubleOrNull() ?: 0.0
+                val num = value.toSafeDouble()
                 val newShop = when (type) {
                     ShopUpdateType.ARREARS -> {
                         shop.copy(arrears = num, isChanged = !user.isSysOrAdmin())
@@ -274,7 +304,7 @@ class RequestViewModel @Inject constructor(
     private fun initRequest() {
         launchCoroutine {
             val shop = viewState.value.shop
-            if (shop != null) if (shop.status || shop.statusServer == StatusModel.UN_SYNC.toStr()) {
+            if (shop != null) if (shop.status || shop.statusServer == StatusModel.UN_SYNC.toStr() || shop.statusServer == StatusModel.SYNC_FAILED.toStr()) {
                 updateViewState { it.copy(toggleConfirmSaveShopDialog = true) }
             } else {
                 updateShop()
@@ -294,9 +324,9 @@ class RequestViewModel @Inject constructor(
             updateViewState {
                 it.copy(
                     typePay = nextType,
-                    getNoCash = if (nextType != CASH && currentShop.noCash > 0.0) currentShop.noCash.toInt()
+                    getNoCash = if (nextType != CASH) currentShop.noCash.toInt()
                         .toString() else "",
-                    getCash = if (nextType != NO_CASH && currentShop.cash > 0.0) currentShop.cash.toInt()
+                    getCash = if (nextType != NO_CASH) currentShop.cash.toInt()
                         .toString() else "",
                 )
             }
@@ -305,29 +335,33 @@ class RequestViewModel @Inject constructor(
 
     private fun switchStatePrice() {
         updateViewState { it.copy(isOldPrice = !viewState.value.isOldPrice) }
-        calculateOrder()
+        val requests = viewState.value.requests
+        calculateOrder(requests = requests)
     }
 
-    private fun updateRequestValue(item: RequestModel, value: String, type: RequestUpdateType) {
-        modifyRequestInCurrentShop(item) { req ->
+    private suspend fun updateRequestValue(requestToModify: RequestModel, value: String, type: RequestUpdateType) {
+        modifyRequestInCurrentShop(requestToModify) { request ->
             val v = value.trim().toIntOrNull() ?: 0
             val user = sharedViewModel.viewState.value.user
-            val status =
-                if (user != null) (!user.isSysOrAdmin() || req.status) else req.status
+            val status = when {
+                user == null -> request.status
+                user.isSysOrAdmin() -> request.status
+                else -> false
+            }
             when (type) {
-                RequestUpdateType.COUNT -> req.copy(
+                RequestUpdateType.COUNT -> request.copy(
                     count = v,
                     status = status,
                     statusServer = StatusModel.UN_SYNC.toStr()
                 )
 
-                RequestUpdateType.BONUS -> req.copy(
+                RequestUpdateType.BONUS -> request.copy(
                     bonus = v,
                     status = status,
                     statusServer = StatusModel.UN_SYNC.toStr()
                 )
 
-                RequestUpdateType.EXCHANGE -> req.copy(
+                RequestUpdateType.EXCHANGE -> request.copy(
                     exchange = v,
                     statusServer = StatusModel.UN_SYNC.toStr()
                 )
@@ -335,61 +369,71 @@ class RequestViewModel @Inject constructor(
         }
     }
 
+    private fun canModifyData(): Boolean {
+        val shop = viewState.value.shop ?: return false
+        val user = sharedViewModel.viewState.value.user ?: return false
+        return isSameDay(shop.date, System.currentTimeMillis()) || user.isModOrAdminOrSys()
+    }
+
     private suspend fun updateShop() {
-        val user = sharedViewModel.viewState.value.user
-        user?.let {
-            val shop = viewState.value.shop
-            if (shop != null) {
-                if (isSameDay(shop.date, System.currentTimeMillis()) || user.isModOrAdminOrSys()) {
-                    val currentChoiceTypePay = viewState.value.typePay
-                    val getCash = viewState.value.getCash
-                    val getNoCash = viewState.value.getNoCash
-                    val moneyCash =
-                        if (getCash.isEmpty() && currentChoiceTypePay == NO_CASH) 0.0 else getCash.toDouble()
-                    val moneyNoCash =
-                        if (getNoCash.isEmpty() && currentChoiceTypePay == CASH) 0.0 else getNoCash.toDouble()
-                    val isOldPriceProduct = viewState.value.isOldPrice
-                    val updateShop = shop.copy(
-                        statusServer = StatusModel.UN_SYNC.toStr(),
-                        status = false,
-                        typePay = currentChoiceTypePay.getStringByTypePay(),
-                        cash = moneyCash,
-                        noCash = moneyNoCash,
-                        isOldPrice = isOldPriceProduct
-                    )
-                    updateViewState { it.copy(shop = updateShop) }
-
-                    room.shopDao().insertShop(
-                        updateShop
-                    )
-
-                    updateViewState { it.copy(toggleConfirmSaveShopDialog = false) }
-
-                    val response = updaterShop(shop = updateShop, status = true)
-
-                    if (response.success) {
-                        withContext(Dispatchers.Main) {
-                            val requests = room.requestDao().getRequests(idShop = shop.id, idTrip = shop.idTrip)
-                            val sumOrder = requests.sumOf {
-                                it.count * it.price - it.exchange * (if (shop.isOldPrice) it.oldPrice else it.price)
-                            }
-                            val arrear = (sumOrder + shop.arrears + shop.addSum) - (shop.cash + shop.noCash)
-                            updateClient(shop.copy(arrears = arrear))
-                            updateShop.copy(statusServer = StatusModel.SYNC.toStr(), status = true)
-                                .let { s ->
-                                    room.shopDao().insertShop(s)
-                                    updateViewState { it.copy(shop = s) }
-                                }
-                            sharedViewModel.backFromScreen()
-                        }
-                    } else {
-                        sharedViewModel.message(response.message)
-                    }
-                }
-            } else {
-                sharedViewModel.message(Constants.ERROR.RESRTRAINT)
-            }
+        if (!canModifyData()) {
+            sharedViewModel.message(Constants.ERROR.RESRTRAINT)
+            return
         }
+
+        val originalShop = viewState.value.shop ?: return
+
+
+        try {
+            val currentChoiceTypePay = viewState.value.typePay
+            val getCash = viewState.value.getCash
+            val getNoCash = viewState.value.getNoCash
+            val moneyCash =
+                if (getCash.isEmpty() && currentChoiceTypePay == NO_CASH) 0.0 else getCash.toDouble()
+            val moneyNoCash =
+                if (getNoCash.isEmpty() && currentChoiceTypePay == CASH) 0.0 else getNoCash.toDouble()
+            val isOldPriceProduct = viewState.value.isOldPrice
+            val updateShop = originalShop.copy(
+                statusServer = StatusModel.UN_SYNC.toStr(),
+                status = false,
+                typePay = currentChoiceTypePay.getStringByTypePay(),
+                cash = moneyCash,
+                noCash = moneyNoCash,
+                isOldPrice = isOldPriceProduct
+            )
+
+            updateViewState { it.copy(shop = updateShop, toggleConfirmSaveShopDialog = false) }
+
+            room.shopDao().insertShop(
+                updateShop
+            )
+
+            val response = updaterShop(shop = updateShop, status = true)
+
+            if (response.success) {
+                val finalShop = updateShop.copy(
+                    statusServer = StatusModel.SYNC.toStr(),
+                    status = true
+                )
+                room.shopDao().insertShop(shop = finalShop)
+                updateViewState { it.copy(shop = finalShop) }
+            } else {
+                sharedViewModel.message(response.message)
+            }
+
+            val requests = room.requestDao().getRequests(idShop = updateShop.id, idTrip = updateShop.idTrip)
+            val sumOrder = requests.sumOf {
+                it.count * it.price - it.exchange * (if (updateShop.isOldPrice) it.oldPrice else it.price)
+            }
+            val arrear = (sumOrder + updateShop.arrears + updateShop.addSum) - (updateShop.cash + updateShop.noCash)
+            updateClient(updateShop.copy(arrears = arrear))
+        } catch (e: Exception) {
+            sharedViewModel.message("Ошибка доставки на сервер данных магазина!")
+            throw e
+        } finally {
+            sharedViewModel.backFromScreen()
+        }
+
     }
 
     private suspend fun updaterShop(shop: ShopModel, status: Boolean): BaseResponse<ShopModel> {
@@ -416,8 +460,8 @@ class RequestViewModel @Inject constructor(
     }
 
     private suspend fun updateClient(shop: ShopModel) {
-        shop.apply {
-            val responseGetClient = clientApi.getClientById(id = id)
+        shop.let {
+            val responseGetClient = clientApi.getClientById(id = shop.id)
             if (responseGetClient.success) {
                 val client = responseGetClient.obj
                 if (client != null ) {
@@ -429,7 +473,7 @@ class RequestViewModel @Inject constructor(
                         phone = client.phone,
                         cord = client.cord,
                         counter = client.counter,
-                        arrears = arrears,
+                        arrears = shop.arrears,
                         date = client.date
                     )
                     val response = clientApi.update(request)
@@ -442,73 +486,75 @@ class RequestViewModel @Inject constructor(
     }
 
 
-    private fun modifyRequestInCurrentShop(
-        item: RequestModel,
+    private suspend fun modifyRequestInCurrentShop(
+        requestToModify: RequestModel,
         transform: (RequestModel) -> RequestModel
     ) {
-        launchCoroutine {
-            val requests = viewState.value.requests.map { it.copy() }.toMutableList()
-            val reqIndex = requests.indexOfFirst { it.id == item.id }
-            if (reqIndex == -1) return@launchCoroutine
-
-            val newRequest = transform(item)
-            requests[reqIndex] = newRequest
-
-            updateViewState {
-                it.copy(
-                    requests = requests,
-                )
-            }
-
-            calculateOrder()
-
-            updateRequest(newRequest)
+        val requests = viewState.value.requests
+        val reqIndex = requests.indexOfFirst { it.id == requestToModify.id }
+        if (reqIndex == -1) {
+            sharedViewModel.message("Заявка не найдена")
+            return
         }
+
+        val currentRequest = requests[reqIndex]
+
+        val newRequest = transform(currentRequest)
+
+        val newRequests = requests.toMutableList().apply {
+            set(reqIndex, newRequest)
+        }
+
+        updateViewState {
+            it.copy(
+                requests = newRequests,
+            )
+        }
+
+        calculateOrder(requests = newRequests)
+        updateRequest(newRequest)
     }
 
-    private fun updateRequest(request: RequestModel) {
-        launchCoroutine {
-            val shop = viewState.value.shop ?: return@launchCoroutine
-            val user = sharedViewModel.viewState.value.user ?: return@launchCoroutine
+    private suspend fun updateRequest(request: RequestModel) {
+        val shop = viewState.value.shop ?: return sharedViewModel.message(message = "Ошибка, магазин не найден!")
+        val user = sharedViewModel.viewState.value.user ?: return sharedViewModel.message(message = "Ошибка, пользователь не найден!")
 
-            if (isSameDay(shop.date, System.currentTimeMillis()) || user.isModOrAdminOrSys()) {
+        val isAllowed = isSameDay(shop.date, System.currentTimeMillis()) || user.isModOrAdminOrSys()
+        if (!isAllowed) {
+            sharedViewModel.message(Constants.ERROR.RESRTRAINT)
+            return
+        }
 
-                room.requestDao()
-                    .upsertRequest(request = request.copy(statusServer = StatusModel.UN_SYNC.toStr()))
+        val currentRequests = viewState.value.requests
+        val currentRequest = currentRequests.find { it.id == request.id }
+            ?: return sharedViewModel.message("Заявка не найдена")
 
-                launchCoroutine {
-                    val reqResponse = RequestShopRequest(
-                        id = request.id,
-                        idShop = request.idShop,
-                        idTrip = request.idTrip,
-                        idFactory = request.idFactory,
-                        count = request.count,
-                        bonus = request.bonus,
-                        status = request.status,
-                        exchange = request.exchange,
-                        price = request.price,
-                        oldPrice = request.oldPrice,
-                        name = request.name,
-                        counter = request.counter
-                    )
+        val updatingRequest = currentRequest.copy(statusServer = StatusModel.UN_SYNC.toStr())
+        room.requestDao().upsertRequest(request = updatingRequest)
 
-                    val response = requestApi.update(reqResponse)
 
-                    if (!response.success) {
-                        sharedViewModel.message(response.message)
-                    } else {
-                        room.requestDao()
-                            .upsertRequest(request = request.copy(statusServer = StatusModel.SYNC.toStr()))
-                        val updatedList = viewState.value.requests.map { it.copy() }.toMutableList()
-                        val index = updatedList.indexOfFirst { it.id == request.id }
-                        updatedList[index] = request.copy(statusServer = StatusModel.SYNC.toStr())
-                        updateViewState { it.copy(requests = updatedList) }
-                        calculateOrder()
+        try {
+            val response = requestApi.update(updatingRequest.toRequest())
+            if (response.success) {
+                val syncedRequest = updatingRequest.copy(statusServer = StatusModel.SYNC.toStr())
+                room.requestDao().upsertRequest(syncedRequest)
+
+                updateViewState { currentState ->
+                    val updatedRequests = currentState.requests.map { req ->
+                        if (req.id == syncedRequest.id) syncedRequest else req
                     }
+                    currentState.copy(requests = updatedRequests)
                 }
             } else {
-                sharedViewModel.message(Constants.ERROR.RESRTRAINT)
+                val failedRequest = updatingRequest.copy(statusServer = StatusModel.SYNC_FAILED.toStr())
+                room.requestDao().upsertRequest(failedRequest)
+                sharedViewModel.message(response.message)
             }
+        } catch (e: Exception) {
+            val failedRequest = updatingRequest.copy(statusServer = StatusModel.SYNC_FAILED.toStr())
+            room.requestDao().upsertRequest(failedRequest)
+            sharedViewModel.message("Сетевая ошибка!")
+            throw e
         }
     }
 
@@ -520,16 +566,16 @@ class RequestViewModel @Inject constructor(
     private suspend fun getLocalData(shop: ShopModel) {
         val requests = room.requestDao().getRequests(idTrip = shop.idTrip, idShop = shop.id)
             .sortedBy { it.counter }
+
         updateViewState { it.copy(requests = requests) }
-        calculateOrder()
+        calculateOrder(requests = requests)
     }
 
-    private fun calculateOrder() {
-        val list = viewState.value.requests
+    private fun calculateOrder(requests: List<RequestModel>) {
         val isOldPrice = viewState.value.isOldPrice
 
         var money = 0.0
-        list.forEach {
+        requests.forEach {
             money += it.count * it.price - it.exchange * (if (isOldPrice) it.oldPrice else it.price)
         }
         updateViewState { it.copy(orderMoney = money) }

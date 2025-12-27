@@ -59,6 +59,10 @@ fun InfoContentProductItem(product: RequestModel, state: ShopViewState) {
                 color = AppTheme.colors.onSecondary,
                 modifier = Modifier.weight(0.15f)
             )
+        } else {
+            Spacer(
+                modifier = Modifier.weight(0.15f)
+            )
         }
         Text(
             style = AppTheme.typography.bodySmall,

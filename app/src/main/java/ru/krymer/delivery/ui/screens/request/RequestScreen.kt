@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import kotlinx.coroutines.delay
 import ru.krymer.delivery.data.model.ShopModel
 import ru.krymer.delivery.ui.components.CommonDeleteDialog
 import ru.krymer.delivery.ui.components.CommonInfoAlertDialog
@@ -21,6 +22,7 @@ import ru.krymer.delivery.ui.screens.request.view.RequestView
 fun RequestScreen(shop: ShopModel, shops: List<ShopModel>) {
     val viewModel = hiltViewModel<RequestViewModel>()
     LaunchedEffect(Unit) {
+        delay(200)
         viewModel.initData(shop = shop, shops = shops)
     }
     RequestViews(

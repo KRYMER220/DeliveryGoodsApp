@@ -47,4 +47,5 @@ sealed class RequestEvent {
 
     object ToggleListShops: RequestEvent()
     object PreSaveShop: RequestEvent()
+    object ToggleStatusShop: RequestEvent()
 }

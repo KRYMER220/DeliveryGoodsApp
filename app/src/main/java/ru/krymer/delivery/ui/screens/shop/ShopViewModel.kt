@@ -220,7 +220,9 @@ class ShopViewModel @Inject constructor(
             }
 
             is OpenInfoShopDialog -> {
-                getDataInfoShop(event.shop)
+                launchCoroutine {
+                    getDataInfoShop(event.shop)
+                }
                 state.copy(currentShop = event.shop, listCurrentShopInfo = emptyList())
             }
 
@@ -244,14 +246,14 @@ class ShopViewModel @Inject constructor(
             }
 
             ShowAddDialogShopAllRoutes -> {
-                _events.emit(ShopEvent.ProductsRequestLoaded(products = state.products.filter { p -> p.isActive }
+                _events.emit(ProductsRequestLoaded(products = state.products.filter { p -> p.isActive }
                     .map { p -> p.copy() }))
                 getAllDataClient()
                 state.copy(toggleAddDialog = true)
             }
 
             ShowAddDialogShopCurrentRoute -> {
-                _events.emit(ShopEvent.ProductsRequestLoaded(products = state.products.filter { p -> p.isActive }
+                _events.emit(ProductsRequestLoaded(products = state.products.filter { p -> p.isActive }
                     .map { p -> p.copy() }))
                 getDataClientCurrentRoute()
                 state.copy(toggleAddDialog = true)
@@ -432,7 +434,7 @@ class ShopViewModel @Inject constructor(
                     getDataShops(trip = trip)
                 }
             } else {
-                room.tripDao().upsertTrip(trip)
+                room.tripDao().upsertTrip(trip.copy(isLoaded = true))
                 getDataShops(trip = trip)
                 when (val response = repository.getTrip(trip.id)) {
                     is MyResult.Error -> _events.emit(Error(message = "Не удалось обновить рейс!"))
@@ -459,7 +461,7 @@ class ShopViewModel @Inject constructor(
                     is MyResult.Success -> {
                         val newTrip = response.data
                             ?: return _events.emit(Error(message = "Данные о рейсе не найдены!"))
-                        room.tripDao().upsertTrip(newTrip)
+                        room.tripDao().upsertTrip(newTrip.copy(isLoaded = true))
                         _events.emit(SaveCurrentTrip(trip = newTrip))
                     }
                 }
@@ -494,7 +496,7 @@ class ShopViewModel @Inject constructor(
             for (local in shops) {
                 ensureActive()
                 var shop = local
-                if (shop.statusServer.toStatusModel() == StatusModel.UN_SYNC) {
+                if (shop.statusServer.toStatusModel() == StatusModel.UN_SYNC || shop.statusServer.toStatusModel() == StatusModel.SYNC_FAILED) {
                     val shopReq = ShopRequest(
                         id = shop.id,
                         idTrip = shop.idTrip,
@@ -518,7 +520,13 @@ class ShopViewModel @Inject constructor(
                             room.shopDao().insertShop(shop)
                         }
 
-                        is MyResult.Error -> sharedViewModel.message("Ошибка обновления магазина!")
+                        is MyResult.Error -> {
+                            sharedViewModel.message("Ошибка обновления магазина!")
+                            shop = shop.copy(
+                                status = false, statusServer = StatusModel.SYNC_FAILED.toStr()
+                            )
+                            room.shopDao().insertShop(shop)
+                        }
                     }
                 }
 
@@ -529,7 +537,7 @@ class ShopViewModel @Inject constructor(
 
                 for (req in requests) {
                     ensureActive()
-                    if (req.statusServer.toStatusModel() == StatusModel.UN_SYNC) {
+                    if (req.statusServer.toStatusModel() == StatusModel.UN_SYNC || req.statusServer.toStatusModel() == StatusModel.SYNC_FAILED) {
                         val reqReq = RequestShopRequest(
                             id = req.id,
                             idShop = req.idShop,
@@ -545,7 +553,11 @@ class ShopViewModel @Inject constructor(
                             counter = req.counter
                         )
                         when (repository.updateRequest(request = reqReq)) {
-                            is MyResult.Error -> _events.emit(Error(message = "Ошибка обновления заявки"))
+                            is MyResult.Error -> {
+                                room.requestDao()
+                                    .upsertRequest(req.copy(statusServer = StatusModel.SYNC_FAILED.toStr()))
+                                _events.emit(Error(message = "Ошибка обновления заявки"))
+                            }
                             is MyResult.Success -> room.requestDao()
                                 .upsertRequest(req.copy(statusServer = StatusModel.SYNC.toStr()))
                         }
@@ -595,7 +607,6 @@ class ShopViewModel @Inject constructor(
                     val clients = response.data.filterNot { p -> list.any { pr -> pr.id == p.id } }
                         .sortedBy { s -> s.name }
                     _events.emit(ClientsLoaded(clients = clients))
-                    changeClient(client = clients[0])
                 }
             }
         }
@@ -613,7 +624,6 @@ class ShopViewModel @Inject constructor(
                     val clients = response.data.filterNot { p -> list.any { pr -> pr.id == p.id } }
                         .sortedBy { s -> s.counter }
                     _events.emit(ClientsLoaded(clients = clients))
-                    changeClient(client = clients[0])
                 }
             }
         }
@@ -702,10 +712,10 @@ class ShopViewModel @Inject constructor(
                                     StatusModel.NOT_CHANGE -> StatusModel.NOT_CHANGE.toStr()
                                     StatusModel.SYNC -> StatusModel.SYNC.toStr()
                                     StatusModel.UN_SYNC -> StatusModel.UN_SYNC.toStr()
+                                    StatusModel.SYNC_FAILED -> StatusModel.SYNC_FAILED.toStr()
                                 }
                             ))
                         }
-
                     } else {
                         requestsToInsert.add(serverRequest)
                     }
@@ -761,7 +771,6 @@ class ShopViewModel @Inject constructor(
         val messages = getMessages(client.id)
         _events.emit(MessageLoaded(messages = messages))
         _events.emit(ShopsForCreateShopLoaded(shops = shops))
-
     }
 
     private suspend fun getMessages(id: Long): List<MessageModel> {
@@ -802,7 +811,6 @@ class ShopViewModel @Inject constructor(
                 is MyResult.Error -> _events.emit(Error(message = "Ошибка получения клиента!"))
                 is MyResult.Success -> {
                     val client = response.data ?: return
-                    saveShop()
                     saveCopyRequest(shop = shop, client = client)
                 }
             }
@@ -842,70 +850,126 @@ class ShopViewModel @Inject constructor(
         }
     }
 
-    private fun saveCopyRequest(shop: ShopServerModel, client: ClientModel) {
-        launchCoroutine {
-            val trip = viewState.value.currentTrip
-            trip?.let { trip ->
-                val listRequest = shop.listRequest.map { it.copy(exchange = 0, status = false) }
-                val hasBonus = listRequest.any { it.bonus > 0 }
-                val shops = viewState.value.shops.map { it.copy() }.toMutableList()
-                shop.listRequest = listRequest.sortedBy { it.counter }
-                shop.isBonus = hasBonus
-                shop.status = false
-                shop.date = trip.date
-                shop.arrears = client.arrears
-                shop.isOldPrice = false
-                shop.noCash = 0.0
-                shop.cash = 0.0
-                shop.addSum = 0.0
-                shop.typePay = TypePayModel.CASH
-                shop.idTrip = trip.id
-                shop.isChanged = false
-                listRequest.forEach { product ->
-                    product.apply {
-                        val reqResponse = RequestShopRequest(
-                            id = id,
-                            idShop = shop.id,
-                            idTrip = shop.idTrip,
-                            idFactory = product.idFactory,
-                            count = product.count,
-                            bonus = product.bonus,
-                            status = false,
-                            exchange = product.exchange,
-                            price = product.price,
-                            oldPrice = product.oldPrice,
-                            name = product.name,
-                            counter = product.counter
-                        )
-                        when (repository.createRequest(reqResponse)) {
-                            is MyResult.Error -> _events.emit(Error(message = "Ошибка создания заявки!"))
-                            is MyResult.Success -> {
-                                val requestModel = RequestModel(
-                                    id = product.id,
-                                    idShop = shop.id,
-                                    idTrip = shop.idTrip,
-                                    idFactory = shop.idFactory,
-                                    count = product.count,
-                                    bonus = product.bonus,
-                                    status = false,
-                                    exchange = product.exchange,
-                                    price = product.price,
-                                    oldPrice = product.oldPrice,
-                                    name = product.name,
-                                    counter = product.counter
-                                )
-                                room.requestDao().upsertRequest(requestModel)
-                            }
-                        }
-                    }
+    private suspend fun saveCopyRequest(shop: ShopServerModel, client: ClientModel) {
+        val trip = viewState.value.currentTrip
+        trip?.let {
+            val newShop = createShopFromCopy(oldShop = shop, client = client, currentTrip = trip)
+
+            val listRequest = shop.listRequest.map { request ->
+                request.copy(
+                    exchange = 0,
+                    status = false,
+                    id = request.id,
+                    idShop = newShop.id,
+                    idTrip = trip.id
+                )
+            }
+
+            val hasBonus = listRequest.any { it.bonus > 0 }
+            val updatedShop = newShop.toServerModel().copy(
+                listRequest = listRequest.sortedBy { it.counter },
+                isBonus = hasBonus,
+                status = false,
+                date = trip.date,
+                arrears = client.arrears,
+                isOldPrice = false,
+                noCash = 0.0,
+                cash = 0.0,
+                addSum = 0.0,
+                typePay = TypePayModel.CASH,
+                isChanged = false
+            )
+            saveRequestsForCopiedShop(listRequest, updatedShop)
+            updateUiWithNewShop(updatedShop, client)
+        }
+    }
+
+    private suspend fun updateUiWithNewShop(
+        shop: ShopServerModel,
+        client: ClientModel
+    ) {
+        val shops = viewState.value.shops.map { it.copy() }.toMutableList()
+        val updatedShop = shop.toUiModel()
+
+        val existingIndex = shops.indexOfFirst {
+            it.id == shop.id && it.idTrip == shop.idTrip
+        }
+
+        if (existingIndex != -1) {
+            shops[existingIndex] = updatedShop
+        } else {
+            shops.add(updatedShop)
+        }
+        obtainEvent(DismissAddDialog)
+        _events.emit(ShopsForCreateShopLoaded(shops = emptyList()))
+        _events.emit(ShopsLoaded(shops = shops.sortedBy { s -> s.counter }))
+        _events.emit(ClientsLoaded(clients = viewState.value.clients - client))
+    }
+
+    private suspend fun saveRequestsForCopiedShop(
+        requests: List<RequestModel>,
+        shop: ShopServerModel
+    ) {
+        requests.forEach { request ->
+            val reqResponse = RequestShopRequest(
+                id = request.id,
+                idShop = shop.id,
+                idTrip = shop.idTrip,
+                idFactory = request.idFactory,
+                count = request.count,
+                bonus = request.bonus,
+                status = false,
+                exchange = request.exchange,
+                price = request.price,
+                oldPrice = request.oldPrice,
+                name = request.name,
+                counter = request.counter,
+            )
+
+            when (repository.createRequest(reqResponse)) {
+                is MyResult.Success -> {
+                    val req = request.copy(
+                        idShop = shop.id,
+                        idTrip = shop.idTrip,
+                    )
+                    room.requestDao().upsertRequest(request = req)
                 }
-                val existingIndex = shops.indexOfFirst { it.id == shop.id }
-                if (existingIndex != -1) {
-                    shops[existingIndex] = shop.toUiModel()
-                } else {
-                    shops.add(shop.toUiModel())
+                is MyResult.Error -> {
+                    _events.emit(Error(message = "Ошибка создания заявки!"))
+                    return
                 }
-                _events.emit(ShopsLoaded(shops = shops.sortedBy { s -> s.counter }))
+            }
+        }
+    }
+
+    private suspend fun createShopFromCopy(
+        oldShop: ShopServerModel,
+        client: ClientModel,
+        currentTrip: TripModel
+    ): ShopModel {
+        val shopRequest = ShopRequest(
+            id = oldShop.id,
+            idTrip = currentTrip.id,
+            idFactory = currentTrip.idFactory,
+            arrears = client.arrears,
+            date = currentTrip.date,
+            counter = client.counter,
+            isOldPrice = false,
+            nameShop = client.name,
+            cord = client.cord,
+            addSum = 0.0,
+            cash = 0.0,
+            status = false,
+            isChanged = false
+        )
+
+        return when (val response = repository.create(shop = shopRequest)) {
+            is MyResult.Error -> {
+                _events.emit(Error(message = "Ошибка создания магазина при копировании!"))
+                throw Exception("Ошибка создания магазина при копировании!")
+            }
+            is MyResult.Success -> {
+                response.data ?: throw Exception("Повторите снова")
             }
         }
     }
@@ -1100,22 +1164,28 @@ class ShopViewModel @Inject constructor(
         }
     }
 
-    private fun getDataInfoShop(curShop: ShopModel) {
-        launchCoroutine {
-            val localList = room.shopDao().getShopsById(id = curShop.id).map { it.toServerModel() }
-                .sortedByDescending { it.date }
-            val request =
-                room.requestDao().getRequests(idShop = curShop.id, idTrip = curShop.idTrip)
-            _events.emit(ShopsForCreateShopLoaded(shops = localList.map { it.copy(listRequest = request) }))
-            when (val response = repository.getCurrentShopsByFactory(
-                id = curShop.id,
-                idFactory = curShop.idFactory
-            )) {
-                is MyResult.Error -> _events.emit(Error(message = "Ошибка получения магазинов!"))
-                is MyResult.Success -> {
-                    val list = response.data
-                    _events.emit(ShopsForCreateShopLoaded(shops = list))
-                }
+    private suspend fun getDataInfoShop(curShop: ShopModel) {
+        val localShops = room.shopDao().getShopsById(id = curShop.id)
+            .sortedByDescending { it.date }
+
+        val shopsWithRequests = localShops.map { shop ->
+            val requests = room.requestDao().getRequests(
+                idShop = shop.id,
+                idTrip = shop.idTrip
+            )
+            shop.toServerModel().copy(listRequest = requests)
+        }
+        when (val response = repository.getCurrentShopsByFactory(
+            id = curShop.id,
+            idFactory = curShop.idFactory
+        )) {
+            is MyResult.Error -> {
+                _events.emit(ShopsForCreateShopLoaded(shops = shopsWithRequests))
+                _events.emit(Error(message = "Ошибка получения магазинов!"))
+            }
+            is MyResult.Success -> {
+                val newShops = response.data
+                _events.emit(ShopsForCreateShopLoaded(shops = newShops))
             }
         }
     }

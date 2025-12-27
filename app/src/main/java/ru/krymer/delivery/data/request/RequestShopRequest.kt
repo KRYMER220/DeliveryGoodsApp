@@ -1,5 +1,7 @@
 package ru.krymer.delivery.data.request
 
+import ru.krymer.delivery.data.model.RequestModel
+
 data class RequestShopRequest(
     val id: Long,
     val idShop: Long,
