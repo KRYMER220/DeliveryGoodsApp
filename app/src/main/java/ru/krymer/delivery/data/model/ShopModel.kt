@@ -48,6 +48,7 @@ data class ShopServerModel(
     var listRequest: List<RequestModel>,
     var isBonus: Boolean,
     var isChanged: Boolean,
+    var nameCourier: String = ""
 )
 
 data class ShopUIModel(

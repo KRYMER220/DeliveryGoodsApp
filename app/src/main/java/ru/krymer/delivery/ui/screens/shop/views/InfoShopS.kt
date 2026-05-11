@@ -31,8 +31,11 @@ import androidx.compose.ui.unit.sp
 import ru.krymer.delivery.R
 import ru.krymer.delivery.data.model.RequestModel
 import ru.krymer.delivery.data.model.ShopServerModel
+import ru.krymer.delivery.data.model.TripModel
 import ru.krymer.delivery.data.model.utilModel.TypePayModel
 import ru.krymer.delivery.ui.components.CustomCircularProgressIndicator
+import ru.krymer.delivery.ui.screens.shop.ShopViewModel
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent
 import ru.krymer.delivery.ui.theme.AppTheme
 import ru.krymer.delivery.utills.convertToTextDate
 
@@ -47,7 +50,6 @@ fun InfoShopContent(shops: List<ShopServerModel>) {
                 var cash by remember { mutableStateOf(shop.cash.toInt().toString()) }
                 var noCash by remember { mutableStateOf(shop.noCash.toInt().toString()) }
                 val typePayState = shop.typePay
-
                 Column(
                     modifier = Modifier.background(
                         colorResource(id = R.color.tint),
@@ -56,13 +58,14 @@ fun InfoShopContent(shops: List<ShopServerModel>) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
+                    Spacer(modifier = Modifier.height(5.dp))
+                  //  TODO("Сделать отображение имени курьера!! Нужно трогать сервер и добавлять в обьект магазина имя")
                     Text(
                         style = AppTheme.typography.titleSmall,
                         text = convertToTextDate(shop.date),
                         color = AppTheme.colors.onSecondary,
                         textAlign = TextAlign.Center,
                     )
-
                     Text(
                         style = AppTheme.typography.titleMedium,
                         text = shop.nameShop,

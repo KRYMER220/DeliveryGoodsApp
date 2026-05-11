@@ -9,12 +9,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Card
@@ -118,7 +120,7 @@ fun KeyBoardDialog(
                         CommonButton(onClick = { setNumber(0) }, text = "0")
                     }
                     Spacer(modifier = Modifier.height(7.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         CommonTextField(
                             modifier = Modifier.weight(0.5f),
                             value = count,
@@ -131,16 +133,22 @@ fun KeyBoardDialog(
                             ),
                             textStyle = AppTheme.typography.titleMedium
                         )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Image(
-                            painter = painterResource(R.drawable.submit),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .background(AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp))
-                                .size(60.dp)
-                                .weight(0.5f)
-                                .clickable(onClick = { setNumber(count.toInt()) })
-                        )
+
+                        Column(modifier = Modifier.height(76.dp).weight(0.5f),verticalArrangement = Arrangement.Center) {
+                            Text(
+                                text = "",
+                                color = AppTheme.colors.onSecondary,
+                                style = AppTheme.typography.bodySmall,
+                                modifier = Modifier.padding(3.dp)
+                            )
+                            Box(modifier = Modifier.height(60.dp).background(AppTheme.colors.secondary, shape = RoundedCornerShape(10.dp)).fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Image(
+                                    painter = painterResource(R.drawable.submit),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(50.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }

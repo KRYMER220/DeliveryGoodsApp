@@ -396,68 +396,82 @@ fun OnceItemShop(state: RequestViewState, event: (RequestEvent) -> Unit) {
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.spacedBy(5.dp)
                                         ) {
-                                            CommonTextField(
-                                                value = cash,
-                                                placeholder = stringResource(R.string.cash),
-                                                modifier = Modifier.weight(0.333f),
-                                                changerText = { newValue ->
-                                                    cash = newValue
-                                                    errorCash = when {
-                                                        newValue == "" -> Error(
-                                                            visible = true,
-                                                            error = errorEmpty
-                                                        )
-
-                                                        else -> {
-                                                            event(
-                                                                RequestEvent.ChangeCash(
-                                                                    newValue
-                                                                )
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(0.333f)) {
+                                                Text(
+                                                    style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
+                                                    text = stringResource(R.string.cash),
+                                                    color = AppTheme.colors.onSecondary
+                                                )
+                                                CommonTextField(
+                                                    value = cash,
+                                                    placeholder = stringResource(R.string.cash),
+                                                    modifier = Modifier,
+                                                    changerText = { newValue ->
+                                                        cash = newValue
+                                                        errorCash = when {
+                                                            newValue == "" -> Error(
+                                                                visible = true,
+                                                                error = errorEmpty
                                                             )
-                                                            Error()
-                                                        }
-                                                    }
-                                                },
-                                                keyboardOptions = KeyboardOptions(
-                                                    keyboardType = KeyboardType.Number,
-                                                    imeAction = ImeAction.Done
-                                                ),
-                                                textStyle = AppTheme.typography.titleLarge,
-                                                isError = errorCash.visible,
-                                                errorValue = errorCash.error,
-                                                autoClearFocus = true
-                                            )
-                                            CommonTextField(
-                                                value = noCash,
-                                                placeholder = stringResource(R.string.noCash),
-                                                modifier = Modifier.weight(0.333f),
-                                                changerText = { newValue ->
-                                                    noCash = newValue
-                                                    errorNoCash = when {
-                                                        newValue == "" -> Error(
-                                                            visible = true,
-                                                            error = errorEmpty
-                                                        )
 
-                                                        else -> {
-                                                            event(
-                                                                RequestEvent.ChangeNoCash(
-                                                                    newValue
+                                                            else -> {
+                                                                event(
+                                                                    RequestEvent.ChangeCash(
+                                                                        newValue
+                                                                    )
                                                                 )
-                                                            )
-                                                            Error()
+                                                                Error()
+                                                            }
                                                         }
-                                                    }
-                                                },
-                                                keyboardOptions = KeyboardOptions(
-                                                    keyboardType = KeyboardType.Number,
-                                                    imeAction = ImeAction.Done
-                                                ),
-                                                textStyle = AppTheme.typography.titleLarge,
-                                                isError = errorNoCash.visible,
-                                                errorValue = errorNoCash.error,
-                                                autoClearFocus = true
-                                            )
+                                                    },
+                                                    keyboardOptions = KeyboardOptions(
+                                                        keyboardType = KeyboardType.Number,
+                                                        imeAction = ImeAction.Done
+                                                    ),
+                                                    textStyle = AppTheme.typography.titleLarge,
+                                                    isError = errorCash.visible,
+                                                    errorValue = errorCash.error,
+                                                    autoClearFocus = true
+                                                )
+                                            }
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(0.333f)) {
+                                                Text(
+                                                    style = AppTheme.typography.bodySmall.copy(fontSize = (AppTheme.typography.bodySmall.fontSize.value - 2).sp),
+                                                    text = stringResource(R.string.noCash),
+                                                    color = AppTheme.colors.onSecondary
+                                                )
+                                                CommonTextField(
+                                                    value = noCash,
+                                                    placeholder = stringResource(R.string.noCash),
+                                                    modifier = Modifier,
+                                                    changerText = { newValue ->
+                                                        noCash = newValue
+                                                        errorNoCash = when {
+                                                            newValue == "" -> Error(
+                                                                visible = true,
+                                                                error = errorEmpty
+                                                            )
+
+                                                            else -> {
+                                                                event(
+                                                                    RequestEvent.ChangeNoCash(
+                                                                        newValue
+                                                                    )
+                                                                )
+                                                                Error()
+                                                            }
+                                                        }
+                                                    },
+                                                    keyboardOptions = KeyboardOptions(
+                                                        keyboardType = KeyboardType.Number,
+                                                        imeAction = ImeAction.Done
+                                                    ),
+                                                    textStyle = AppTheme.typography.titleLarge,
+                                                    isError = errorNoCash.visible,
+                                                    errorValue = errorNoCash.error,
+                                                    autoClearFocus = true
+                                                )
+                                            }
                                         }
                                         Box(
                                             modifier = Modifier.fillMaxWidth(),

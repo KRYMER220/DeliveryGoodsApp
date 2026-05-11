@@ -29,6 +29,8 @@ import ru.krymer.delivery.data.model.utilModel.TypePayModel.NO_CASH
 import ru.krymer.delivery.data.model.utilModel.getStringByTypePay
 import ru.krymer.delivery.data.model.utilModel.getTypePayByString
 import ru.krymer.delivery.data.model.utilModel.toStr
+import ru.krymer.delivery.data.repository.MessageRepository
+import ru.krymer.delivery.data.repositoryImpl.MessageRepositoryImpl
 import ru.krymer.delivery.data.request.ClientRequest
 import ru.krymer.delivery.data.request.CreateMessage
 import ru.krymer.delivery.data.request.RequestShopRequest
@@ -38,11 +40,18 @@ import ru.krymer.delivery.ui.screens.request.models.RequestEvent
 import ru.krymer.delivery.ui.screens.request.models.RequestViewState
 import ru.krymer.delivery.ui.screens.shared.SharedViewModel
 import ru.krymer.delivery.ui.screens.shop.RequestUpdateType
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.Error
+import ru.krymer.delivery.ui.screens.shop.models.ShopEvent.MessageLoaded
 import ru.krymer.delivery.utills.Constants
+import ru.krymer.delivery.utills.MyResult
 import ru.krymer.delivery.utills.isSameDay
+import ru.krymer.delivery.utills.toLocalDate
 import ru.krymer.delivery.utills.toSafeDouble
 import java.io.IOException
 import java.net.UnknownHostException
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -55,7 +64,7 @@ class RequestViewModel @Inject constructor(
     private val shopApi: ShopApi,
     private val room: AppDatabase,
     private val clientApi: ClientApi,
-    private val messageApi: MessageApi,
+    private val messageRepository: MessageRepositoryImpl,
 ) : ViewModel(), EventHandler<RequestEvent> {
 
     private val _viewState = MutableStateFlow(RequestViewState())
@@ -251,16 +260,27 @@ class RequestViewModel @Inject constructor(
             val obj = CreateMessage(
                 idClient = shop.id, text = message, date = System.currentTimeMillis()
             )
-            messageApi.add(message = obj)
-            val messages = getMessages(shop.id)
-            updateViewState { it.copy(messages = messages) }
+            when (messageRepository.add(message = obj)) {
+                is MyResult.Error -> {
+                    obtainEvent(RequestEvent.ToggleMessageDialog)
+                    sharedViewModel.message(message = "Ошибка создания сообщения!")
+                }
+                is MyResult.Success -> {
+                    val messages = getMessages(shop.id)
+                    updateViewState { it.copy(messages = messages) }
+                }
+            }
         }
     }
 
     private suspend fun deleteMessage(message: MessageModel) {
-        messageApi.delete(message.id)
-        val list = viewState.value.messages - message
-        updateViewState { it.copy(messages = list) }
+        when (messageRepository.delete(message.id)) {
+            is MyResult.Error -> sharedViewModel.message(message = "Ошибка удаления сообщения!")
+            is MyResult.Success -> {
+                val list = viewState.value.messages - message
+                updateViewState { it.copy(messages = list) }
+            }
+        }
     }
 
     private fun updateShopValue(value: String, type: ShopUpdateType) {
@@ -559,8 +579,15 @@ class RequestViewModel @Inject constructor(
     }
 
     private suspend fun getMessages(id: Long): List<MessageModel> {
-        val messages = messageApi.getMessages(idClient = id).obj
-        return messages ?: emptyList()
+        return when (val response = messageRepository.get(idClient = id)) {
+            is MyResult.Error -> emptyList()
+            is MyResult.Success -> {
+                response.data.sortedWith(
+                    compareByDescending<MessageModel> { it.date.toLocalDate() }
+                        .thenBy { it.date }
+                )
+            }
+        }
     }
 
     private suspend fun getLocalData(shop: ShopModel) {

@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import ru.krymer.delivery.AppDatabase
 import ru.krymer.delivery.data.api.MessageApi
 import ru.krymer.delivery.data.model.ClientModel
+import ru.krymer.delivery.data.model.CourierInfoModel
 import ru.krymer.delivery.data.model.MessageModel
 import ru.krymer.delivery.data.model.ProductModel
 import ru.krymer.delivery.data.model.RequestModel
@@ -36,6 +37,7 @@ import ru.krymer.delivery.data.model.utilModel.TypePayModel
 import ru.krymer.delivery.data.model.utilModel.getTypePayByString
 import ru.krymer.delivery.data.model.utilModel.toStatusModel
 import ru.krymer.delivery.data.model.utilModel.toStr
+import ru.krymer.delivery.data.repositoryImpl.MessageRepositoryImpl
 import ru.krymer.delivery.data.repositoryImpl.ShopRepositoryImpl
 import ru.krymer.delivery.data.request.ClientRequest
 import ru.krymer.delivery.data.request.RequestShopRequest
@@ -88,6 +90,7 @@ import ru.krymer.delivery.utills.Constants
 import ru.krymer.delivery.utills.MyResult
 import ru.krymer.delivery.utills.copyToClipboard
 import ru.krymer.delivery.utills.isSameDay
+import ru.krymer.delivery.utills.toLocalDate
 import java.io.IOException
 import java.net.UnknownHostException
 import javax.inject.Inject
@@ -99,7 +102,8 @@ enum class RequestUpdateType { COUNT, BONUS, EXCHANGE }
 class ShopViewModel @Inject constructor(
     private val sharedViewModel: SharedViewModel,
     private val room: AppDatabase,
-    private val messageApi: MessageApi, private val repository: ShopRepositoryImpl
+    private val messageRepository: MessageRepositoryImpl,
+    private val repository: ShopRepositoryImpl
 ) : ViewModel() {
 
     private val _events = MutableSharedFlow<ShopEvent>(extraBufferCapacity = 64)
@@ -309,7 +313,9 @@ class ShopViewModel @Inject constructor(
 
             is MessageLoaded -> state.copy(messages = event.messages)
 
-            is ShopsForCreateShopLoaded -> state.copy(listCurrentShopInfo = event.shops)
+            is ShopsForCreateShopLoaded -> {
+                state.copy(listCurrentShopInfo = event.shops)
+            }
 
             is SaveCurrentTrip -> {
                 state.copy(currentTrip = event.trip)
@@ -377,7 +383,26 @@ class ShopViewModel @Inject constructor(
     private suspend fun getDataForCourier(trip: TripModel) {
         when (val response =
             repository.getDataAboutCourier(idTrip = trip.id, idFactory = trip.idFactory)) {
-            is MyResult.Error -> _events.emit(Error(message = "Ошибка загрузки информации о курьере!"))
+            is MyResult.Error -> {
+                _events.emit(Error(message = "Ошибка загрузки информации о курьере!"))
+                var cash = 0.0
+                var noCash = 0.0
+                var allMoney = 0.0
+                room.shopDao().getShops(idTrip = trip.id).forEach { shop ->
+                    cash += shop.cash
+                    noCash += shop.noCash
+                    allMoney += shop.noCash + shop.cash
+                }
+                val loadData = CourierInfoModel(
+                    cash = cash,
+                    noCash = noCash,
+                    percentSalary = 0.0,
+                    allMoney = allMoney,
+                    remainCash = allMoney - trip.salaryCourier - noCash,
+                    salary = trip.salaryCourier
+                )
+                _events.emit(CourierInfoLoaded(loadData, trip = trip))
+            }
             is MyResult.Success -> {
                 val getData = response.data ?: return
                 _events.emit(CourierInfoLoaded(getData, trip = trip))
@@ -386,8 +411,10 @@ class ShopViewModel @Inject constructor(
     }
 
     private suspend fun deleteMessage(message: MessageModel) {
-        messageApi.delete(message.id)
-        _events.emit(MessageLoaded(viewState.value.messages - message))
+        when (messageRepository.delete(message.id)) {
+            is MyResult.Error -> _events.emit(Error(message = "Ошибка удаления сообщения!"))
+            is MyResult.Success -> _events.emit(MessageLoaded(viewState.value.messages - message))
+        }
     }
 
     private suspend fun initData(trip: TripModel) {
@@ -743,6 +770,8 @@ class ShopViewModel @Inject constructor(
 
     private suspend fun changeClient(client: ClientModel?) {
         if (client == null) return
+        val messages = getMessages(client.id)
+        _events.emit(MessageLoaded(messages = messages))
         val shops = room.shopDao().getShopsById(id = client.id).map { shop ->
             return@map shop.let {
                 val requests =
@@ -768,14 +797,31 @@ class ShopViewModel @Inject constructor(
                 )
             }
         }.sortedByDescending { shop -> shop.date }
-        val messages = getMessages(client.id)
-        _events.emit(MessageLoaded(messages = messages))
-        _events.emit(ShopsForCreateShopLoaded(shops = shops))
+        when (val response = repository.getCurrentShopsByFactory(
+            id = client.id,
+            idFactory = client.idFactory
+        )) {
+            is MyResult.Error -> {
+                _events.emit(ShopsForCreateShopLoaded(shops = shops))
+                _events.emit(Error(message = "Ошибка получения магазинов!"))
+            }
+            is MyResult.Success -> {
+                val newShops = response.data
+                _events.emit(ShopsForCreateShopLoaded(shops = newShops))
+            }
+        }
     }
 
     private suspend fun getMessages(id: Long): List<MessageModel> {
-        val messages = messageApi.getMessages(idClient = id).obj
-        return messages ?: emptyList()
+        return when (val response = messageRepository.get(idClient = id)) {
+            is MyResult.Error -> emptyList()
+            is MyResult.Success -> {
+                response.data.sortedWith(
+                    compareByDescending<MessageModel> { it.date.toLocalDate() }
+                        .thenBy { it.date }
+                )
+            }
+        }
     }
 
     private suspend fun updateProductRequest(
@@ -786,7 +832,7 @@ class ShopViewModel @Inject constructor(
         val index = list.indexOfFirst { it.id == editProduct.id }
         if (index == -1) return
         list[index] = transform(editProduct)
-        _events.emit(ShopEvent.ProductsRequestLoaded(list))
+        _events.emit(ProductsRequestLoaded(list))
     }
 
     private suspend fun changeRequestCountProduct(count: String, editProduct: ProductModel) =
@@ -900,8 +946,8 @@ class ShopViewModel @Inject constructor(
         } else {
             shops.add(updatedShop)
         }
-        obtainEvent(DismissAddDialog)
         _events.emit(ShopsForCreateShopLoaded(shops = emptyList()))
+        obtainEvent(DismissAddDialog)
         _events.emit(ShopsLoaded(shops = shops.sortedBy { s -> s.counter }))
         _events.emit(ClientsLoaded(clients = viewState.value.clients - client))
     }
@@ -1077,6 +1123,9 @@ class ShopViewModel @Inject constructor(
                 sharedViewModel.message(Constants.ERROR.RESRTRAINT)
                 obtainEvent(ToggleMillageDialog)
             }
+        } else {
+            sharedViewModel.message("Ошибка получения данных")
+            obtainEvent(ToggleMillageDialog)
         }
     }
 
@@ -1124,11 +1173,11 @@ class ShopViewModel @Inject constructor(
                     }
                     val newState = viewState.value.copy(
                         isLoadDataRequestsInfoDialog = true,
-                        listInfoRequests = updatedRequests,
+                        listInfoRequests = updatedRequests.sortedBy { it.price },
                         allCountRequestsInfo = count,
                         allExchangeRequestsInfo = exchange
                     )
-                    _events.emit(ShopEvent.LoadState(state = newState))
+                    _events.emit(LoadState(state = newState))
                 }
             }
         }
@@ -1175,6 +1224,7 @@ class ShopViewModel @Inject constructor(
             )
             shop.toServerModel().copy(listRequest = requests)
         }
+
         when (val response = repository.getCurrentShopsByFactory(
             id = curShop.id,
             idFactory = curShop.idFactory
