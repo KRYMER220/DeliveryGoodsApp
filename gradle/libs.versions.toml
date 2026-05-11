@@ -1,7 +1,7 @@
 
 
 [versions]
-agp = "8.13.2"
+agp = "9.2.1"
 animation = "1.10.0"
 bom = "2025.08.01"
 composeCharts = "0.2.0"
